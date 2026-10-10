@@ -10,9 +10,9 @@ cd "C:\Users\rotim\Documents\twitter scraper\hiring"
 python ctl.py serve
 ```
 
-Opens `http://127.0.0.1:8765`. Five tabs: Commands, Searches, Results, Status, Settings.
-It is bound to loopback on purpose, because running anything here uses your `.env`
-credentials, so nothing leaves this machine.
+Opens `http://127.0.0.1:8765`. Six tabs: Commands, Searches, Query Builder,
+Results, Status, Settings. Bound to loopback on purpose, because running anything
+here uses your `.env` credentials, so nothing leaves this machine.
 
 There is no server and no database. The page reads and writes `searches.json`
 directly and the standard library serves it. QMD has no web page either; what
@@ -21,6 +21,31 @@ you remember is its MCP Inspector.
 The Commands tab lists every command in `COMMANDS.md`, read from the file so the
 page cannot drift from it. Only the nine on the allowlist can be started from the
 page. Everything else is there to copy.
+
+## Query Builder
+
+Every X search operator, in one panel, composing a query you can read and edit
+before you run it. All 41 forms were verified against the live API on
+2026-10-10, including Boolean `AND`/`OR`/`NOT`, parentheses, quoted phrases,
+`from:`, `to:`, `@mention`, `participant:`, engagement floors and ceilings, date
+and `within:`, `has:` and `filter:` and `exclude:`, `lang:`, `place:`,
+`geolocation:`, `url:`, `conversation_id:`, `thread_id:`, `topic:`, and cashtags.
+
+Two constraints the panel shows you rather than hiding. X rejects any query over
+512 characters, and a hand-written query is never split into batches, only the
+built-in 81 phrase set is. So a long query is your problem, and the counter goes
+red before you spend a request.
+
+The `list:` operator returns nothing on this account. To read a list, use the
+`list` source instead, which calls the list endpoint directly.
+
+Run it once from the builder, or save it as a scheduled search.
+
+## Results pagination
+
+Results are paged server side, ten runs to a page, with the page size
+selectable. An account reads a couple of runs a week, so one page is usually
+enough.
 
 ### Writing your X credentials is locked by default
 
@@ -203,6 +228,7 @@ it. The commands are in the last lines of each script.
 | `search.py` | The engine. Classifier and the four fetch modes. |
 | `serve.py` | The localhost server. Standard library only, loopback only. |
 | `web/index.html` | The page itself. One file, no build, no dependencies. |
+| `test_panel.py` | Checks the page's JavaScript parses and every operator is wired. |
 | `test_credentials.py` | Proves the credential write path, against a temp file only. |
 | `searches.json` | Your searches. Safe to edit by hand, but the CLI and page are easier. |
 | `pat.py` | Regex guard. Every pattern must match its own probe or the run stops. |

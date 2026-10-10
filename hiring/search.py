@@ -518,11 +518,25 @@ def main():
         if err:
             sys.exit(f'could not read @{args.watch}: {err}')
     elif args.live:
-        phrase_set = args.query or CORE
-        source = f'live X search: {args.query or "full phrase set"}'
-        rows, notes = fetch_live_chunked(phrase_set, args.limit, since, args.min_likes,
-                                         tuple(x for x in args.exclude.split(',') if x),
-                                         args.pause)
+        if args.query:
+            # A user query is never split. chunk_phrases exists only for the
+            # built-in 81 phrase set, and splitting a query like
+            # "(a OR b) NOT c" on OR would silently change its meaning.
+            if len(args.query) > 512:
+                sys.exit(f'query is {len(args.query)} characters. X rejects anything '
+                         f'over 512. Shorten it, or drop --query to use the built-in set.')
+            source = f'live X search: {args.query}'
+            rows, err = fetch_live(args.query, args.limit, since, args.min_likes,
+                                   tuple(x for x in args.exclude.split(',') if x))
+            notes = [f'1 query of {len(args.query)} characters']
+            if err:
+                sys.exit(f'live search failed: {err}\n'
+                         f'If this says 404, the patch was lost. Run: node fix-twitter-cli.js')
+        else:
+            source = 'live X search: full phrase set'
+            rows, notes = fetch_live_chunked(CORE, args.limit, since, args.min_likes,
+                                             tuple(x for x in args.exclude.split(',') if x),
+                                             args.pause)
     else:
         rows = fetch(args.db)
         if since:

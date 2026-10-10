@@ -20,6 +20,7 @@ import threading
 import webbrowser
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -195,7 +196,8 @@ def run(config, load, save, load_state, run_one):
             return json.loads(self.rfile.read(n) or b'{}')
 
         def do_GET(self):
-            path = self.path.split('?')[0]
+            path, _, qs = self.path.partition('?')
+            query = parse_qs(qs)
             if path in ('/', '/index.html'):
                 return self._send(200, open(PAGE, encoding='utf-8').read(), 'text/html; charset=utf-8')
             if path == '/api/searches':
@@ -204,11 +206,20 @@ def run(config, load, save, load_state, run_one):
             if path == '/api/results':
                 out = os.path.join(ROOT, 'out', 'searches')
                 try:
-                    files = sorted(f for f in os.listdir(out) if f.endswith('.json'))[-60:]
+                    files = sorted(f for f in os.listdir(out) if f.endswith('.json'))
                 except FileNotFoundError:
                     files = []
+                files.reverse()
+                try:
+                    page = max(1, int(query.get('page', ['1'])[0]))
+                    size = min(50, max(1, int(query.get('size', ['10'])[0])))
+                except ValueError:
+                    page, size = 1, 10
+                total = len(files)
+                pages = max(1, (total + size - 1) // size)
+                page = min(page, pages)
                 items = []
-                for fn in reversed(files):
+                for fn in files[(page - 1) * size:page * size]:
                     try:
                         d = json.load(open(os.path.join(out, fn), encoding='utf-8'))
                     except Exception:
@@ -217,7 +228,8 @@ def run(config, load, save, load_state, run_one):
                                   'ran_at': d.get('ran_at'), 'counts': d.get('counts', {}),
                                   'openings': d.get('openings', 0),
                                   'tweets': d.get('tweets', [])[:200]})
-                return self._send(200, {'results': items})
+                return self._send(200, {'results': items, 'page': page, 'pages': pages,
+                                        'total': total, 'size': size})
             if path == '/api/commands':
                 return self._send(200, {'commands': parse_commands(),
                                         'runnable': sorted(RUNNABLE),
@@ -329,6 +341,62 @@ def run(config, load, save, load_state, run_one):
                                            timeout=3600, env=env)
                         jobs[key] = {'state': 'done' if r.returncode == 0 else 'failed',
                                      'output': (r.stdout or '').splitlines()[-60:]}
+                    except Exception as e:
+                        jobs[key] = {'state': 'failed', 'output': [f'{type(e).__name__}: {e}']}
+
+                threading.Thread(target=work, daemon=True).start()
+                return self._send(200, {'ok': True, 'started': key})
+
+            if path == '/api/run-query':
+                q = (body.get('query') or '').strip()
+                if not q:
+                    return self._send(400, {'error': 'empty query'})
+                # X rejects anything over 512 characters. Say so here rather
+                # than letting the run fail later with a pipeline error.
+                if len(q) > 512:
+                    return self._send(400, {'error':
+                        f'query is {len(q)} characters. X rejects anything over 512.'})
+                key = 'one-off: ' + q[:40]
+                if jobs.get(key, {}).get('state') == 'running':
+                    return self._send(409, {'error': 'that query is already running'})
+
+                def work():
+                    import search as S
+                    from datetime import timedelta
+                    jobs[key] = {'state': 'running', 'output': ['searching...']}
+                    try:
+                        since = datetime.now(timezone.utc) - timedelta(days=int(body.get('days_back', 7)))
+                        rows, err = S.fetch_live(q, int(body.get('limit', 50)), since,
+                                                 int(body.get('min_likes', 0)))
+                        if err:
+                            raise RuntimeError(err)
+                        for r in rows:
+                            r.update(S.extract(r))
+                            r['bucket'] = S.classify(r.get('text') or '')
+                            r['dt'] = S.when(r.get('posted_at') or '')
+                        from collections import Counter
+                        counts = dict(Counter(r['bucket'] for r in rows))
+                        out = os.path.join(ROOT, 'out', 'searches')
+                        os.makedirs(out, exist_ok=True)
+                        stamp = datetime.now().strftime('%Y-%m-%d_%H%M')
+                        base = os.path.join(out, f"oneoff-{stamp}")
+                        payload = {'name': 'one-off', 'source': 'live', 'query': q,
+                                   'ran_at': datetime.now(timezone.utc).isoformat(),
+                                   'since': since.isoformat(),
+                                   'coverage': [f'query: {q}'],
+                                   'counts': counts, 'openings': counts.get('opening', 0),
+                                   'tweets': [{k: v for k, v in r.items() if k != 'dt'} for r in rows]}
+                        with open(base + '.json', 'w', encoding='utf-8') as f:
+                            json.dump(payload, f, ensure_ascii=False, indent=2)
+                        with open(base + '.md', 'w', encoding='utf-8') as f:
+                            f.write(f"# one-off\n\n```\n{q}\n```\n\n"
+                                    f"{len(rows)} tweets, {counts.get('opening', 0)} openings.\n\n"
+                                    + '\n\n'.join(f"**@{r['author_handle']}**  \n{r['text']}\n"
+                                                  f"<{r['url']}>" for r in rows[:100]))
+                        jobs[key] = {'state': 'done',
+                                     'output': [f'{len(rows)} tweets, '
+                                                f"{counts.get('opening', 0)} openings",
+                                                f'wrote {base}.md']}
                     except Exception as e:
                         jobs[key] = {'state': 'failed', 'output': [f'{type(e).__name__}: {e}']}
 
