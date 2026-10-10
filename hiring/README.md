@@ -10,14 +10,37 @@ cd "C:\Users\rotim\Documents\twitter scraper\hiring"
 python ctl.py serve
 ```
 
-Opens `http://127.0.0.1:8765`. Add, enable, disable, delete, and run searches
-from the page, then read results there. It is bound to loopback on purpose,
-because running a search uses your `.env` credentials, so nothing leaves this
-machine.
+Opens `http://127.0.0.1:8765`. Five tabs: Commands, Searches, Results, Status, Settings.
+It is bound to loopback on purpose, because running anything here uses your `.env`
+credentials, so nothing leaves this machine.
 
 There is no server and no database. The page reads and writes `searches.json`
 directly and the standard library serves it. QMD has no web page either; what
 you remember is its MCP Inspector.
+
+The Commands tab lists every command in `COMMANDS.md`, read from the file so the
+page cannot drift from it. Only the nine on the allowlist can be started from the
+page. Everything else is there to copy.
+
+### Writing your X credentials is locked by default
+
+The Settings tab can write `auth_token` and `ct0` into `.env`, but only if you
+start the panel with the write path armed:
+
+```powershell
+$env:FT_ALLOW_ENV_WRITE='1'; python ctl.py serve
+```
+
+Without that variable the save button is disabled and the server answers 403.
+
+This exists because of a real accident on 2026-10-10. A test posted to the write
+endpoint to prove it worked, and that overwrote the live `auth_token` with a test
+string. The backup command had a wrong path so it silently did nothing. It then
+happened a second time to `ct0` during the follow-up test. Both were restored, but
+it should not have been possible twice, so proving the path now requires arming
+it, and `FT_ENV_FILE` redirects it away from the real file.
+`python test_credentials.py` checks the write logic against a temp file and
+asserts the real `.env` is byte-for-byte unchanged.
 
 ## The CLI
 
@@ -178,8 +201,9 @@ it. The commands are in the last lines of each script.
 |---|---|
 | `ctl.py` | The control plane. Config, CLI, and scheduler. Start here. |
 | `search.py` | The engine. Classifier and the four fetch modes. |
-| `serve.py` | The localhost page. Standard library only, loopback only. |
+| `serve.py` | The localhost server. Standard library only, loopback only. |
 | `web/index.html` | The page itself. One file, no build, no dependencies. |
+| `test_credentials.py` | Proves the credential write path, against a temp file only. |
 | `searches.json` | Your searches. Safe to edit by hand, but the CLI and page are easier. |
 | `pat.py` | Regex guard. Every pattern must match its own probe or the run stops. |
 | `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. |
