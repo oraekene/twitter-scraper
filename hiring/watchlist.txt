@@ -1,0 +1,33 @@
+# Accounts to watch for job openings. One handle per line. # starts a comment.
+#
+# This is the only way to search X from here, because `twitter search` returns
+# HTTP 404. It cannot discover accounts you do not already know, so seed this
+# list yourself and add handles when a report surfaces a new one.
+#
+# Where new handles come from: the report ends with a section listing the accounts
+# that posted the most openings. Add the ones you do not follow yet.
+
+# Founders and operators who post openings directly
+simononchain
+vasuman
+kanekallaway
+tonychang430
+fuzailkazi_
+inanksm
+0x6080604052
+armankhon
+Keanaalabre
+jeff_weinstein
+
+# Recruiters and job aggregators
+official_cumi
+TheJobfather__
+AramideOyekunle
+AbrahamOkah2
+amosuibk
+v_garg_s
+
+# Companies that post openings often
+comma_ai
+trillium_labs
+nader_dabit
