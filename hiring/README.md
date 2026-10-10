@@ -35,18 +35,25 @@ the whole tweet. Every other tool you own works on the same data too:
 
 Two ways in, and they have different shapes.
 
-`--live` searches X for a query. It found accounts you have never heard of,
-which is the whole point, but a general search for `hiring` is noisy. Raise
-`--min-likes` to cut the spam.
+`--live` searches X for a query. With no `--query` it uses the **full 81 phrase
+set**, the same one the bookmark pass uses, because there is no reason for live
+search to recall less. X caps one query at 512 characters and the set is 1329,
+so it is split into 4 batches and merged. A three second pause sits between
+batches. The report's `Coverage` section shows how each batch did.
 
-`--watchlist` reads every handle in `watchlist.txt`, one per line. It is the
-higher signal read, because you chose the accounts. Seed it yourself and add
-handles when a report names an account you do not follow.
+It found accounts you have never heard of, which is the whole point, but a
+general search for `hiring` is noisy. Raise `--min-likes` to cut the spam.
 
 ```powershell
-python search.py --live --query 'hiring OR "we are hiring"' --min-likes 30 --days 7 --md -
-python search.py --watchlist watchlist.txt --days 7 --md -
+python search.py --live --days 7 --min-likes 30 --md -      # full phrase set
+python search.py --live --query 'hiring OR "open role"' --md -   # one narrow query
 ```
+
+`--watchlist` reads every handle in `watchlist.txt`, one per line. It sends **no
+query at all**: it reads everything the account posts and then classifies each
+post. That is why the watchlist pass does not need the phrase set and is the
+higher signal read, because you chose the accounts. Seed it yourself and add
+handles when a report names an account you do not follow.
 
 ### Why search was broken, and what fixes it
 

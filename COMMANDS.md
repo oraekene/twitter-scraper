@@ -112,16 +112,17 @@ Everything lives in the `hiring` folder. See `hiring\README.md`. Two jobs, one s
 python hiring\search.py                          # your bookmarks
 python hiring\search.py --json out\h.json        # same, full text, nothing truncated
 python hiring\search.py --days 8 --md -          # only the last 8 days
-python hiring\search.py --live --min-likes 30    # search X for a query
+python hiring\search.py --live --min-likes 30    # search X, full 81 phrase set, batched
 python hiring\search.py --watchlist hiring\watchlist.txt   # X, from the watchlist
 pwsh -File hiring\weekly.ps1                     # schedule the bookmark hunt
 pwsh -File hiring\weekly-twitter.ps1             # schedule the X hunt
 ```
 
 The X half runs two passes. A live search finds accounts you have never heard of but returns noise, so
-raise `--min-likes`. The watchlist is the higher signal read because you chose the accounts. Two
-seconds between accounts is required or X answers HTTP 429 halfway through and the run looks
-successful.
+raise `--min-likes`. It uses the same 81 phrase set as the bookmark pass, split into batches because
+X rejects any query over 512 characters. The watchlist sends no query at all, it reads each account
+in full and classifies every post, which is why it is the higher signal read. Two seconds between
+accounts is required or X answers HTTP 429 halfway through and the run looks successful.
 
 Three traps it already handles, all found on 2026-10-09. Join the search table on `rowid`, never on
 `b.id`, because `bookmarks.id` is TEXT and the wrong join takes 382 seconds to return zero rows.

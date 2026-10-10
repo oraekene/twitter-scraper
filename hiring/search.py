@@ -263,6 +263,53 @@ def fetch_live(query, limit=200, since=None, min_likes=0, exclude=('retweets',))
     return normalise_live(payload.get('data') or []), None
 
 
+def chunk_phrases(pattern, cap=440):
+    """Split an OR chain into batches X will accept.
+
+    X rejects a raw query over 512 characters with PipelineFailure. The full
+    phrase set is 81 phrases and 1329 characters, so it has to go out in pieces.
+    """
+    parts = [p.strip() for p in pattern.split(' OR ') if p.strip()]
+    out, cur = [], []
+    for p in parts:
+        if cur and len(' OR '.join(cur + [p])) > cap:
+            out.append(' OR '.join(cur))
+            cur = [p]
+        else:
+            cur.append(p)
+    if cur:
+        out.append(' OR '.join(cur))
+    return out
+
+
+def fetch_live_chunked(phrase_set, limit=200, since=None, min_likes=0,
+                       exclude=('retweets',), pause=3.0, cap=440):
+    """Search X for every phrase, in batches, and merge the results.
+
+    This is the live equivalent of what the database does with one MATCH. Using
+    only a few hand-picked phrases throws away most of the recall for no reason.
+    """
+    import time
+    batches = chunk_phrases(phrase_set, cap)
+    rows, seen, notes = [], set(), []
+    for i, b in enumerate(batches, 1):
+        if i > 1:
+            time.sleep(pause)
+        got, err = fetch_live(b, limit, since, min_likes, exclude)
+        if err:
+            notes.append(f'batch {i} of {len(batches)} FAILED: {err.strip()[:120]}')
+            continue
+        fresh = 0
+        for r in got:
+            if r['id'] in seen:
+                continue
+            seen.add(r['id'])
+            rows.append(r)
+            fresh += 1
+        notes.append(f'batch {i} of {len(batches)}: {len(got)} tweets, {fresh} new')
+    return rows, notes
+
+
 def fetch_watch(handle, limit=200):
     """Read one account's own posts. This live path works today."""
     payload = run_twitter(['user-posts', handle, '-n', str(limit), '--json'])
@@ -420,8 +467,9 @@ def main():
                     help='read every account in a watchlist file, one handle per line')
     ap.add_argument('--pause', type=float, default=2.0,
                     help='seconds between accounts in watchlist mode, avoids HTTP 429')
-    ap.add_argument('--query', default='hiring OR "we are hiring" OR "open role"',
-                    help='search phrase, only used with --live')
+    ap.add_argument('--query',
+                    help='live search only. Defaults to the full 81 phrase set, '
+                         'which is sent in batches because X caps a query at 512 characters.')
     ap.add_argument('--limit', type=int, default=200, help='max tweets in live or watch mode')
     ap.add_argument('--days', type=int, help='only tweets from the last N days')
     ap.add_argument('--since', help='only tweets on or after YYYY-MM-DD')
@@ -454,13 +502,11 @@ def main():
         if err:
             sys.exit(f'could not read @{args.watch}: {err}')
     elif args.live:
-        source = f'live X search: {args.query}'
-        rows, err = fetch_live(args.query, args.limit, since, args.min_likes,
-                               tuple(x for x in args.exclude.split(',') if x))
-        if err:
-            sys.exit(f'live search failed: {err}\n'
-                     f'If this says 404, the patch was lost. Run: node fix-twitter-cli.js\n'
-                     f'Otherwise use --watchlist FILE, which does not depend on that patch.')
+        phrase_set = args.query or CORE
+        source = f'live X search: {args.query or "full phrase set"}'
+        rows, notes = fetch_live_chunked(phrase_set, args.limit, since, args.min_likes,
+                                         tuple(x for x in args.exclude.split(',') if x),
+                                         args.pause)
     else:
         rows = fetch(args.db)
         if since:
@@ -486,7 +532,7 @@ def main():
             'since': since.isoformat() if since else None,
             'counts': dict(buckets),
             'openings': len(openings),
-            'accounts_read': notes,
+            'coverage': notes,
             'tweets': [{
                 'id': r['id'], 'url': r['url'], 'author': r['author_handle'],
                 'author_name': r['author_name'], 'posted_at': r['date'],
@@ -523,7 +569,7 @@ def main():
         A(f'| Other employment talk | {buckets["other"] + buckets["misc"]} |')
         A('')
         if notes:
-            A('Accounts read:')
+            A('Coverage:' if args.live else 'Accounts read:')
             A('')
             for n in notes:
                 A(f'- {n}')

@@ -16,7 +16,7 @@ param(
     [int]$Limit = 50,
     [int]$MinLikes = 20,
     [int]$KeepRuns = 12,
-    [string]$Query = 'hiring OR "we are hiring" OR "open role" OR "we are looking for"',
+    [string]$Query = '',
     [switch]$WatchlistOnly
 )
 
@@ -50,8 +50,11 @@ function Run-Pass($Name, $ScriptArgs) {
 }
 
 if (-not $WatchlistOnly) {
-    Run-Pass 'search' @('--live', '--query', $Query, '--limit', $Limit,
-                        '--days', $Days, '--min-likes', $MinLikes)
+    # No -Query means the full 81 phrase set, sent in batches. X caps one query
+    # at 512 characters and the whole set is 1329, so it is split automatically.
+    $searchArgs = @('--live', '--limit', $Limit, '--days', $Days, '--min-likes', $MinLikes)
+    if ($Query) { $searchArgs += @('--query', $Query) }
+    Run-Pass 'search' $searchArgs
 }
 Run-Pass 'watchlist' @('--watchlist', (Join-Path $Root 'watchlist.txt'),
                        '--limit', $Limit, '--days', $Days)
