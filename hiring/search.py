@@ -318,22 +318,14 @@ def fetch_watch(handle, limit=200):
     return normalise_live(payload.get('data') or []), None
 
 
-def fetch_watchlist(path, limit=200, pause=2.0):
-    """Read every account in a watchlist file, one handle per line.
-
-    This is the only working way to search X from here. `twitter search` returns
-    HTTP 404, so there is no way to discover accounts you do not already know.
+def fetch_handles(handles, limit=200, pause=2.0):
+    """Read a list of accounts, one pause apart.
 
     The pause is not optional. Nineteen accounts back to back returns HTTP 429
-    from the eighth onwards, so without it a weekly run silently covers half the
-    list and reports it as success.
+    from the eighth onwards, so without it a run silently covers half the list
+    and reports it as success.
     """
     import time
-    handles = []
-    for line in open(path, encoding='utf-8'):
-        line = line.split('#', 1)[0].strip().lstrip('@')
-        if line:
-            handles.append(line)
     rows, seen, notes = [], set(), []
     for i, h in enumerate(handles):
         if i:
@@ -349,6 +341,30 @@ def fetch_watchlist(path, limit=200, pause=2.0):
             rows.append(r)
         notes.append(f'@{h}: {len(got)} posts')
     return rows, notes
+
+
+def fetch_watchlist(path, limit=200, pause=2.0):
+    """Read every account in a watchlist file, one handle per line."""
+    handles = []
+    for line in open(path, encoding='utf-8'):
+        line = line.split('#', 1)[0].strip().lstrip('@')
+        if line:
+            handles.append(line)
+    return fetch_handles(handles, limit, pause)
+
+
+def fetch_list(list_id, limit=200, pause=2.0):
+    """Read one X list by numeric id.
+
+    X refuses cookie auth on every list-enumeration endpoint, verified 2026-10-10:
+    /i/api/1.1/lists/list.json returns 401 and /i/api/2/lists/created.json
+    returns 403. So ids have to come from the list URL, x.com/i/lists/<id>.
+    """
+    payload = run_twitter(['list', str(list_id), '-n', str(limit), '--json'])
+    if not payload.get('ok'):
+        return [], payload.get('error', {}).get('message', 'unknown error')
+    got = normalise_live(payload.get('data') or [])
+    return got, [f'list {list_id}: {len(got)} tweets']
 
 
 def normalise_live(items):

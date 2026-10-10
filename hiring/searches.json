@@ -1,0 +1,70 @@
+{
+  "searches": [
+    {
+      "name": "hiring-bookmarks",
+      "source": "bookmarks",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:00",
+      "days_back": 8,
+      "limit": 50,
+      "min_likes": 0,
+      "notes": "Your own saved bookmarks, every day. Local, free, no rate limits."
+    },
+    {
+      "name": "hiring-live",
+      "source": "live",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:20",
+      "days_back": 7,
+      "limit": 50,
+      "min_likes": 20,
+      "notes": "X search using the full 81 phrase set, sent in batches. Noisy."
+    },
+    {
+      "name": "hiring-watchlist",
+      "source": "watchlist",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:40",
+      "days_back": 7,
+      "limit": 50,
+      "handles_file": "watchlist.txt",
+      "notes": "Reads every account in watchlist.txt, no query. Highest signal."
+    },
+    {
+      "name": "list-1908587200419422252",
+      "source": "list",
+      "enabled": false,
+      "list_id": "1908587200419422252",
+      "every_days": 2,
+      "time": "10:00",
+      "days_back": 7,
+      "limit": 50,
+      "notes": "X list. Disabled until you confirm you want it."
+    },
+    {
+      "name": "list-1814831941901758764",
+      "source": "list",
+      "enabled": false,
+      "list_id": "1814831941901758764",
+      "every_days": 2,
+      "time": "10:05",
+      "days_back": 7,
+      "limit": 50,
+      "notes": "X list. Disabled until you confirm you want it."
+    },
+    {
+      "name": "list-1901503315307069643",
+      "source": "list",
+      "enabled": false,
+      "list_id": "1901503315307069643",
+      "every_days": 2,
+      "time": "10:10",
+      "days_back": 7,
+      "limit": 50,
+      "notes": "X list. Disabled until you confirm you want it."
+    }
+  ]
+}

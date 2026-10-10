@@ -3,33 +3,102 @@
 Finds tweets about hiring, job openings, layoffs, and job hunting, then groups
 them so you can read a shortlist instead of 94,415 bookmarks.
 
-There are two jobs here, and they are separate on purpose.
+## The control panel
 
-| Job | Searches | Runs | Output |
+```powershell
+cd "C:\Users\rotim\Documents\twitter scraper\hiring"
+python ctl.py serve
+```
+
+Opens `http://127.0.0.1:8765`. Add, enable, disable, delete, and run searches
+from the page, then read results there. It is bound to loopback on purpose,
+because running a search uses your `.env` credentials, so nothing leaves this
+machine.
+
+There is no server and no database. The page reads and writes `searches.json`
+directly and the standard library serves it. QMD has no web page either; what
+you remember is its MCP Inspector.
+
+## The CLI
+
+Same thing without the browser.
+
+```powershell
+python ctl.py list                                        # show everything
+python ctl.py check                                       # validate config, run nothing
+python ctl.py run --all                                   # run everything now
+python ctl.py run --due                                   # only what is due today
+python ctl.py run --name hiring-live                      # run one
+
+python ctl.py add --name ai-jobs --source live --query 'hiring OR "we are hiring"' --every-days 3
+python ctl.py add --name aakash --source watchlist --handle aakashgupta
+python ctl.py add --name my-list --source list --list-id 1908587200419422252
+```
+
+Sources are `bookmarks`, `live`, `watchlist`, and `list`.
+
+| Source | Reads | Network | Notes |
 |---|---|---|---|
-| `weekly.ps1` | your saved bookmarks | `search.py` | `out\weekly\` |
-| `weekly-twitter.ps1` | accounts on X | `search.py --watchlist` | `out\weekly-twitter\` |
+| `bookmarks` | your saved tweets | no | free, no rate limits |
+| `live` | X search, full 81 phrase set in batches | yes | noisy, raise `--min-likes` |
+| `watchlist` | every post by accounts you named | yes | no query sent, highest signal |
+| `list` | one X list by numeric id | yes | id comes from `x.com/i/lists/<id>` |
 
-Both call the same `search.py` and the same classifier, so a tweet reads the
-same whichever report it lands in. They are split only because the two run at
-different times and read different things.
+## Scheduling
+
+One Windows task runs daily and decides what is due, rather than registering a
+task per search, which Windows makes painful. A search is due when
+`days since last run >= every_days`, so a day the laptop was asleep does not
+skip it.
+
+```powershell
+pwsh -Command "Register-ScheduledTask -TaskName 'hiring-runs' -Description 'Run due hiring searches' -Trigger (New-ScheduledTaskTrigger -Daily -At 8:55am) -Action (New-ScheduledTaskAction -Execute 'python' -Argument '\"C:\Users\rotim\Documents\twitter scraper\hiring\ctl.py\" run --due' -WorkingDirectory 'C:\Users\rotim\Documents\twitter scraper\hiring') -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2) -DontStopIfGoingOnBatteries -AllowStartIfOnBatteries)"
+```
+
+Keep the daily trigger away from `TwitterBookmarkWeeklyScan`, which fires Sunday
+ten in the morning through four in the afternoon. Both open the same database.
+
+Output lands in `out\searches\` as `<name>-<timestamp>.md` and `.json`.
+
+## Adding accounts to a watchlist
+
+Three ways, in order of effort.
+
+Edit `watchlist.txt` by hand, one handle per line. It is already wired to the
+`hiring-watchlist` search.
+
+```
+python ctl.py add --name somename --source watchlist --handle aakashgupta
+```
+
+Or add the handle in the browser page. For a one-account watchlist this is
+better than editing a shared file, because it gets its own schedule.
+
+## X lists
+
+A list id is the last number in the list URL, `x.com/i/lists/<id>`. X refuses
+cookie auth on every list-enumeration endpoint, verified 2026-10-10:
+`/i/api/1.1/lists/list.json` answers 401 and `/i/api/2/lists/created.json`
+answers 403. So there is no way to read your list list, ids have to be copied.
+
+Three of yours are seeded into `searches.json`, disabled until you turn them on.
 
 ## Run it by hand
 
 ```powershell
-cd "C:\Users\rotim\Documents\twitter scraper\hiring"
-
 python search.py                                  # your bookmarks
 python search.py --json out\hiring.json           # full text, nothing truncated
-python search.py --days 8 --md -                 # only the last 8 days
+python search.py --days 8 --md -                  # only the last 8 days
 python search.py --watchlist watchlist.txt        # X, from the watchlist
-python search.py --live                           # X search, broken, see below
+python search.py --live --min-likes 30 --days 7 --md -   # X search, full phrase set
 python search.py --selfcheck                      # check the code, touch nothing
 ```
 
+`search.py` is the engine. `ctl.py` is a scheduler and config layer on top of it,
+so both remain useful on their own.
+
 Truncation is a reading aid in the markdown only. The JSON export always carries
-the whole tweet. Every other tool you own works on the same data too:
-`fieldtheory search "hiring" --json`, `fieldtheory md`, and `fieldtheory show <id>`.
+the whole tweet.
 
 ## The X half
 
@@ -107,13 +176,17 @@ it. The commands are in the last lines of each script.
 
 | File | What it is |
 |---|---|
-| `search.py` | The whole thing. Bookmarks, watchlist, and live modes, plus the classifier. |
+| `ctl.py` | The control plane. Config, CLI, and scheduler. Start here. |
+| `search.py` | The engine. Classifier and the four fetch modes. |
+| `serve.py` | The localhost page. Standard library only, loopback only. |
+| `web/index.html` | The page itself. One file, no build, no dependencies. |
+| `searches.json` | Your searches. Safe to edit by hand, but the CLI and page are easier. |
 | `pat.py` | Regex guard. Every pattern must match its own probe or the run stops. |
-| `weekly.ps1` | Scheduled job for your bookmarks. |
-| `weekly-twitter.ps1` | Scheduled job for X. |
-| `watchlist.txt` | The accounts the watchlist pass reads. Edit this to change what it watches. |
-| `fix-fieldtheory.js` | Re-applies the search fix in `fieldtheory`. Run after `npm update -g fieldtheory`. |
-| `fix-twitter-cli.js` | Re-applies the transaction header fix in `twitter-cli`. Run after upgrading the CLI, or if `twitter search` starts returning 404 again. |
+| `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. |
+| `weekly-twitter.ps1` | Standalone X hunt, same. |
+| `watchlist.txt` | Accounts for the `hiring-watchlist` search. |
+| `fix-fieldtheory.js` | Re-applies the search fix in `fieldtheory`. |
+| `fix-twitter-cli.js` | Re-applies the transaction header fix in `twitter-cli`. |
 | `scratch/` | Throwaway scripts from the first run on 2026-10-09. Kept for history. Do not run them. |
 
 ## Three traps this already handles
