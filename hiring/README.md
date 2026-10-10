@@ -10,17 +10,54 @@ cd "C:\Users\rotim\Documents\twitter scraper\hiring"
 python ctl.py serve
 ```
 
-Opens `http://127.0.0.1:8765`. Six tabs: Commands, Searches, Query Builder,
-Results, Status, Settings. Bound to loopback on purpose, because running anything
-here uses your `.env` credentials, so nothing leaves this machine.
+Opens `http://127.0.0.1:8765`. Eight sections in a left sidebar: Dashboard,
+Searches, Lists, Query Builder, Results, Commands, Status, Settings. Light mode.
+Bound to loopback on purpose, because running anything here uses your `.env`
+credentials, so nothing leaves this machine.
+
+If something already holds port 8765, use `--port 8791`.
 
 There is no server and no database. The page reads and writes `searches.json`
-directly and the standard library serves it. QMD has no web page either; what
-you remember is its MCP Inspector.
+and `lists.json` directly and the standard library serves it. QMD has no web page
+either; what you remember is its MCP Inspector.
 
 The Commands tab lists every command in `COMMANDS.md`, read from the file so the
 page cannot drift from it. Only the nine on the allowlist can be started from the
 page. Everything else is there to copy.
+
+## Lists
+
+Lists are named, reusable groups in `lists.json`. Any number of searches can
+point at the same list, so one account you care about can feed five different
+schedules.
+
+A list is either `handles`, a set of account handles, or `xlist`, an X list read
+by numeric id. Create, rename, edit, and delete them in the **Lists** tab, or:
+
+```powershell
+python ctl.py lists                                    # show every list
+python ctl.py mklist --name founders --handle aakashgupta --handle vasuman
+python ctl.py mklist --name my-list --kind xlist --list-id 1908587200419422252
+python ctl.py rmlist founders
+```
+
+Point a search at one by name:
+
+```powershell
+python ctl.py add --name daily-founders --source watchlist --list founders --every-days 1
+python ctl.py add --name weekly-list --source list --list my-list --every-days 7
+```
+
+The Lists tab shows which searches use each list, and warns before deleting one
+that is still in use.
+
+`watchlist.txt` still exists for the standalone `python search.py --watchlist
+watchlist.txt` command. The panel does not read it.
+
+A list id is the last number in the list URL, `x.com/i/lists/<id>`. X refuses
+cookie auth on every list-enumeration endpoint, verified 2026-10-10:
+`/i/api/1.1/lists/list.json` answers 401 and `/i/api/2/lists/created.json`
+answers 403. So there is no way to read your list list, ids have to be copied.
 
 ## Query Builder
 
@@ -228,13 +265,15 @@ it. The commands are in the last lines of each script.
 | `search.py` | The engine. Classifier and the four fetch modes. |
 | `serve.py` | The localhost server. Standard library only, loopback only. |
 | `web/index.html` | The page itself. One file, no build, no dependencies. |
-| `test_panel.py` | Checks the page's JavaScript parses and every operator is wired. |
+| `test_panel.py` | Checks the page parses, is light mode, and every operator is wired. |
+| `test_api.py` | Boots the server on a spare port and checks every route and rejection. |
 | `test_credentials.py` | Proves the credential write path, against a temp file only. |
+| `lists.json` | Your named lists. One source of truth for the panel. |
 | `searches.json` | Your searches. Safe to edit by hand, but the CLI and page are easier. |
 | `pat.py` | Regex guard. Every pattern must match its own probe or the run stops. |
 | `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. |
 | `weekly-twitter.ps1` | Standalone X hunt, same. |
-| `watchlist.txt` | Accounts for the `hiring-watchlist` search. |
+| `watchlist.txt` | Only for the standalone `search.py --watchlist` command. The panel uses lists.json. |
 | `fix-fieldtheory.js` | Re-applies the search fix in `fieldtheory`. |
 | `fix-twitter-cli.js` | Re-applies the transaction header fix in `twitter-cli`. |
 | `scratch/` | Throwaway scripts from the first run on 2026-10-09. Kept for history. Do not run them. |

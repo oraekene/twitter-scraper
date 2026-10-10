@@ -174,8 +174,8 @@ def tail(path, n=25):
     return open(path, encoding='utf-8', errors='replace').read().splitlines()[-n:]
 
 
-def run(config, load, save, load_state, run_one):
-    host, port = '127.0.0.1', 8765
+def run(config, load, save, load_state, run_one, load_lists, save_lists, port=8765):
+    host = '127.0.0.1'
     lock = threading.Lock()
     jobs = {}
 
@@ -203,6 +203,9 @@ def run(config, load, save, load_state, run_one):
             if path == '/api/searches':
                 with lock:
                     return self._send(200, {'searches': load()['searches'], 'state': load_state()})
+            if path == '/api/lists':
+                with lock:
+                    return self._send(200, {'lists': load_lists()['lists']})
             if path == '/api/results':
                 out = os.path.join(ROOT, 'out', 'searches')
                 try:
@@ -403,6 +406,64 @@ def run(config, load, save, load_state, run_one):
                 threading.Thread(target=work, daemon=True).start()
                 return self._send(200, {'ok': True, 'started': key})
 
+            if path == '/api/list/add':
+                with lock:
+                    lc = load_lists()
+                    name = (body.get('name') or '').strip()
+                    kind = body.get('kind', 'handles')
+                    if not name:
+                        return self._send(400, {'error': 'name is required'})
+                    if any(l['name'] == name for l in lc['lists']):
+                        return self._send(400, {'error': 'that name already exists'})
+                    if kind not in ('handles', 'xlist'):
+                        return self._send(400, {'error': 'kind must be handles or xlist'})
+                    entry = {'name': name, 'kind': kind, 'note': body.get('note', '')}
+                    if kind == 'handles':
+                        hs = body.get('handles')
+                        if isinstance(hs, str):
+                            hs = [h.strip().lstrip('@') for h in hs.replace('\n', ',').split(',')]
+                        entry['handles'] = [h.strip().lstrip('@') for h in (hs or []) if h.strip()]
+                    else:
+                        lid = (body.get('list_id') or '').strip()
+                        if not lid:
+                            return self._send(400, {'error': 'an X list needs its id'})
+                        if not lid.isdigit():
+                            return self._send(400, {'error': 'a list id is the number in the list URL'})
+                        entry['list_id'] = lid
+                    lc['lists'].append(entry)
+                    save_lists(lc)
+                return self._send(200, {'ok': True, 'name': name})
+
+            if path == '/api/list/edit':
+                with lock:
+                    lc = load_lists()
+                    name = body.get('name')
+                    for l in lc['lists']:
+                        if l['name'] != name:
+                            continue
+                        if 'note' in body:
+                            l['note'] = body['note']
+                        if 'handles' in body:
+                            hs = body['handles']
+                            if isinstance(hs, str):
+                                hs = [h.strip().lstrip('@') for h in hs.replace('\n', ',').split(',')]
+                            l['handles'] = [h.strip().lstrip('@') for h in hs if h.strip()]
+                        if 'list_id' in body and body['list_id']:
+                            l['list_id'] = str(body['list_id']).strip()
+                        save_lists(lc)
+                        return self._send(200, {'ok': True})
+                return self._send(404, {'error': 'no such list'})
+
+            if path == '/api/list/delete':
+                with lock:
+                    lc = load_lists()
+                    before = len(lc['lists'])
+                    lc['lists'] = [l for l in lc['lists'] if l['name'] != body.get('name')]
+                    if len(lc['lists']) == before:
+                        return self._send(404, {'error': 'no such list'})
+                    save_lists(lc)
+                return self._send(200, {'ok': True})
+
             if path == '/api/watchlist':
                 wl = os.path.join(HERE, 'watchlist.txt')
                 with open(wl, 'w', encoding='utf-8') as f:
@@ -430,7 +491,10 @@ def run(config, load, save, load_state, run_one):
 
     srv = ThreadingHTTPServer((host, port), Handler)
     print(f'control panel on http://{host}:{port}   (ctrl-c to stop)')
-    webbrowser.open(f'http://{host}:{port}')
+    if port == 8765:
+        webbrowser.open(f'http://{host}:{port}')
+    else:
+        print(f'not opening a browser, non-default port. open http://{host}:{port} yourself')
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

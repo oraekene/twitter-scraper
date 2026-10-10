@@ -34,6 +34,7 @@ sys.path.insert(0, HERE)
 import search as S
 
 CONFIG = os.path.join(HERE, 'searches.json')
+LISTS = os.path.join(HERE, 'lists.json')
 STATE = os.path.join(HERE, 'searches-state.json')
 OUTDIR = os.path.join(os.path.dirname(HERE), 'out', 'searches')
 SOURCES = ('bookmarks', 'live', 'watchlist', 'list')
@@ -51,6 +52,26 @@ def save(cfg):
     with open(CONFIG, 'w', encoding='utf-8') as f:
         json.dump(cfg, f, indent=2, ensure_ascii=False)
         f.write('\n')
+
+
+def load_lists():
+    if not os.path.exists(LISTS):
+        return {'lists': []}
+    with open(LISTS, encoding='utf-8') as f:
+        return json.load(f)
+
+
+def save_lists(cfg):
+    with open(LISTS, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+
+
+def find_list(name):
+    for l in load_lists()['lists']:
+        if l['name'] == name:
+            return l
+    return None
 
 
 def load_state():
@@ -78,10 +99,15 @@ def check(s):
         raise ValueError(f"{s['name']}: source must be one of {SOURCES}, got {s.get('source')!r}")
     # An empty live query is valid. It means "use the full phrase set", which is
     # sent in batches because X caps one query at 512 characters.
-    if s['source'] == 'list' and not s.get('list_id'):
-        raise ValueError(f"{s['name']}: source list needs a list_id")
-    if s['source'] == 'watchlist' and not (s.get('handles') or s.get('handles_file')):
-        raise ValueError(f"{s['name']}: source watchlist needs handles or handles_file")
+    if s['source'] == 'list':
+        if s.get('list') and not find_list(s['list']):
+            raise ValueError(f"{s['name']}: no list named {s['list']!r} in lists.json")
+        if not s.get('list') and not s.get('list_id'):
+            raise ValueError(f"{s['name']}: source list needs a list name or a list_id")
+    if s['source'] == 'watchlist' and not (s.get('list') or s.get('handles') or s.get('handles_file')):
+        raise ValueError(f"{s['name']}: source watchlist needs a list, handles, or handles_file")
+    if s['source'] == 'watchlist' and s.get('list') and not find_list(s['list']):
+        raise ValueError(f"{s['name']}: no list named {s['list']!r} in lists.json")
     if int(s.get('every_days', 1)) < 1:
         raise ValueError(f"{s['name']}: every_days must be 1 or more")
     if not re.fullmatch(r'\d{2}:\d{2}', s.get('time', '09:00')):
@@ -105,7 +131,14 @@ def run_one(s):
                                            int(s.get('min_likes', 0)), ('retweets',),
                                            float(s.get('pause', 3.0)))
     elif src == 'watchlist':
-        handles = s.get('handles') or []
+        handles = list(s.get('handles') or [])
+        if s.get('list'):
+            entry = find_list(s['list'])
+            if not entry:
+                raise ValueError(f"no list named {s['list']!r}")
+            if entry['kind'] != 'handles':
+                raise ValueError(f"{entry['name']} is an X list, not a handles list")
+            handles += entry.get('handles', [])
         hf = s.get('handles_file')
         if hf:
             path = hf if os.path.isabs(hf) else os.path.join(HERE, hf)
@@ -114,7 +147,15 @@ def run_one(s):
                         if l.split('#', 1)[0].strip()]
         rows, notes = S.fetch_handles(handles, limit, float(s.get('pause', 2.0)))
     else:
-        rows, notes = S.fetch_list(s['list_id'], limit, float(s.get('pause', 0.0)))
+        list_id = s.get('list_id')
+        if s.get('list'):
+            entry = find_list(s['list'])
+            if not entry:
+                raise ValueError(f"no list named {s['list']!r}")
+            if entry['kind'] != 'xlist':
+                raise ValueError(f"{entry['name']} is a handles list, not an X list")
+            list_id = entry.get('list_id')
+        rows, notes = S.fetch_list(list_id, limit, float(s.get('pause', 0.0)))
 
     for r in rows:
         r.update(S.extract(r))
@@ -207,7 +248,7 @@ def main():
     p.add_argument('--source', required=True, choices=SOURCES)
     p.add_argument('--query', default='')
     p.add_argument('--handle', action='append', default=[], help='repeatable')
-    p.add_argument('--handles-file')
+    p.add_argument('--list', help='a named list from lists.json')
     p.add_argument('--list-id')
     p.add_argument('--every-days', type=int, default=1)
     p.add_argument('--time', default='09:00')
@@ -216,14 +257,31 @@ def main():
     p.add_argument('--min-likes', type=int, default=0)
     p.add_argument('--disabled', action='store_true')
 
-    for name in ('run',):
-        r = sub.add_parser(name, help='run searches')
-        r.add_argument('--name', action='append', default=[])
-        r.add_argument('--all', action='store_true')
-        r.add_argument('--due', action='store_true')
+    lp = sub.add_parser('lists', help='show every list')
+    lap = sub.add_parser('mklist', help='create a list')
+    lap.add_argument('--name', required=True)
+    lap.add_argument('--kind', default='handles', choices=('handles', 'xlist'))
+    lap.add_argument('--handle', action='append', default=[])
+    lap.add_argument('--list-id')
+    lap.add_argument('--note', default='')
 
-    sub.add_parser('serve', help='local browser control panel')
+    lcp = sub.add_parser('rmlist', help='delete a list')
+    lcp.add_argument('name')
+
+    sub.add_parser('serve', help='local browser control panel').add_argument(
+        '--port', type=int, default=8765,
+        help='8765 unless something else already holds it')
     sub.add_parser('check', help='validate the config without running anything')
+
+    # Every subparser must be registered before parse_args is called, or the
+    # ones registered after it are rejected as invalid choices.
+    r = sub.add_parser('run', help='run searches')
+    r.add_argument('--name', action='append', default=[])
+    r.add_argument('--all', action='store_true')
+    r.add_argument('--due', action='store_true')
+
+    args = ap.parse_args()
+
     args = ap.parse_args()
 
     cfg = load()
@@ -261,8 +319,8 @@ def main():
             s['query'] = args.query
         if args.handle:
             s['handles'] = args.handle
-        if args.handles_file:
-            s['handles_file'] = args.handles_file
+        if args.list:
+            s['list'] = args.list
         if args.list_id:
             s['list_id'] = args.list_id
         try:
@@ -272,6 +330,46 @@ def main():
         cfg['searches'].append(s)
         save(cfg)
         print(f'added {s["name"]}')
+        return
+
+    if args.cmd == 'lists':
+        rows = load_lists()['lists']
+        print(f"{'name':30} {'kind':9} {'size':>6}  detail")
+        for l in rows:
+            n = len(l.get('handles', [])) if l['kind'] == 'handles' else 0
+            detail = ', '.join(l.get('handles', [])[:4]) if l['kind'] == 'handles' \
+                else 'list ' + str(l.get('list_id'))
+            if n > 4:
+                detail += f' +{n - 4} more'
+            print(f"{l['name']:30} {l['kind']:9} {n or '-':>6}  {detail}")
+        return
+
+    if args.cmd == 'mklist':
+        lc = load_lists()
+        if find_list(args.name):
+            sys.exit(f'a list called {args.name!r} already exists')
+        entry = {'name': args.name, 'kind': args.kind, 'note': args.note}
+        if args.kind == 'handles':
+            entry['handles'] = [h.lstrip('@') for h in args.handle]
+            if not entry['handles']:
+                sys.exit('give at least one --handle, or create it in the browser')
+        else:
+            entry['list_id'] = args.list_id
+            if not entry['list_id']:
+                sys.exit('give --list-id, taken from the list URL')
+        lc['lists'].append(entry)
+        save_lists(lc)
+        print(f'created list {entry["name"]}')
+        return
+
+    if args.cmd == 'rmlist':
+        lc = load_lists()
+        before = len(lc['lists'])
+        lc['lists'] = [l for l in lc['lists'] if l['name'] != args.name]
+        if len(lc['lists']) == before:
+            sys.exit(f'no list called {args.name!r}')
+        save_lists(lc)
+        print(f'deleted list {args.name}')
         return
 
     if args.cmd == 'run':
@@ -297,7 +395,8 @@ def main():
 
     if args.cmd == 'serve':
         import serve
-        serve.run(CONFIG, load, save, load_state, run_one)
+        serve.run(CONFIG, load, save, load_state, run_one, load_lists, save_lists,
+                  args.port)
 
 
 if __name__ == '__main__':

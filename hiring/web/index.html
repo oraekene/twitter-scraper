@@ -6,544 +6,739 @@
 <style>
 /* ── tokens ─────────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Apple's spacing and type scale. Tracking tightens as size grows. */
-  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
-  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 26px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:28px; --s7:40px;
+  --r1:8px; --r2:12px; --r3:16px; --r4:22px;
 
-  --bg:        #08090b;
-  --surface:   #101215;
-  --raised:    #171a1f;
-  --chrome:    rgba(16, 18, 21, 0.72);
-  --line:      rgba(255, 255, 255, 0.08);
-  --line-hard: rgba(255, 255, 255, 0.14);
+  /* Light greys, cool tint, the way modern dashboards step surfaces. */
+  --bg:        #f6f7f9;
+  --surface:   #ffffff;
+  --surface-2: #fbfbfd;
+  --sidebar:   #ffffff;
+  --line:      #e8e9ee;
+  --line-2:    #dcdee6;
 
-  --fg:   rgba(255, 255, 255, 0.92);
-  --fg-2: rgba(255, 255, 255, 0.62);
-  --fg-3: rgba(255, 255, 255, 0.38);
+  --fg:   #16181d;
+  --fg-2: #5b6070;
+  --fg-3: #9298a6;
 
-  --accent:  #0a84ff;
-  --good:    #30d158;
-  --warn:    #ffd60a;
-  --bad:     #ff453a;
+  --brand:   #4f46e5;
+  --brand-2: #6366f1;
+  --brand-w: #eef0ff;
+  --good:    #0f9d58;
+  --good-w:  #e7f6ec;
+  --warn:    #b45309;
+  --warn-w:  #fef4e6;
+  --bad:     #d92d20;
+  --bad-w:   #fdeceb;
+  --amber:   #b25e09;
 
-  /* Custom curves. Built-in easings feel weak. */
+  /* tinted icon-chip colours, one per stat, as in the reference */
+  --tint-1: #eef0ff; --tint-1-fg: #4f46e5;
+  --tint-2: #e8f6f4; --tint-2-fg: #0d8f80;
+  --tint-3: #fdf1e6; --tint-3-fg: #b25e09;
+  --tint-4: #fdeef4; --tint-4-fg: #c02a72;
+
+  --shadow-1: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.04);
+  --shadow-2: 0 4px 16px -4px rgba(16,24,40,.10), 0 2px 6px -2px rgba(16,24,40,.06);
+  --shadow-3: 0 24px 56px -16px rgba(16,24,40,.20);
+
   --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --sidebar-w: 244px;
 }
 
 * { box-sizing: border-box }
-
 html { -webkit-text-size-adjust: 100% }
 
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  font-optical-sizing: auto;
-  -webkit-font-smoothing: antialiased;
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 14.5px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
+  font-optical-sizing: auto; -webkit-font-smoothing: antialiased;
 }
 
-/* Ambient depth. Two soft pools, no animation, no distraction. */
-body::before {
-  content: ""; position: fixed; inset: -30% -10% auto -10%; height: 70vh;
-  background:
-    radial-gradient(48vw 34vh at 22% 0%, rgba(10,132,255,0.13), transparent 62%),
-    radial-gradient(42vw 30vh at 82% 4%, rgba(191,90,242,0.10), transparent 60%);
-  pointer-events: none; z-index: 0;
+h1, h2, h3 { letter-spacing: -0.018em; }
+
+/* ── shell ──────────────────────────────────────────────────────────────── */
+.app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+
+/* ── sidebar ────────────────────────────────────────────────────────────── */
+.side {
+  background: var(--sidebar); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: var(--s5) var(--s5) var(--s4); }
+.brand .mark {
+  width: 32px; height: 32px; border-radius: 9px; flex: none;
+  background: linear-gradient(140deg, var(--brand-2), var(--brand));
+  color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 700;
+  letter-spacing: -0.02em; box-shadow: 0 2px 6px -1px rgba(79,70,229,.4);
+}
+.brand .name { font-size: 15px; font-weight: 640; letter-spacing: -0.02em; }
+.brand .ver { font-size: 11px; color: var(--fg-3); letter-spacing: 0; }
+
+.nav { padding: var(--s2) var(--s3); display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+.navlabel {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--fg-3); padding: var(--s4) var(--s3) var(--s2);
+}
+.navbtn {
+  position: relative; display: flex; align-items: center; gap: 10px;
+  background: none; border: 0; cursor: pointer; font: inherit; font-size: 14px;
+  color: var(--fg-2); padding: 9px 12px; border-radius: var(--r1); text-align: left;
+  width: 100%; transition: background 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.navbtn svg { width: 18px; height: 18px; flex: none; stroke-width: 1.7; }
+.navbtn:hover { background: var(--surface-2); color: var(--fg); }
+.navbtn:active { transform: scale(0.985); transition-duration: 100ms; }
+.navbtn.on { background: var(--brand-w); color: var(--brand); font-weight: 550; }
+.navbtn.on::before {
+  content: ""; position: absolute; left: -11px; top: 50%; translate: 0 -50%;
+  width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: var(--brand);
+}
+.navbtn .badge {
+  margin-left: auto; font-size: 11px; font-weight: 600; color: var(--fg-3);
+  background: var(--bg); border-radius: 99px; padding: 1px 7px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── chrome ─────────────────────────────────────────────────────────────── */
-header {
-  position: sticky; top: 0; z-index: 20;
-  background: var(--chrome);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+.sidefoot { padding: var(--s3) var(--s5) var(--s5); border-top: 1px solid var(--line); }
+.sidefoot .row { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--fg-3); }
+.dot { width: 7px; height: 7px; border-radius: 99px; background: var(--good); flex: none; }
+.dot.bad { background: var(--bad) } .dot.warn { background: var(--warn) }
+
+/* ── main ───────────────────────────────────────────────────────────────── */
+.main { min-width: 0; display: flex; flex-direction: column; }
+.top {
+  position: sticky; top: 0; z-index: 15;
+  background: rgba(246,247,249,.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--line);
+  padding: var(--s5) var(--s6);
+  display: flex; align-items: flex-start; gap: var(--s4);
 }
-.title { max-width: 1180px; margin: 0 auto; padding: var(--s4) var(--s5) var(--s3);
-         display: flex; align-items: baseline; gap: var(--s3); }
-h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
-.sub { font-size: 12.5px; color: var(--fg-3); letter-spacing: 0.002em; }
+.top h1 { font-size: 24px; font-weight: 680; margin: 0; letter-spacing: -0.025em; }
+.top .sub { font-size: 13.5px; color: var(--fg-2); margin: 3px 0 0; }
+.top .actions { margin-left: auto; display: flex; gap: var(--s2); align-items: center; }
 
-nav { max-width: 1180px; margin: 0 auto; padding: 0 var(--s5);
-      display: flex; gap: var(--s1); overflow-x: auto; scrollbar-width: none; }
-nav::-webkit-scrollbar { display: none }
+.content { padding: var(--s5) var(--s6) var(--s7); display: grid; gap: var(--s4); }
+.tab { display: none } .tab.on { display: grid; gap: var(--s4) }
 
-.tabbtn {
-  position: relative; background: none; border: 0; cursor: pointer;
-  font: inherit; font-size: 13.5px; letter-spacing: -0.005em;
-  color: var(--fg-3); padding: var(--s2) var(--s3) var(--s3);
-  transition: color 180ms var(--ease-out);
-  white-space: nowrap;
+/* ── banner ─────────────────────────────────────────────────────────────── */
+.banner {
+  display: flex; align-items: center; gap: var(--s3);
+  background: linear-gradient(100deg, #f2f1ff, #fbfaff);
+  border: 1px solid #e5e3fb; border-radius: var(--r3);
+  padding: var(--s3) var(--s4);
 }
-.tabbtn:hover { color: var(--fg-2) }
-.tabbtn.on { color: var(--fg) }
-.tabbtn::after {
-  content: ""; position: absolute; left: var(--s2); right: var(--s2); bottom: 0;
-  height: 2px; border-radius: 2px; background: var(--accent);
-  transform: scaleX(0); transform-origin: 50% 50%;
-  transition: transform 260ms var(--ease-out);
+.banner .ico {
+  width: 32px; height: 32px; border-radius: 9px; flex: none; display: grid; place-items: center;
+  background: #e6e4ff; color: var(--brand);
 }
-.tabbtn.on::after { transform: scaleX(1) }
+.banner b { font-weight: 600; font-size: 14px; }
+.banner .t { font-size: 13.5px; color: var(--fg-2); }
+.banner .btn { margin-left: auto; }
 
-main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto;
-       padding: var(--s5) var(--s5) var(--s7); }
-.tab { display: none } .tab.on { display: block }
-h2 { font-size: 12px; font-weight: 590; letter-spacing: 0.06em; text-transform: uppercase;
-     color: var(--fg-3); margin: 0 0 var(--s3); }
-
-/* ── cards ──────────────────────────────────────────────────────────────── */
+/* ── card ───────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--r-lg); padding: var(--s5); margin-bottom: var(--s4);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 32px -18px rgba(0,0,0,0.9);
+  border-radius: var(--r3); box-shadow: var(--shadow-1);
 }
-.hint { color: var(--fg-3); font-size: 13px; line-height: 1.5; margin: 0 0 var(--s4); }
-.hint code { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-             color: var(--fg-2); background: rgba(255,255,255,0.05);
-             padding: 1px 5px; border-radius: 5px; }
+.card > header {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s4) var(--s5); border-bottom: 1px solid var(--line);
+}
+.card > header h2 { font-size: 16px; font-weight: 620; margin: 0; letter-spacing: -0.02em; }
+.card > header .sub { font-size: 13px; color: var(--fg-3); margin: 1px 0 0; }
+.card > header .actions { margin-left: auto; display: flex; gap: var(--s2); }
+.card .body { padding: var(--s5); }
+.card.tint { border-left: 3px solid var(--brand); }
+.hint { font-size: 13.5px; color: var(--fg-2); margin: 0 0 var(--s4); line-height: 1.55; }
+.hint code, code {
+  font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--bg); color: var(--fg-2); padding: 1.5px 6px; border-radius: 6px;
+  border: 1px solid var(--line);
+}
 
 /* ── controls ───────────────────────────────────────────────────────────── */
 button, .btn {
-  font: inherit; font-size: 13px; font-weight: 500; letter-spacing: -0.003em;
-  color: var(--fg); background: var(--raised); border: 1px solid var(--line);
-  border-radius: 980px; padding: 7px 15px; cursor: pointer;
+  font: inherit; font-size: 13.5px; font-weight: 550; letter-spacing: -0.005em;
+  color: var(--fg); background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: 9px; padding: 7px 14px; cursor: pointer; white-space: nowrap;
+  box-shadow: var(--shadow-1);
   transition: transform 160ms var(--ease-out), background 160ms var(--ease-out),
-              opacity 160ms var(--ease-out);
+              border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
-button:hover, .btn:hover { background: #1e2229 }
-button:active, .btn:active { transform: scale(0.97); transition-duration: 100ms }
-button:disabled { opacity: 0.4; cursor: not-allowed }
-button.primary { background: var(--accent); border-color: transparent; color: #fff }
-button.primary:hover { background: #3d9bff }
-button.danger { color: var(--bad) }
-button.danger:hover { background: rgba(255,69,58,0.14) }
-button.ghost { background: transparent }
+button:hover, .btn:hover { background: var(--surface-2); border-color: #c9ccd8; }
+button:active, .btn:active { transform: scale(0.97); transition-duration: 100ms; }
+button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+button.primary { background: var(--brand); border-color: var(--brand); color: #fff;
+                 box-shadow: 0 1px 2px rgba(79,70,229,.24); }
+button.primary:hover { background: #4338ca; border-color: #4338ca; }
+button.danger { color: var(--bad); }
+button.danger:hover { background: var(--bad-w); border-color: #f5c6c2; }
+button.quiet { background: transparent; border-color: transparent; box-shadow: none;
+               color: var(--fg-2); padding: 6px 10px; }
+button.quiet:hover { background: var(--bg); color: var(--fg); }
+button.sm { font-size: 12.5px; padding: 5px 10px; border-radius: 7px; }
 
 input, select, textarea {
-  font: inherit; font-size: 14px; color: var(--fg);
-  background: var(--raised); border: 1px solid var(--line);
-  border-radius: var(--r-sm); padding: 9px 11px; width: 100%;
-  transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out);
+  font: inherit; font-size: 14px; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line-2); border-radius: 9px; padding: 9px 11px; width: 100%;
+  transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 input::placeholder, textarea::placeholder { color: var(--fg-3) }
 input:focus, select:focus, textarea:focus {
-  outline: none; border-color: var(--accent); background: #1b1f26;
+  outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(79,70,229,.13);
 }
-textarea { font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
-           resize: vertical; min-height: 150px; }
-select { appearance: none; cursor: pointer;
-         background-image: linear-gradient(45deg, transparent 50%, var(--fg-3) 50%),
-                           linear-gradient(135deg, var(--fg-3) 50%, transparent 50%);
-         background-position: calc(100% - 17px) 51%, calc(100% - 12px) 51%;
-         background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
-         padding-right: 32px; }
+textarea { font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+select {
+  appearance: none; cursor: pointer; padding-right: 32px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 8l3-3.5' fill='none' stroke='%239298a6' stroke-width='1.5' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
 
-.grid { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.grid { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .field label, .flabel {
-  display: block; font-size: 11.5px; font-weight: 550; letter-spacing: 0.04em;
-  text-transform: uppercase; color: var(--fg-3); margin-bottom: 5px;
+  display: block; font-size: 12px; font-weight: 560; color: var(--fg-2);
+  margin-bottom: 5px; letter-spacing: -0.002em;
 }
-.op { font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
+.op { font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--brand); }
 .row { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
-.row.tight { gap: 6px }
-.spacer { flex: 1 }
+.row.tight { gap: 6px } .spacer { flex: 1 }
 
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
-  font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  padding: 5px 9px; border-radius: 980px; cursor: pointer;
-  background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--fg-2);
-  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+  font: 12.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 6px 11px; border-radius: 99px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line-2); color: var(--fg-2);
+  box-shadow: var(--shadow-1);
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out),
+              border-color 160ms var(--ease-out), color 160ms var(--ease-out);
 }
-.chip:hover { background: rgba(255,255,255,0.1); color: var(--fg) }
-.chip:active { transform: scale(0.95) }
-.chip[aria-pressed="true"] { background: rgba(10,132,255,0.2); border-color: rgba(10,132,255,0.5); color: #9dcbff }
+.chip:hover { border-color: #c9ccd8; color: var(--fg); }
+.chip:active { transform: scale(0.95); }
+.chip[aria-pressed="true"] { background: var(--brand-w); border-color: #c7c4f7; color: var(--brand); }
+
+.acc { border-top: 1px solid var(--line); }
+.acc > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 9px;
+  padding: var(--s3) 0; font-size: 13.5px; font-weight: 560; color: var(--fg);
+}
+.acc > summary::-webkit-details-marker { display: none }
+.acc > summary .tw { color: var(--fg-3); transition: transform 220ms var(--ease-out); }
+.acc[open] > summary .tw { transform: rotate(90deg) }
+.acc .inner { padding: 0 0 var(--s4) }
 
 /* ── tables ─────────────────────────────────────────────────────────────── */
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; font-size: 11px; font-weight: 590; letter-spacing: 0.05em;
-     text-transform: uppercase; color: var(--fg-3); padding: 0 var(--s3) var(--s2); }
-td { padding: var(--s3); border-top: 1px solid var(--line); vertical-align: top; }
+th { text-align: left; font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+     text-transform: uppercase; color: var(--fg-3); padding: 0 var(--s4) var(--s3); }
+td { padding: var(--s3) var(--s4); border-top: 1px solid var(--line); vertical-align: top; }
 tbody tr { transition: background 140ms var(--ease-out); }
-tbody tr:hover { background: rgba(255,255,255,0.025); }
+tbody tr:hover { background: var(--surface-2); }
 
 .mono { font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg-2); }
-.dim { color: var(--fg-3) } .small { font-size: 12.5px }
-.pill { display: inline-block; font-size: 11px; font-weight: 550; letter-spacing: 0.01em;
-        padding: 2px 8px; border-radius: 980px; border: 1px solid var(--line);
-        background: rgba(255,255,255,0.05); color: var(--fg-2); white-space: nowrap; }
-.pill.on   { color: var(--good); border-color: rgba(48,209,88,0.35);  background: rgba(48,209,88,0.12) }
-.pill.off  { color: var(--fg-3) }
-.pill.bad  { color: var(--bad);  border-color: rgba(255,69,58,0.35);  background: rgba(255,69,58,0.12) }
-.pill.warn { color: var(--warn); border-color: rgba(255,214,10,0.3);  background: rgba(255,214,10,0.1) }
+.dim { color: var(--fg-3) } .small { font-size: 12.5px } .strong { font-weight: 600 }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 570; padding: 2px 9px; border-radius: 99px;
+  background: var(--bg); border: 1px solid var(--line); color: var(--fg-2); white-space: nowrap;
+}
+.pill.on { color: var(--good); background: var(--good-w); border-color: #c6e9d3; }
+.pill.off { color: var(--fg-3) }
+.pill.bad { color: var(--bad); background: var(--bad-w); border-color: #f6cdc9; }
+.pill.warn { color: var(--warn); background: var(--warn-w); border-color: #f4dcb8; }
+.pill.brand { color: var(--brand); background: var(--brand-w); border-color: #d3d0f8; }
+
+/* ── stat tiles ─────────────────────────────────────────────────────────── */
+.tiles { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r3);
+  padding: var(--s4); box-shadow: var(--shadow-1);
+  display: flex; gap: var(--s3); align-items: flex-start;
+}
+.tile .ico {
+  width: 36px; height: 36px; border-radius: 10px; flex: none; display: grid; place-items: center;
+  background: var(--tint-1); color: var(--tint-1-fg);
+}
+.tile .v { font-size: 22px; font-weight: 650; letter-spacing: -0.03em; line-height: 1.1;
+           font-variant-numeric: tabular-nums; }
+.tile .k { font-size: 12.5px; color: var(--fg-2); margin-top: 1px; }
 
 /* ── results ────────────────────────────────────────────────────────────── */
-details.run { border: 1px solid var(--line); border-radius: var(--r-md);
-              margin-bottom: var(--s2); background: var(--surface); overflow: hidden; }
+details.run { border: 1px solid var(--line); border-radius: var(--r2);
+              margin-bottom: var(--s2); background: var(--surface); overflow: hidden;
+              box-shadow: var(--shadow-1); }
 details.run > summary {
   cursor: pointer; padding: var(--s3) var(--s4); list-style: none;
   display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
   transition: background 140ms var(--ease-out);
 }
 details.run > summary::-webkit-details-marker { display: none }
-details.run > summary:hover { background: rgba(255,255,255,0.03) }
+details.run > summary:hover { background: var(--surface-2) }
 details.run[open] > summary { border-bottom: 1px solid var(--line) }
-.chev { transition: transform 240ms var(--ease-out); color: var(--fg-3); flex: none; }
-details.run[open] .chev { transform: rotate(90deg) }
+.tw-c { color: var(--fg-3); transition: transform 240ms var(--ease-out); flex: none;
+        display: inline-block; }
+details.run[open] .tw-c { transform: rotate(90deg) }
 
 .tweet { padding: var(--s3) var(--s4); border-top: 1px solid var(--line); }
 .tweet:first-child { border-top: 0 }
-.tweet .who { color: var(--accent); font-size: 13.5px; font-weight: 550; }
-.tweet .txt { margin: 3px 0; font-size: 14px; line-height: 1.5; }
+.tweet .who { color: var(--brand); font-size: 13.5px; font-weight: 600; }
+.tweet .txt { margin: 3px 0; font-size: 14px; line-height: 1.55; }
 .tweet a { color: var(--fg-3); font-size: 12px; text-decoration: none;
            transition: color 140ms var(--ease-out); }
-.tweet a:hover { color: var(--accent) }
+.tweet a:hover { color: var(--brand) }
 
-.pager { display: flex; gap: var(--s2); align-items: center; justify-content: center;
-         padding: var(--s4) 0 0; }
-.pager .n { font-size: 13px; color: var(--fg-2); font-variant-numeric: tabular-nums;
-            padding: 0 var(--s2); }
+.pager { display: flex; gap: var(--s2); align-items: center; justify-content: center; padding-top: var(--s3); }
+.pager .n { font-size: 13px; color: var(--fg-2); padding: 0 var(--s2); font-variant-numeric: tabular-nums; }
 
-pre { background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md);
-      padding: var(--s4); overflow: auto; max-height: 300px; font-size: 12px;
-      line-height: 1.55; color: var(--fg-2); margin: var(--s3) 0 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-
-.kv { display: grid; grid-template-columns: 210px 1fr; gap: var(--s2) var(--s4); font-size: 13.5px; }
+pre {
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r2);
+  padding: var(--s4); overflow: auto; max-height: 300px; margin: 0;
+  font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg-2);
+}
+.kv { display: grid; grid-template-columns: 210px 1fr; gap: var(--s3) var(--s4); font-size: 13.5px; }
 .kv > div:nth-child(odd) { color: var(--fg-3) }
 
 /* ── toast + dialog ─────────────────────────────────────────────────────── */
 #toast {
-  position: fixed; left: 50%; bottom: var(--s5); z-index: 60;
-  transform: translateX(-50%) translateY(150%);
-  background: var(--raised); border: 1px solid var(--line-hard);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  padding: 10px 18px; border-radius: 980px; font-size: 13.5px;
-  box-shadow: 0 18px 44px -14px rgba(0,0,0,0.85);
-  transition: transform 380ms var(--ease-drawer), opacity 260ms var(--ease-out);
-  opacity: 0; pointer-events: none; max-width: 78vw; text-align: center;
+  position: fixed; left: 50%; bottom: var(--s6); z-index: 60;
+  transform: translateX(-50%) translateY(200%);
+  background: var(--fg); color: #fff; border-radius: 99px; font-size: 13.5px; font-weight: 500;
+  padding: 10px 20px; box-shadow: var(--shadow-3);
+  transition: transform 400ms var(--ease-drawer), opacity 240ms var(--ease-out);
+  opacity: 0; pointer-events: none; max-width: 76vw; text-align: center;
 }
-#toast.up { transform: translateX(-50%) translateY(0); opacity: 1;
-            transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
-#toast.bad { border-color: rgba(255,69,58,0.5) }
+#toast.up { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.bad { background: var(--bad) }
 
 dialog {
-  background: var(--raised); color: var(--fg);
-  border: 1px solid var(--line-hard); border-radius: var(--r-xl);
-  padding: var(--s5); width: min(880px, 94vw); max-height: 88vh;
-  box-shadow: 0 40px 90px -30px rgba(0,0,0,0.9);
-  transform-origin: center;
-  opacity: 0; transform: scale(0.96) translateY(8px);
-  transition: opacity 220ms var(--ease-out), transform 260ms var(--ease-out),
-              overlay 220ms allow-discrete, display 220ms allow-discrete;
+  border: 1px solid var(--line); border-radius: var(--r4); padding: 0;
+  width: min(880px, 94vw); max-height: 88vh; color: var(--fg); box-shadow: var(--shadow-3);
+  transform-origin: center; opacity: 0; transform: scale(0.97) translateY(6px);
+  transition: opacity 200ms var(--ease-out), transform 240ms var(--ease-out),
+              overlay 200ms allow-discrete, display 200ms allow-discrete;
 }
 dialog[open] { opacity: 1; transform: scale(1) translateY(0); }
-@starting-style { dialog[open] { opacity: 0; transform: scale(0.96) translateY(8px); } }
-dialog::backdrop { background: rgba(0,0,0,0.55); backdrop-filter: blur(3px); }
+@starting-style { dialog[open] { opacity: 0; transform: scale(0.97) translateY(6px); } }
+dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
+.dlg-h { padding: var(--s5) var(--s5) var(--s3); }
+.dlg-b { padding: 0 var(--s5) var(--s5); }
+.dlg-f { padding: var(--s4) var(--s5); border-top: 1px solid var(--line); display: flex; gap: var(--s2); justify-content: flex-end; }
 
-.acc { border-top: 1px solid var(--line); margin-top: var(--s4); padding-top: var(--s4); }
-.acc > summary { cursor: pointer; font-size: 13px; color: var(--fg-2);
-                 list-style: none; display: flex; align-items: center; gap: var(--s2); }
-.acc > summary::-webkit-details-marker { display: none }
-.acc > summary::before { content: "›"; color: var(--fg-3); font-size: 15px;
-                         transition: transform 220ms var(--ease-out); }
-.acc[open] > summary::before { transform: rotate(90deg) }
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr }
+  .side { position: static; height: auto; flex-direction: row; align-items: center; overflow-x: auto;
+          border-right: 0; border-bottom: 1px solid var(--line) }
+  .brand { padding: var(--s3) var(--s4) } .nav { flex-direction: row; padding: var(--s2) }
+  .navlabel, .sidefoot { display: none }
+  .navbtn { white-space: nowrap } .navbtn.on::before { display: none }
+  .top, .content { padding-left: var(--s4); padding-right: var(--s4) }
+}
 
-/* ── reduced motion: keep feedback, drop movement ───────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important; transition-duration: 140ms !important;
-  }
-  dialog[open] { transform: none }
-  #toast.up { transform: translateX(-50%) }
-  .tabbtn.on::after, .chev, .acc > summary::before { transition: none }
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 140ms !important; }
+  dialog[open], #toast.up { transform: translateX(-50%); transform: none }
 }
 @media (prefers-reduced-transparency: reduce) {
-  header, #toast { background: #101215; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .top { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none }
 }
 </style>
 
-<header>
-  <div class="title">
-    <h1>twitter scraper</h1>
-    <span class="sub">local only &middot; 127.0.0.1:8765 &middot; your X cookies never leave this machine</span>
-  </div>
-  <nav>
-    <button class="tabbtn on" data-tab="commands">Commands</button>
-    <button class="tabbtn" data-tab="searches">Searches</button>
-    <button class="tabbtn" data-tab="builder">Query Builder</button>
-    <button class="tabbtn" data-tab="results">Results</button>
-    <button class="tabbtn" data-tab="status">Status</button>
-    <button class="tabbtn" data-tab="settings">Settings</button>
-  </nav>
-</header>
-
-<main>
-
-<!-- ═══ COMMANDS ═══ -->
-<section class="tab on" id="tab-commands">
-  <div class="card">
-    <h2>Run a command</h2>
-    <p class="hint">Only these can be started from the page. Everything else in
-      <code>COMMANDS.md</code> is there to copy.</p>
-    <div class="chips" id="runnable"></div>
-    <pre id="cmdout">nothing run yet</pre>
-  </div>
-  <div class="card">
-    <h2>Every command in COMMANDS.md</h2>
-    <p class="hint">Parsed from the file at request time, so this page cannot drift from it.</p>
-    <table>
-      <thead><tr><th style="width:44%">Command</th><th>Why you run it</th><th style="width:20%">Section</th></tr></thead>
-      <tbody id="cmdrows"></tbody>
-    </table>
-  </div>
-</section>
-
-<!-- ═══ SEARCHES ═══ -->
-<section class="tab" id="tab-searches">
-  <div class="card">
-    <h2>Your searches</h2>
-    <table>
-      <thead><tr><th>Name</th><th style="width:22%">Source</th><th style="width:13%">Schedule</th>
-        <th style="width:8%">On</th><th style="width:13%">Last run</th><th style="width:24%"></th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-  </div>
-  <div class="card">
-    <h2>Quick add</h2>
-    <p class="hint">For anything beyond the basics, use the
-      <strong>Query Builder</strong> tab. It has every X search operator.</p>
-    <div class="grid">
-      <div class="field"><label>Name</label><input id="f-name" placeholder="ai-jobs"></div>
-      <div class="field"><label>Source</label><select id="f-source">
-        <option value="bookmarks">bookmarks (local, free)</option>
-        <option value="live">live X search</option>
-        <option value="watchlist">watchlist accounts</option>
-        <option value="list">X list</option></select></div>
-      <div class="field" id="w-query"><label>Query</label><input id="f-query" placeholder='hiring OR "open role"'></div>
-      <div class="field" id="w-handle"><label>Handles</label><input id="f-handles" placeholder="aakashgupta, comma separated"></div>
-      <div class="field" id="w-list"><label>List id</label><input id="f-list" placeholder="1908587200419422252"></div>
-      <div class="field"><label>Every N days</label><input id="f-every" type="number" min="1" value="1"></div>
-      <div class="field"><label>Time</label><input id="f-time" value="09:00"></div>
-      <div class="field"><label>Look back days</label><input id="f-back" type="number" min="1" value="7"></div>
-      <div class="field"><label>Min likes</label><input id="f-likes" type="number" min="0" value="0"></div>
-    </div>
-    <div class="row" style="margin-top:var(--s4)">
-      <button class="primary" onclick="add()">Add search</button>
-      <span class="hint" style="margin:0">Blank query on a live search uses the built-in 81 phrase set.</span>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ QUERY BUILDER ═══ -->
-<section class="tab" id="tab-builder">
-  <div class="card">
-    <h2>X advanced search builder</h2>
-    <p class="hint">Every operator X supports, verified working on this account on 2026-10-10.
-      Type in any box and the composed query updates live. X rejects anything over
-      <strong>512 characters</strong>, and a hand-written query is never split, so keep it short.</p>
-
-    <div class="field" style="margin-bottom:var(--s4)">
-      <label>Words</label>
-      <input id="q-words" placeholder='hiring recruiting OR "we are hiring" NOT internship'>
-      <div class="row tight" style="margin-top:6px">
-        <span class="small dim">Wrap words in quotes for a phrase. Use AND / OR / NOT and ( ) freely.</span>
+<div class="app">
+  <!-- ── sidebar ── -->
+  <aside class="side">
+    <div class="brand">
+      <div class="mark">ts</div>
+      <div>
+        <div class="name">twitter scraper</div>
+        <div class="ver">local control plane</div>
       </div>
     </div>
 
-    <details class="acc" open>
-      <summary>Account</summary>
-      <div class="grid" style="margin-top:var(--s3)">
-        <div class="field"><label>From <span class="op">from:</span></label><input id="q-from" placeholder="comma_ai"></div>
-        <div class="field"><label>To <span class="op">to:</span></label><input id="q-to" placeholder="aakashgupta"></div>
-        <div class="field"><label>Mentions <span class="op">@</span></label><input id="q-mention" placeholder="kenechukwu"></div>
-        <div class="field"><label>Participant <span class="op">participant:</span></label><input id="q-participant" placeholder="username"></div>
-      </div>
-    </details>
+    <nav class="nav">
+      <div class="navlabel">Overview</div>
+      <button class="navbtn on" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard</button>
 
-    <details class="acc">
-      <summary>Engagement</summary>
-      <div class="grid" style="margin-top:var(--s3)">
-        <div class="field"><label>Min likes <span class="op">min_faves:</span></label><input id="q-minfaves" type="number" min="0"></div>
-        <div class="field"><label>Max likes <span class="op">max_faves:</span></label><input id="q-maxfaves" type="number" min="0"></div>
-        <div class="field"><label>Min reposts <span class="op">min_retweets:</span></label><input id="q-minrt" type="number" min="0"></div>
-        <div class="field"><label>Max reposts <span class="op">max_retweets:</span></label><input id="q-maxrt" type="number" min="0"></div>
-        <div class="field"><label>Min replies <span class="op">min_replies:</span></label><input id="q-minrep" type="number" min="0"></div>
-        <div class="field"><label>Min quotes <span class="op">min_quote_count:</span></label><input id="q-minquote" type="number" min="0"></div>
-        <div class="field"><label>Min bookmarks <span class="op">min_bookmarks:</span></label><input id="q-minbm" type="number" min="0"></div>
-        <div class="field"><label>Interactions <span class="op">interaction_count:</span></label><input id="q-inter" placeholder="&gt;100"></div>
-      </div>
-    </details>
+      <div class="navlabel">Configure</div>
+      <button class="navbtn" data-tab="searches">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        Searches <span class="badge" id="badge-searches">0</span></button>
+      <button class="navbtn" data-tab="lists">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.4"/><circle cx="3.5" cy="12" r="1.4"/><circle cx="3.5" cy="18" r="1.4"/></svg>
+        Lists <span class="badge" id="badge-lists">0</span></button>
+      <button class="navbtn" data-tab="builder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="17.5" cy="12" r="2.5"/></svg>
+        Query Builder</button>
 
-    <details class="acc">
-      <summary>Time</summary>
-      <div class="grid" style="margin-top:var(--s3)">
-        <div class="field"><label>Since <span class="op">since:</span></label><input id="q-since" type="date"></div>
-        <div class="field"><label>Until <span class="op">until:</span></label><input id="q-until" type="date"></div>
-        <div class="field"><label>Within <span class="op">within:</span></label>
-          <select id="q-within"><option value="">none</option><option value="1h">1 hour</option>
-            <option value="6h">6 hours</option><option value="1d">1 day</option><option value="7d">7 days</option>
-            <option value="30d">30 days</option></select></div>
-      </div>
-    </details>
+      <div class="navlabel">Read</div>
+      <button class="navbtn" data-tab="results">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+        Results</button>
+      <button class="navbtn" data-tab="commands">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l-4 4 4 4M17 8l4 4-4 4M14 5l-4 14"/></svg>
+        Commands</button>
 
-    <details class="acc">
-      <summary>Content filters</summary>
-      <div style="margin-top:var(--s3)">
-        <span class="flabel">Has</span>
-        <div class="chips" id="c-has">
-          <button class="chip" data-op="has:links">has:links</button>
-          <button class="chip" data-op="has:media">has:media</button>
-          <button class="chip" data-op="has:images">has:images</button>
-          <button class="chip" data-op="has:videos">has:videos</button>
+      <div class="navlabel">Maintain</div>
+      <button class="navbtn" data-tab="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3.5v5c0 5-3.4 8.4-8 9.5-4.6-1.1-8-4.5-8-9.5v-5z"/><path d="M9 12l2 2 4-4"/></svg>
+        Status</button>
+      <button class="navbtn" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1A1.6 1.6 0 007 19.4a1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 002 15H2a2 2 0 110-4h.1A1.6 1.6 0 004.6 7a1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 0010 2.6V2a2 2 0 114 0v.1A1.6 1.6 0 0019.4 7"/></svg>
+        Settings</button>
+    </nav>
+
+    <div class="sidefoot">
+      <div class="row"><span class="dot" id="health-dot"></span><span id="health-text">checking</span></div>
+    </div>
+  </aside>
+
+  <!-- ── main ── -->
+  <div class="main">
+    <div class="top">
+      <div>
+        <h1 id="page-title">Dashboard</h1>
+        <p class="sub" id="page-sub">Your bookmarks, X, and everything they run.</p>
+      </div>
+      <div class="actions" id="page-actions"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <section class="tab on" id="tab-dashboard">
+        <div class="banner">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18M3 12h18"/></svg></div>
+          <div>
+            <b>Searches, lists, and queries all live here</b>
+            <div class="t">Every run is scheduled from one daily task that decides what is due.</div>
+          </div>
+          <button class="btn" onclick="go('builder')">Open Query Builder</button>
         </div>
-        <span class="flabel" style="display:block;margin-top:var(--s4)">Filter</span>
-        <div class="chips" id="c-filter">
-          <button class="chip" data-op="filter:links">filter:links</button>
-          <button class="chip" data-op="filter:media">filter:media</button>
-          <button class="chip" data-op="filter:images">filter:images</button>
-          <button class="chip" data-op="filter:videos">filter:videos</button>
-          <button class="chip" data-op="filter:replies">filter:replies</button>
-          <button class="chip" data-op="filter:retweets">filter:retweets</button>
-          <button class="chip" data-op="filter:interactions">filter:interactions</button>
-          <button class="chip" data-op="filter:nativeretweets">filter:nativeretweets</button>
-          <button class="chip" data-op="filter:all">filter:all</button>
-          <button class="chip" data-op="-filter:replies">-filter:replies</button>
-          <button class="chip" data-op="-filter:retweets">-filter:retweets</button>
+
+        <div class="tiles" id="dash-tiles"></div>
+
+        <div class="card">
+          <header><div><h2>Recent runs</h2><p class="sub">Latest output from every search</p></div>
+            <div class="actions"><button class="sm" onclick="go('results')">See all</button></div></header>
+          <div class="body" id="dash-recent"></div>
         </div>
-        <span class="flabel" style="display:block;margin-top:var(--s4)">Exclude</span>
-        <div class="chips" id="c-exclude">
-          <button class="chip" data-op="exclude:retweets">exclude:retweets</button>
-          <button class="chip" data-op="exclude:replies">exclude:replies</button>
-          <button class="chip" data-op="exclude:links">exclude:links</button>
+      </section>
+
+      <!-- SEARCHES -->
+      <section class="tab" id="tab-searches">
+        <div class="card">
+          <header><div><h2>Your searches</h2><p class="sub">Each one has its own source, schedule, and options</p></div>
+            <div class="actions"><button class="primary sm" onclick="openAdd()">New search</button></div></header>
+          <div class="body" style="padding:0">
+            <table>
+              <thead><tr><th>Name</th><th style="width:20%">Source</th><th style="width:12%">Schedule</th>
+                <th style="width:7%">On</th><th style="width:12%">Last run</th><th style="width:22%"></th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </details>
+      </section>
 
-    <details class="acc">
-      <summary>Place, language, and other</summary>
-      <div class="grid" style="margin-top:var(--s3)">
-        <div class="field"><label>Language <span class="op">lang:</span></label><input id="q-lang" placeholder="en"></div>
-        <div class="field"><label>Place <span class="op">place:</span></label><input id="q-place" placeholder="London"></div>
-        <div class="field"><label>Geolocation <span class="op">geolocation:</span></label><input id="q-geo" placeholder="35.7,139.7,10km"></div>
-        <div class="field"><label>URL contains <span class="op">url:</span></label><input id="q-url" placeholder="greenhouse.io"></div>
-        <div class="field"><label>Conversation <span class="op">conversation_id:</span></label><input id="q-conv" placeholder="1234567890"></div>
-        <div class="field"><label>Thread <span class="op">thread_id:</span></label><input id="q-thread" placeholder="1234567890"></div>
-        <div class="field"><label>Cashtag</label><input id="q-cashtag" placeholder="TSLA"></div>
-        <div class="field"><label>Topic <span class="op">topic:</span></label><input id="q-topic" placeholder=""></div>
-      </div>
-    </details>
+      <!-- LISTS -->
+      <section class="tab" id="tab-lists">
+        <div class="card">
+          <header><div><h2>Lists</h2><p class="sub">Reusable groups. Handles for the accounts you chose, or an X list by id</p></div>
+            <div class="actions"><button class="primary sm" onclick="openListAdd()">New list</button></div></header>
+          <div class="body" style="padding:0">
+            <table>
+              <thead><tr><th style="width:24%">Name</th><th style="width:12%">Kind</th>
+                <th style="width:9%">Items</th><th>Detail</th><th style="width:18%"></th></tr></thead>
+              <tbody id="listrows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <header><div><h2>Add from your bookmarks</h2><p class="sub">Every report ends with the accounts that posted the most openings</p></div></header>
+          <div class="body" id="dash-suggest"></div>
+        </div>
+      </section>
 
-    <div class="acc">
-      <h2 style="margin-bottom:var(--s2)">Composed query</h2>
-      <pre id="q-preview" style="margin:0">hiring</pre>
-      <div class="row" style="margin-top:var(--s3)">
-        <span id="q-len" class="pill">0 / 512</span>
-        <span class="spacer"></span>
-        <button onclick="copyQuery()">Copy</button>
-        <button onclick="resetQuery()">Reset</button>
-      </div>
-    </div>
+      <!-- BUILDER -->
+      <section class="tab" id="tab-builder">
+        <div class="card tint">
+          <header><div><h2>Query Builder</h2><p class="sub">Every X search operator, composing one readable query</p></div></header>
+          <div class="body">
+            <p class="hint">All 41 operator forms were verified against the live API on 2026-10-10.
+              Type in any box and the composed query updates. X rejects anything over
+              <strong>512 characters</strong>, and a hand-written query is never split into batches.</p>
 
-    <div class="acc">
-      <h2 style="margin-bottom:var(--s2)">Save as a search</h2>
-      <div class="grid">
-        <div class="field"><label>Name</label><input id="q-name" placeholder="ai-jobs-weekly"></div>
-        <div class="field"><label>Every N days</label><input id="q-every" type="number" min="1" value="1"></div>
-        <div class="field"><label>Time</label><input id="q-time" value="09:00"></div>
-        <div class="field"><label>Look back days</label><input id="q-back" type="number" min="1" value="7"></div>
-        <div class="field"><label>Min likes</label><input id="q-likes" type="number" min="0" value="0"></div>
-      </div>
-      <div class="row" style="margin-top:var(--s4)">
-        <button class="primary" onclick="saveQuery()">Save as live search</button>
-        <button onclick="runQuery()">Run once now</button>
-      </div>
+            <div class="field">
+              <label>Words</label>
+              <input id="q-words" placeholder='hiring recruiting OR "we are hiring" NOT internship'>
+              <p class="hint" style="margin:6px 0 0">Wrap in quotes for a phrase. Use AND / OR / NOT and ( ) freely.</p>
+            </div>
+
+            <details class="acc" open>
+              <summary><span class="tw">&rsaquo;</span>Account</summary>
+              <div class="inner grid">
+                <div class="field"><label>From <span class="op">from:</span></label><input id="q-from" placeholder="comma_ai"></div>
+                <div class="field"><label>To <span class="op">to:</span></label><input id="q-to" placeholder="aakashgupta"></div>
+                <div class="field"><label>Mentions <span class="op">@</span></label><input id="q-mention" placeholder="kenechukwu"></div>
+                <div class="field"><label>Participant <span class="op">participant:</span></label><input id="q-participant" placeholder="username"></div>
+              </div>
+            </details>
+
+            <details class="acc">
+              <summary><span class="tw">&rsaquo;</span>Engagement</summary>
+              <div class="inner grid">
+                <div class="field"><label>Min likes <span class="op">min_faves:</span></label><input id="q-minfaves" type="number" min="0"></div>
+                <div class="field"><label>Max likes <span class="op">max_faves:</span></label><input id="q-maxfaves" type="number" min="0"></div>
+                <div class="field"><label>Min reposts <span class="op">min_retweets:</span></label><input id="q-minrt" type="number" min="0"></div>
+                <div class="field"><label>Max reposts <span class="op">max_retweets:</span></label><input id="q-maxrt" type="number" min="0"></div>
+                <div class="field"><label>Min replies <span class="op">min_replies:</span></label><input id="q-minrep" type="number" min="0"></div>
+                <div class="field"><label>Min quotes <span class="op">min_quote_count:</span></label><input id="q-minquote" type="number" min="0"></div>
+                <div class="field"><label>Min bookmarks <span class="op">min_bookmarks:</span></label><input id="q-minbm" type="number" min="0"></div>
+                <div class="field"><label>Interactions <span class="op">interaction_count:</span></label><input id="q-inter" placeholder="&gt;100"></div>
+              </div>
+            </details>
+
+            <details class="acc">
+              <summary><span class="tw">&rsaquo;</span>Time</summary>
+              <div class="inner grid">
+                <div class="field"><label>Since <span class="op">since:</span></label><input id="q-since" type="date"></div>
+                <div class="field"><label>Until <span class="op">until:</span></label><input id="q-until" type="date"></div>
+                <div class="field"><label>Within <span class="op">within:</span></label>
+                  <select id="q-within"><option value="">none</option><option value="1h">1 hour</option>
+                    <option value="6h">6 hours</option><option value="1d">1 day</option>
+                    <option value="7d">7 days</option><option value="30d">30 days</option></select></div>
+              </div>
+            </details>
+
+            <details class="acc">
+              <summary><span class="tw">&rsaquo;</span>Content filters</summary>
+              <div class="inner">
+                <span class="flabel">Has</span>
+                <div class="chips" id="c-has">
+                  <button class="chip" data-op="has:links">has:links</button>
+                  <button class="chip" data-op="has:media">has:media</button>
+                  <button class="chip" data-op="has:images">has:images</button>
+                  <button class="chip" data-op="has:videos">has:videos</button>
+                </div>
+                <span class="flabel" style="display:block;margin-top:16px">Filter</span>
+                <div class="chips" id="c-filter">
+                  <button class="chip" data-op="filter:links">filter:links</button>
+                  <button class="chip" data-op="filter:media">filter:media</button>
+                  <button class="chip" data-op="filter:images">filter:images</button>
+                  <button class="chip" data-op="filter:videos">filter:videos</button>
+                  <button class="chip" data-op="filter:replies">filter:replies</button>
+                  <button class="chip" data-op="filter:retweets">filter:retweets</button>
+                  <button class="chip" data-op="filter:interactions">filter:interactions</button>
+                  <button class="chip" data-op="filter:nativeretweets">filter:nativeretweets</button>
+                  <button class="chip" data-op="filter:all">filter:all</button>
+                  <button class="chip" data-op="-filter:replies">-filter:replies</button>
+                  <button class="chip" data-op="-filter:retweets">-filter:retweets</button>
+                </div>
+                <span class="flabel" style="display:block;margin-top:16px">Exclude</span>
+                <div class="chips" id="c-exclude">
+                  <button class="chip" data-op="exclude:retweets">exclude:retweets</button>
+                  <button class="chip" data-op="exclude:replies">exclude:replies</button>
+                  <button class="chip" data-op="exclude:links">exclude:links</button>
+                </div>
+              </div>
+            </details>
+
+            <details class="acc">
+              <summary><span class="tw">&rsaquo;</span>Place, language, and other</summary>
+              <div class="inner grid">
+                <div class="field"><label>Language <span class="op">lang:</span></label><input id="q-lang" placeholder="en"></div>
+                <div class="field"><label>Place <span class="op">place:</span></label><input id="q-place" placeholder="London"></div>
+                <div class="field"><label>Geolocation <span class="op">geolocation:</span></label><input id="q-geo" placeholder="35.7,139.7,10km"></div>
+                <div class="field"><label>URL contains <span class="op">url:</span></label><input id="q-url" placeholder="greenhouse.io"></div>
+                <div class="field"><label>Conversation <span class="op">conversation_id:</span></label><input id="q-conv" placeholder="1234567890"></div>
+                <div class="field"><label>Thread <span class="op">thread_id:</span></label><input id="q-thread" placeholder="1234567890"></div>
+                <div class="field"><label>Cashtag</label><input id="q-cashtag" placeholder="TSLA"></div>
+                <div class="field"><label>Topic <span class="op">topic:</span></label><input id="q-topic" placeholder=""></div>
+              </div>
+            </details>
+
+            <details class="acc" open>
+              <summary><span class="tw">&rsaquo;</span>Composed query</summary>
+              <div class="inner">
+                <pre id="q-preview">hiring</pre>
+                <div class="row" style="margin-top:12px">
+                  <span id="q-len" class="pill on">0 / 512</span>
+                  <span class="spacer"></span>
+                  <button class="sm" onclick="copyQuery()">Copy</button>
+                  <button class="sm" onclick="resetQuery()">Reset</button>
+                </div>
+              </div>
+            </details>
+
+            <details class="acc" open>
+              <summary><span class="tw">&rsaquo;</span>Save or run once</summary>
+              <div class="inner">
+                <div class="grid">
+                  <div class="field"><label>Name</label><input id="q-name" placeholder="ai-jobs-weekly"></div>
+                  <div class="field"><label>Every N days</label><input id="q-every" type="number" min="1" value="1"></div>
+                  <div class="field"><label>Time</label><input id="q-time" value="09:00"></div>
+                  <div class="field"><label>Look back days</label><input id="q-back" type="number" min="1" value="7"></div>
+                  <div class="field"><label>Min likes</label><input id="q-likes" type="number" min="0" value="0"></div>
+                </div>
+                <div class="row" style="margin-top:16px">
+                  <button class="primary" onclick="saveQuery()">Save as live search</button>
+                  <button onclick="runQuery()">Run once now</button>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="tab" id="tab-results">
+        <div class="card">
+          <header><div><h2>Results</h2><p class="sub" id="results-sub">output in out\searches</p></div>
+            <div class="actions">
+              <select id="r-size" style="width:auto"><option>5</option><option selected>10</option><option>20</option></select>
+              <button class="sm" onclick="loadResults(1)">Refresh</button>
+            </div></header>
+          <div class="body"><div id="results" class="dim">loading&hellip;</div>
+            <div class="pager" id="pager"></div></div>
+        </div>
+      </section>
+
+      <!-- COMMANDS -->
+      <section class="tab" id="tab-commands">
+        <div class="card">
+          <header><div><h2>Run a command</h2><p class="sub">Only these can be started from the page</p></div></header>
+          <div class="body">
+            <div class="chips" id="runnable"></div>
+            <pre id="cmdout" style="margin-top:16px">nothing run yet</pre>
+          </div>
+        </div>
+        <div class="card">
+          <header><div><h2>Every command in COMMANDS.md</h2><p class="sub">Parsed from the file, so this page cannot drift from it</p></div></header>
+          <div class="body" style="padding:0">
+            <table><thead><tr><th style="width:42%">Command</th><th>Why you run it</th><th style="width:18%">Section</th></tr></thead>
+              <tbody id="cmdrows"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATUS -->
+      <section class="tab" id="tab-status">
+        <div class="tiles" id="status-tiles"></div>
+        <div class="card">
+          <header><div><h2>Details</h2></div>
+            <div class="actions"><button class="sm" onclick="loadStatus()">Refresh</button></div></header>
+          <div class="body"><div class="kv" id="statuskv">loading&hellip;</div></div>
+        </div>
+        <div class="card">
+          <header><div><h2>Recent run logs</h2></div></header>
+          <div class="body" id="logs" class="dim">loading&hellip;</div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="tab" id="tab-settings">
+        <div class="card">
+          <header><div><h2>X credentials</h2><p class="sub">Write only. Values are never sent back to this page</p></div></header>
+          <div class="body">
+            <p class="hint">Get them from a logged in x.com: DevTools &gt; Application &gt; Cookies &gt; https://x.com</p>
+            <p id="envlock" class="small" style="color:var(--bad)"></p>
+            <div class="grid">
+              <div class="field"><label>auth_token</label><input id="f-token" type="password" placeholder="leave blank to keep"></div>
+              <div class="field"><label>ct0</label><input id="f-ct0" type="password" placeholder="leave blank to keep"></div>
+            </div>
+            <div class="row" style="margin-top:16px">
+              <button class="primary" id="envsave" onclick="saveEnv()">Save credentials</button>
+              <span class="small dim" id="envstate"></span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <header><div><h2>Watchlist file</h2><p class="sub">Only used by the standalone search.py command, not by the panel</p></div></header>
+          <div class="body">
+            <p class="hint">The panel uses named lists instead. This file stays for
+              <code>python search.py --watchlist watchlist.txt</code>.</p>
+            <textarea id="watchlist" spellcheck="false"></textarea>
+            <div class="row" style="margin-top:12px"><button onclick="saveWatchlist()">Save file</button></div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
-</section>
+</div>
 
-<!-- ═══ RESULTS ═══ -->
-<section class="tab" id="tab-results">
-  <div class="card">
-    <div class="row" style="margin-bottom:var(--s4)">
-      <h2 style="margin:0">Results</h2>
-      <span class="spacer"></span>
-      <select id="r-size" style="width:auto"><option>5</option><option selected>10</option><option>20</option></select>
-      <button onclick="loadResults(1)">Refresh</button>
-    </div>
-    <div id="results" class="dim">loading&hellip;</div>
-    <div class="pager" id="pager"></div>
-  </div>
-</section>
-
-<!-- ═══ STATUS ═══ -->
-<section class="tab" id="tab-status">
-  <div class="card">
-    <div class="row" style="margin-bottom:var(--s4)">
-      <h2 style="margin:0">Tool status</h2><span class="spacer"></span>
-      <button onclick="loadStatus()">Refresh</button>
-    </div>
-    <div class="kv" id="statuskv">loading&hellip;</div>
-  </div>
-  <div class="card"><h2>Recent run logs</h2><div id="logs" class="dim">loading&hellip;</div></div>
-</section>
-
-<!-- ═══ SETTINGS ═══ -->
-<section class="tab" id="tab-settings">
-  <div class="card">
-    <h2>Watchlist</h2>
-    <p class="hint">One handle per line. <code>#</code> starts a comment. Used by the
-      <code>hiring-watchlist</code> search.</p>
-    <textarea id="watchlist" spellcheck="false"></textarea>
-    <div class="row" style="margin-top:var(--s3)"><button class="primary" onclick="saveWatchlist()">Save watchlist</button></div>
-  </div>
-  <div class="card">
-    <h2>X credentials</h2>
-    <p class="hint">Write only. Values are never sent back to this page. Get them from a logged in
-      x.com: DevTools &gt; Application &gt; Cookies &gt; https://x.com</p>
-    <p id="envlock" class="small" style="color:var(--bad)"></p>
-    <div class="grid">
-      <div class="field"><label>auth_token</label><input id="f-token" type="password" placeholder="leave blank to keep"></div>
-      <div class="field"><label>ct0</label><input id="f-ct0" type="password" placeholder="leave blank to keep"></div>
-    </div>
-    <div class="row" style="margin-top:var(--s3)">
-      <button class="primary" id="envsave" onclick="saveEnv()">Save credentials</button>
-      <span class="small dim" id="envstate"></span>
-    </div>
-  </div>
-</section>
-
-</main>
-
+<!-- dialogs -->
 <dialog id="editdlg">
-  <h2 style="margin:0 0 var(--s4)">Edit <span id="edit-name" class="mono"></span></h2>
-  <div class="grid">
-    <div class="field"><label>Query</label><input id="e-query"></div>
-    <div class="field"><label>Handles</label><input id="e-handles"></div>
-    <div class="field"><label>List id</label><input id="e-list"></div>
-    <div class="field"><label>Every N days</label><input id="e-every" type="number" min="1"></div>
-    <div class="field"><label>Time</label><input id="e-time"></div>
-    <div class="field"><label>Look back days</label><input id="e-back" type="number" min="1"></div>
-    <div class="field"><label>Min likes</label><input id="e-likes" type="number" min="0"></div>
-    <div class="field"><label>Limit</label><input id="e-limit" type="number" min="1"></div>
+  <div class="dlg-h"><h2 style="margin:0;font-size:18px;font-weight:640">Edit <span id="edit-name" class="mono"></span></h2></div>
+  <div class="dlg-b">
+    <div class="grid">
+      <div class="field"><label>Source</label><select id="e-source"></select></div>
+      <div class="field"><label>List</label><select id="e-list"></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Query</label><input id="e-query"></div>
+      <div class="field" style="grid-column:1/-1"><label>Handles (only when source is watchlist and no list)</label><input id="e-handles"></div>
+      <div class="field"><label>Every N days</label><input id="e-every" type="number" min="1"></div>
+      <div class="field"><label>Time</label><input id="e-time"></div>
+      <div class="field"><label>Look back days</label><input id="e-back" type="number" min="1"></div>
+      <div class="field"><label>Min likes</label><input id="e-likes" type="number" min="0"></div>
+      <div class="field"><label>Limit</label><input id="e-limit" type="number" min="1"></div>
+    </div>
   </div>
-  <div class="row" style="margin-top:var(--s5);justify-content:flex-end">
-    <button onclick="document.getElementById('editdlg').close()">Cancel</button>
-    <button class="primary" onclick="saveEdit()">Save</button>
+  <div class="dlg-f"><button onclick="document.getElementById('editdlg').close()">Cancel</button>
+    <button class="primary" onclick="saveEdit()">Save</button></div>
+</dialog>
+
+<dialog id="adddlg">
+  <div class="dlg-h"><h2 style="margin:0;font-size:18px;font-weight:640">New search</h2></div>
+  <div class="dlg-b">
+    <div class="grid">
+      <div class="field"><label>Name</label><input id="a-name" placeholder="ai-jobs"></div>
+      <div class="field"><label>Source</label><select id="a-source"></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Query (live)</label><input id="a-query" placeholder='hiring OR "open role"'></div>
+      <div class="field"><label>List</label><select id="a-list"></select></div>
+      <div class="field"><label>Handles</label><input id="a-handles" placeholder="aakashgupta"></div>
+      <div class="field"><label>Every N days</label><input id="a-every" type="number" min="1" value="1"></div>
+      <div class="field"><label>Time</label><input id="a-time" value="09:00"></div>
+      <div class="field"><label>Look back days</label><input id="a-back" type="number" min="1" value="7"></div>
+      <div class="field"><label>Min likes</label><input id="a-likes" type="number" min="0" value="0"></div>
+    </div>
   </div>
+  <div class="dlg-f"><button onclick="document.getElementById('adddlg').close()">Cancel</button>
+    <button class="primary" onclick="saveAdd()">Create</button></div>
+</dialog>
+
+<dialog id="listdlg">
+  <div class="dlg-h"><h2 id="listdlg-title" style="margin:0;font-size:18px;font-weight:640">New list</h2></div>
+  <div class="dlg-b">
+    <div class="grid">
+      <div class="field"><label>Name</label><input id="l-name" placeholder="founders"></div>
+      <div class="field"><label>Kind</label><select id="l-kind">
+        <option value="handles">handles</option><option value="xlist">X list</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Note</label><input id="l-note" placeholder="Founders who post openings"></div>
+      <div class="field" id="w-lhandles" style="grid-column:1/-1"><label>Handles, one per line or comma separated</label>
+        <textarea id="l-handles" style="min-height:120px"></textarea></div>
+      <div class="field" id="w-lid" style="grid-column:1/-1"><label>List id, the number in the list URL</label>
+        <input id="l-id" placeholder="1908587200419422252"></div>
+    </div>
+  </div>
+  <div class="dlg-f"><button onclick="document.getElementById('listdlg').close()">Cancel</button>
+    <button class="primary" onclick="saveList()">Save</button></div>
 </dialog>
 
 <div id="toast"></div>
 
 <script>
-const $ = (s) => document.querySelector(s);
 const el = (id) => document.getElementById(id);
+const esc = (x) => String(x ?? '').replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SOURCES = ['bookmarks', 'live', 'watchlist', 'list'];
 
 function toast(msg, bad) {
   const t = el('toast');
@@ -551,25 +746,35 @@ function toast(msg, bad) {
   t.classList.toggle('bad', !!bad);
   t.classList.add('up');
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.remove('up'), 3000);
+  toast._t = setTimeout(() => t.classList.remove('up'), 3200);
 }
 async function api(path, body) {
-  const r = await fetch(path, body ? {method: 'POST', body: JSON.stringify(body)} : {});
+  const r = await fetch(path, body ? {method:'POST', body: JSON.stringify(body)} : {});
   return {status: r.status, data: await r.json().catch(() => ({}))};
 }
-const esc = (x) => String(x ?? '').replace(/[&<>"]/g,
-  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ── tabs ───────────────────────────────────────────────────────────────── */
-document.querySelectorAll('.tabbtn').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.tabbtn').forEach(x => x.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
-  b.classList.add('on');
-  el('tab-' + b.dataset.tab).classList.add('on');
-  if (b.dataset.tab === 'status') loadStatus();
-  if (b.dataset.tab === 'settings') loadSettings();
-  if (b.dataset.tab === 'results') loadResults(PAGE);
-});
+const PAGES = {
+  dashboard: ['Dashboard', 'Your bookmarks, X, and everything they run.'],
+  searches:  ['Searches', 'Each one has its own source, schedule, and options'],
+  lists:     ['Lists', 'Reusable groups shared by any number of searches'],
+  builder:   ['Query Builder', 'Every X search operator in one readable query'],
+  results:   ['Results', 'What every scheduled run produced'],
+  commands:  ['Commands', 'Everything in COMMANDS.md, and what can be run here'],
+  status:    ['Status', 'Patches, credentials, tools, and scheduled tasks'],
+  settings:  ['Settings', 'Credentials and the standalone watchlist file'],
+};
+
+function go(tab) {
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + tab));
+  el('page-title').textContent = PAGES[tab][0];
+  el('page-sub').textContent = PAGES[tab][1];
+  if (tab === 'status') loadStatus();
+  if (tab === 'settings') loadSettings();
+  if (tab === 'results') loadResults(PAGE);
+  if (tab === 'dashboard') loadDashboard();
+}
+document.querySelectorAll('.navbtn').forEach(b => b.onclick = () => go(b.dataset.tab));
 
 /* ── commands ───────────────────────────────────────────────────────────── */
 let POLL = null;
@@ -600,6 +805,180 @@ function runCmd(key) {
   });
 }
 
+/* ── lists ──────────────────────────────────────────────────────────────── */
+let LISTS = [];
+async function loadLists() {
+  const {data} = await api('/api/lists');
+  LISTS = data.lists;
+  el('badge-lists').textContent = LISTS.length;
+  el('listrows').innerHTML = LISTS.map(l => {
+    const n = l.kind === 'handles' ? (l.handles || []).length : 0;
+    const detail = l.kind === 'handles'
+      ? esc((l.handles || []).slice(0, 6).join(', ')) + (n > 6 ? ' +' + (n - 6) + ' more' : '')
+      : 'list id <span class="mono">' + esc(l.list_id) + '</span>';
+    const used = CURRENT.filter(s => s.list === l.name).map(s => s.name);
+    return `<tr>
+      <td><span class="strong">${esc(l.name)}</span>${l.note ? `<br><span class="small dim">${esc(l.note)}</span>` : ''}
+        ${used.length ? `<br><span class="small" style="color:var(--brand)">used by ${used.map(esc).join(', ')}</span>` : ''}</td>
+      <td><span class="pill ${l.kind === 'xlist' ? 'warn' : 'brand'}">${esc(l.kind)}</span></td>
+      <td class="mono">${n || '—'}</td>
+      <td class="small dim">${detail}</td>
+      <td><div class="row tight">
+        <button class="sm quiet" onclick="editList('${esc(l.name)}')">Edit</button>
+        <button class="sm quiet danger" onclick="delList('${esc(l.name)}')">Delete</button>
+      </div></td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="dim">no lists yet</td></tr>';
+  fillListSelects();
+}
+function fillListSelects() {
+  const opts = '<option value="">none</option>' + LISTS.map(l =>
+    `<option value="${esc(l.name)}">${esc(l.name)} (${l.kind})</option>`).join('');
+  el('e-list').innerHTML = opts;
+  el('a-list').innerHTML = opts;
+}
+function openListAdd() {
+  el('listdlg-title').textContent = 'New list';
+  el('l-name').value = ''; el('l-note').value = '';
+  el('l-handles').value = ''; el('l-id').value = '';
+  el('l-name').dataset.original = '';
+  el('l-kind').value = 'handles'; syncListFields();
+  el('listdlg').showModal();
+}
+function editList(name) {
+  const l = LISTS.find(x => x.name === name); if (!l) return;
+  el('listdlg-title').textContent = 'Edit ' + name;
+  el('l-name').value = l.name;
+  el('l-name').dataset.original = name;
+  el('l-kind').value = l.kind;
+  el('l-note').value = l.note || '';
+  el('l-handles').value = (l.handles || []).join('\n');
+  el('l-id').value = l.list_id || '';
+  syncListFields();
+  el('listdlg').showModal();
+}
+function syncListFields() {
+  const k = el('l-kind').value;
+  el('w-lhandles').style.display = k === 'handles' ? '' : 'none';
+  el('w-lid').style.display = k === 'xlist' ? '' : 'none';
+}
+el('l-kind').onchange = syncListFields;
+async function saveList() {
+  const name = el('l-name').value.trim();
+  const original = el('l-name').dataset.original;
+  if (!name) return toast('name is required', true);
+  const body = {name, kind: el('l-kind').value, note: el('l-note').value.trim(),
+                handles: el('l-handles').value, list_id: el('l-id').value.trim()};
+  const r = original ? await api('/api/list/edit', {name: original, ...body})
+                      : await api('/api/list/add', body);
+  toast(r.status === 200 ? 'saved ' + name : (r.data.error || 'failed'), r.status !== 200);
+  if (r.status === 200) el('listdlg').close();
+  loadLists();
+}
+async function delList(name) {
+  const used = CURRENT.filter(s => s.list === name).map(s => s.name);
+  const warn = used.length ? '\n\nIt is used by: ' + used.join(', ') : '';
+  if (!confirm('delete list ' + name + '?' + warn)) return;
+  const r = await api('/api/list/delete', {name});
+  toast(r.status === 200 ? 'deleted ' + name : (r.data.error || 'failed'), r.status !== 200);
+  loadLists();
+}
+
+/* ── searches ───────────────────────────────────────────────────────────── */
+let CURRENT = [];
+function brief(s) {
+  if (s.query) return s.query;
+  if (s.list) return 'list: ' + s.list;
+  if (s.handles) return Array.isArray(s.handles) ? s.handles.join(', ') : s.handles;
+  if (s.handles_file) return s.handles_file;
+  return '';
+}
+async function loadSearches() {
+  const {data} = await api('/api/searches');
+  CURRENT = data.searches;
+  el('badge-searches').textContent = CURRENT.length;
+  el('rows').innerHTML = CURRENT.map(s => `
+    <tr>
+      <td><span class="strong">${esc(s.name)}</span>${s.notes ? `<br><span class="small dim">${esc(s.notes)}</span>` : ''}</td>
+      <td><span class="pill brand">${esc(s.source)}</span><br><span class="mono small">${esc(brief(s).slice(0, 40))}</span></td>
+      <td class="small">every ${s.every_days || 1}d<br>${esc(s.time || '09:00')}</td>
+      <td><span class="pill ${s.enabled !== false ? 'on' : 'off'}">${s.enabled !== false ? 'on' : 'off'}</span></td>
+      <td class="mono small">${esc((data.state[s.name] || {}).last_run || 'never')}</td>
+      <td><div class="row tight">
+        <button class="sm" onclick="run('${esc(s.name)}')">Run</button>
+        <button class="sm quiet" onclick="openEdit('${esc(s.name)}')">Edit</button>
+        <button class="sm quiet" onclick="toggle('${esc(s.name)}')">${s.enabled !== false ? 'Disable' : 'Enable'}</button>
+        <button class="sm quiet danger" onclick="del('${esc(s.name)}')">Delete</button>
+      </div></td></tr>`).join('');
+}
+function fillSourceSelect(sel, value) {
+  sel.innerHTML = SOURCES.map(s => `<option value="${s}">${s}</option>`).join('');
+  sel.value = value || 'bookmarks';
+}
+function openAdd() {
+  el('a-name').value = '';
+  fillSourceSelect(el('a-source'), 'live');
+  el('a-query').value = ''; el('a-handles').value = '';
+  el('a-every').value = 1; el('a-time').value = '09:00';
+  el('a-back').value = 7; el('a-likes').value = 0;
+  fillListSelects();
+  el('adddlg').showModal();
+}
+async function saveAdd() {
+  const body = {name: el('a-name').value.trim(), source: el('a-source').value,
+                every_days: +el('a-every').value || 1, time: el('a-time').value,
+                days_back: +el('a-back').value || 7, min_likes: +el('a-likes').value || 0,
+                limit: 50};
+  const q = el('a-query').value.trim(), h = el('a-handles').value.trim(), l = el('a-list').value;
+  if (q) body.query = q;
+  if (h) body.handles = h.split(',').map(x => x.trim().replace(/^@/, '')).filter(Boolean);
+  if (l) body.list = l;
+  if (!body.name) return toast('name is required', true);
+  const r = await api('/api/add', body);
+  toast(r.status === 200 ? 'created ' + body.name : (r.data.error || 'failed'), r.status !== 200);
+  if (r.status === 200) { el('adddlg').close(); loadSearches(); }
+}
+function openEdit(name) {
+  const s = CURRENT.find(x => x.name === name); if (!s) return;
+  el('edit-name').textContent = name;
+  fillSourceSelect(el('e-source'), s.source);
+  fillListSelects();
+  el('e-list').value = s.list || '';
+  el('e-query').value = s.query || '';
+  el('e-handles').value = (s.handles || []).join(', ');
+  el('e-every').value = s.every_days || 1;
+  el('e-time').value = s.time || '09:00';
+  el('e-back').value = s.days_back || 7;
+  el('e-likes').value = s.min_likes || 0;
+  el('e-limit').value = s.limit || 50;
+  el('editdlg').showModal();
+}
+async function saveEdit() {
+  const patch = {source: el('e-source').value, list: el('e-list').value,
+                 query: el('e-query').value.trim(),
+                 handles: el('e-handles').value.split(',').map(x => x.trim().replace(/^@/, '')).filter(Boolean),
+                 every_days: +el('e-every').value || 1, time: el('e-time').value.trim(),
+                 days_back: +el('e-back').value || 7, min_likes: +el('e-likes').value || 0,
+                 limit: +el('e-limit').value || 50};
+  const r = await api('/api/edit', {name: el('edit-name').textContent, patch});
+  toast(r.status === 200 ? 'saved' : (r.data.error || 'failed'), r.status !== 200);
+  if (r.status === 200) { el('editdlg').close(); loadSearches(); }
+}
+async function toggle(n){ await api('/api/toggle', {name:n}); loadSearches(); }
+async function del(n){ if(!confirm('delete ' + n + '?')) return; await api('/api/delete', {name:n}); loadSearches(); }
+async function run(n) {
+  toast('running ' + n);
+  const r = await api('/api/run', {name:n});
+  if (r.status !== 200) return toast(r.data.error || 'failed', true);
+  let i = 0;
+  const t = setInterval(async () => {
+    const j = await api('/api/job?job=' + n);
+    if (j.data.state !== 'running' || i++ > 90) {
+      clearInterval(t); toast(n + ': ' + j.data.state, j.data.state === 'failed');
+      loadSearches(); loadResults(1); loadDashboard();
+    }
+  }, 2000);
+}
+
 /* ── query builder ──────────────────────────────────────────────────────── */
 const CHIP_OPS = new Set();
 document.querySelectorAll('.chip[data-op]').forEach(c => c.onclick = () => {
@@ -618,11 +997,10 @@ const OPERATOR_FIELDS = [
   ['q-thread','thread_id:'], ['q-topic','topic:'],
 ];
 const PLAIN_FIELDS = [['q-mention','@'], ['q-cashtag','$']];
-
 function renderQuery() {
   const parts = [];
-  const words = el('q-words').value.trim();
-  if (words) parts.push(words);
+  const w = el('q-words').value.trim();
+  if (w) parts.push(w);
   for (const [id, pre] of PLAIN_FIELDS) {
     const v = el(id).value.trim();
     if (v) parts.push(pre + v.replace(/^[@$]/, ''));
@@ -634,9 +1012,8 @@ function renderQuery() {
   const q = [...new Set(parts)].join(' ');
   const over = q.length > 512;
   el('q-preview').textContent = q || 'hiring';
-  el('q-preview').style.color = over ? 'var(--bad)' : 'var(--fg-2)';
   const len = el('q-len');
-  len.textContent = `${q.length} / 512`;
+  len.textContent = q.length + ' / 512';
   len.className = 'pill ' + (over ? 'bad' : (q.length > 430 ? 'warn' : 'on'));
   return q;
 }
@@ -644,10 +1021,7 @@ document.querySelectorAll('#tab-builder input, #tab-builder select').forEach(i =
   i.addEventListener('input', renderQuery);
   i.addEventListener('change', renderQuery);
 });
-function copyQuery() {
-  navigator.clipboard.writeText(renderQuery());
-  toast('copied');
-}
+function copyQuery(){ navigator.clipboard.writeText(renderQuery()); toast('copied'); }
 function resetQuery() {
   document.querySelectorAll('#tab-builder input').forEach(i => { if (i.type !== 'checkbox') i.value = ''; });
   document.querySelectorAll('#tab-builder select').forEach(s => s.selectedIndex = 0);
@@ -663,151 +1037,85 @@ async function saveQuery() {
   const q = renderQuery();
   const name = el('q-name').value.trim();
   if (!name) return toast('name is required', true);
-  const r = await api('/api/add', {
-    name, source: 'live', query: q,
-    every_days: +el('q-every').value || 1, time: el('q-time').value,
-    days_back: +el('q-back').value || 7, min_likes: +el('q-likes').value || 0,
-    limit: 50, notes: 'built in the query builder',
-  });
+  const r = await api('/api/add', {name, source:'live', query:q,
+    every_days:+el('q-every').value||1, time:el('q-time').value,
+    days_back:+el('q-back').value||7, min_likes:+el('q-likes').value||0,
+    limit:50, notes:'built in the query builder'});
   toast(r.status === 200 ? 'saved ' + name : (r.data.error || 'failed'), r.status !== 200);
   if (r.status === 200) { el('q-name').value = ''; loadSearches(); }
 }
 async function runQuery() {
   const q = renderQuery();
   if (q.length > 512) return toast('query too long, X caps it at 512', true);
-  toast('running one-off search');
-  const r = await api('/api/run-query', {query: q, days_back: +el('q-back').value || 7,
-                                          limit: 50, min_likes: +el('q-likes').value || 0});
+  const r = await api('/api/run-query', {query:q, days_back:+el('q-back').value||7,
+                                          limit:50, min_likes:+el('q-likes').value||0});
   if (r.status !== 200) return toast(r.data.error || 'failed', true);
   toast('running, results land in a minute');
   setTimeout(loadResults, 2500);
 }
 
-/* ── searches ───────────────────────────────────────────────────────────── */
-let CURRENT = [];
-function showFields() {
-  const s = el('f-source').value;
-  el('w-query').style.display  = s === 'live' ? '' : 'none';
-  el('w-handle').style.display = s === 'watchlist' ? '' : 'none';
-  el('w-list').style.display   = s === 'list' ? '' : 'none';
-}
-el('f-source').onchange = showFields;
-function brief(s) {
-  if (s.query) return s.query;
-  if (s.list_id) return 'list ' + s.list_id;
-  if (s.handles) return Array.isArray(s.handles) ? s.handles.join(', ') : s.handles;
-  if (s.handles_file) return s.handles_file;
-  return '';
-}
-
-async function loadSearches() {
-  const {data} = await api('/api/searches');
-  CURRENT = data.searches;
-  el('rows').innerHTML = CURRENT.map(s => `
-    <tr>
-      <td><strong>${esc(s.name)}</strong>${s.notes ? `<br><span class="small dim">${esc(s.notes)}</span>` : ''}</td>
-      <td><span class="pill">${esc(s.source)}</span><br><span class="mono">${esc(brief(s).slice(0, 46))}</span></td>
-      <td class="small">every ${s.every_days || 1}d<br>${esc(s.time || '09:00')}</td>
-      <td><span class="pill ${s.enabled !== false ? 'on' : 'off'}">${s.enabled !== false ? 'on' : 'off'}</span></td>
-      <td class="mono small">${esc((data.state[s.name] || {}).last_run || 'never')}</td>
-      <td><div class="row tight">
-        <button onclick="run('${esc(s.name)}')">Run</button>
-        <button class="ghost" onclick="openEdit('${esc(s.name)}')">Edit</button>
-        <button class="ghost" onclick="toggle('${esc(s.name)}')">${s.enabled !== false ? 'Disable' : 'Enable'}</button>
-        <button class="ghost danger" onclick="del('${esc(s.name)}')">Delete</button>
-      </div></td>
-    </tr>`).join('');
-}
-async function add() {
-  const body = {
-    name: el('f-name').value.trim(), source: el('f-source').value,
-    every_days: +el('f-every').value || 1, time: el('f-time').value,
-    days_back: +el('f-back').value || 7, min_likes: +el('f-likes').value || 0,
-  };
-  const q = el('f-query').value.trim(), h = el('f-handles').value.trim(), l = el('f-list').value.trim();
-  if (q) body.query = q;
-  if (h) body.handles = h.split(',').map(x => x.trim().replace(/^@/, '')).filter(Boolean);
-  if (l) body.list_id = l;
-  if (!body.name) return toast('name is required', true);
-  const r = await api('/api/add', body);
-  toast(r.status === 200 ? 'added ' + body.name : (r.data.error || 'failed'), r.status !== 200);
-  if (r.status === 200) el('f-name').value = '';
-  loadSearches();
-}
-function openEdit(name) {
-  const s = CURRENT.find(x => x.name === name); if (!s) return;
-  el('edit-name').textContent = name;
-  el('e-query').value = s.query || '';
-  el('e-handles').value = (s.handles || []).join(', ');
-  el('e-list').value = s.list_id || '';
-  el('e-every').value = s.every_days || 1;
-  el('e-time').value = s.time || '09:00';
-  el('e-back').value = s.days_back || 7;
-  el('e-likes').value = s.min_likes || 0;
-  el('e-limit').value = s.limit || 50;
-  el('editdlg').showModal();
-}
-async function saveEdit() {
-  const r = await api('/api/edit', {name: el('edit-name').textContent, patch: {
-    query: el('e-query').value.trim(),
-    handles: el('e-handles').value.split(',').map(x => x.trim().replace(/^@/, '')).filter(Boolean),
-    list_id: el('e-list').value.trim(),
-    every_days: +el('e-every').value || 1, time: el('e-time').value.trim(),
-    days_back: +el('e-back').value || 7, min_likes: +el('e-likes').value || 0,
-    limit: +el('e-limit').value || 50,
-  }});
-  toast(r.status === 200 ? 'saved' : (r.data.error || 'failed'), r.status !== 200);
-  loadSearches();
-}
-async function toggle(n){ await api('/api/toggle', {name:n}); loadSearches(); }
-async function del(n){ if(!confirm('delete ' + n + '?')) return; await api('/api/delete', {name:n}); loadSearches(); }
-async function run(n) {
-  toast('running ' + n);
-  const r = await api('/api/run', {name:n});
-  if (r.status !== 200) return toast(r.data.error || 'failed', true);
-  let i = 0;
-  const t = setInterval(async () => {
-    const j = await api('/api/job?job=' + n);
-    if (j.data.state !== 'running' || i++ > 90) {
-      clearInterval(t); toast(n + ': ' + j.data.state, j.data.state === 'failed');
-      loadSearches(); loadResults(1);
-    }
-  }, 2000);
-}
-
-/* ── results with pagination ────────────────────────────────────────────── */
+/* ── results ────────────────────────────────────────────────────────────── */
 let PAGE = 1;
 el('r-size').onchange = () => loadResults(1);
 async function loadResults(page) {
   PAGE = page || PAGE || 1;
   const size = el('r-size').value;
-  const {data} = await api(`/api/results?page=${PAGE}&size=${size}`);
+  const {data} = await api('/api/results?page=' + PAGE + '&size=' + size);
   const box = el('results');
   if (!data.results.length) {
-    box.textContent = PAGE > 1 ? 'nothing on this page' : 'no runs yet';
+    box.innerHTML = '<p class="dim">' + (PAGE > 1 ? 'nothing on this page' : 'no runs yet') + '</p>';
     el('pager').innerHTML = ''; return;
   }
   box.innerHTML = data.results.map(r => {
-    const c = Object.entries(r.counts).map(([k, v]) => `${k} ${v}`).join('  ');
+    const c = Object.entries(r.counts).map(([k,v]) => k + ' ' + v).join('   ');
     const body = r.tweets.slice(0, 50).map(t => `
       <div class="tweet">
-        <div><span class="who">@${esc(t.author_handle)}</span>
-          <span class="pill">${esc(t.bucket)}</span>
-          ${t.pay && t.pay.length ? `<span class="mono"> ${esc(t.pay.slice(0,2).join(' '))}</span>` : ''}</div>
+        <div><span class="who">@${esc(t.author_handle)}</span> <span class="pill">${esc(t.bucket)}</span>
+        ${t.pay && t.pay.length ? '<span class="mono"> ' + esc(t.pay.slice(0,2).join(' ')) + '</span>' : ''}</div>
         <div class="txt">${esc(t.text)}</div>
-        <a href="${esc(t.url)}" target="_blank" rel="noopener">open on x</a>
-      </div>`).join('');
-    return `<details class="run"><summary>
-        <span class="chev">›</span><strong>${esc(r.name)}</strong>
-        <span class="small dim">${esc((r.ran_at||'').slice(0,16).replace('T',' '))} &middot;
-        ${r.openings} openings &middot; ${esc(c)}</span></summary>${body}</details>`;
+        <a href="${esc(t.url)}" target="_blank" rel="noopener">open on x</a></div>`).join('');
+    return '<details class="run"><summary><span class="tw-c">&rsaquo;</span>' +
+      '<span class="strong">' + esc(r.name) + '</span>' +
+      '<span class="small dim">' + esc((r.ran_at||'').slice(0,16).replace('T',' ')) +
+      ' &middot; ' + r.openings + ' openings &middot; ' + esc(c) + '</span></summary>' + body + '</details>';
   }).join('');
-  const p = [];
-  p.push(`<button ${data.page <= 1 ? 'disabled' : ''} onclick="loadResults(${data.page - 1})">Previous</button>`);
-  p.push(`<span class="n">${data.page} / ${data.pages}</span>`);
-  p.push(`<button ${data.page >= data.pages ? 'disabled' : ''} onclick="loadResults(${data.page + 1})">Next</button>`);
-  p.push(`<span class="n small dim">${data.total} runs</span>`);
-  el('pager').innerHTML = p.join('');
+  el('pager').innerHTML =
+    '<button class="sm" ' + (data.page <= 1 ? 'disabled' : '') +
+      ' onclick="loadResults(' + (data.page - 1) + ')">Previous</button>' +
+    '<span class="n">' + data.page + ' / ' + data.pages + '</span>' +
+    '<button class="sm" ' + (data.page >= data.pages ? 'disabled' : '') +
+      ' onclick="loadResults(' + (data.page + 1) + ')">Next</button>' +
+    '<span class="n small dim">' + data.total + ' runs</span>';
+}
+
+/* ── dashboard ──────────────────────────────────────────────────────────── */
+async function loadDashboard() {
+  const [{data: st}, {data: rs}] = await Promise.all([api('/api/status'), api('/api/results?page=1&size=4')]);
+  const on = CURRENT.filter(s => s.enabled !== false).length;
+  const handles = LISTS.filter(l => l.kind === 'handles').reduce((a,l) => a + (l.handles||[]).length, 0);
+  const opens = rs.results.reduce((a,r) => a + (r.openings || 0), 0);
+  const tile = (k, v, s, tint) =>
+    '<div class="tile"><div class="ico" style="background:var(--tint-' + tint + ');color:var(--tint-' + tint + '-fg)">' + s + '</div>' +
+    '<div><div class="v">' + esc(v) + '</div><div class="k">' + esc(k) + '</div></div></div>';
+  const svg = (d) => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+  el('dash-tiles').innerHTML = [
+    tile('bookmarks indexed', st.bookmarks.db_mb + ' MB', svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>'), 1),
+    tile('searches enabled', on + ' of ' + CURRENT.length, svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'), 2),
+    tile('lists tracked', LISTS.length + ' (' + handles + ' handles)', svg('<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.4"/>'), 3),
+    tile('openings in last 4 runs', opens, svg('<path d="M12 5v14M5 12h14"/>'), 4),
+  ].join('');
+
+  const bad = (!st.patches.fieldtheory.patched) + (!st.patches['twitter-cli'].patched)
+            + (!st.credentials.TWITTER_AUTH_TOKEN || !st.credentials.TWITTER_CT0);
+  el('health-dot').className = 'dot' + (bad ? ' bad' : '');
+  el('health-text').textContent = bad ? (bad + ' thing(s) need attention') : 'all good';
+
+  el('dash-recent').innerHTML = rs.results.length ? rs.results.map(r =>
+    '<div class="row" style="padding:10px 0;border-top:1px solid var(--line)">' +
+    '<span class="strong">' + esc(r.name) + '</span>' +
+    '<span class="small dim">' + esc((r.ran_at||'').slice(0,16).replace('T',' ')) + '</span>' +
+    '<span class="spacer"></span><span class="pill brand">' + r.openings + ' openings</span></div>').join('')
+    : '<p class="dim">no runs yet</p>';
 }
 
 /* ── status ─────────────────────────────────────────────────────────────── */
@@ -815,11 +1123,11 @@ async function loadStatus() {
   const {data} = await api('/api/status');
   const yn = (x) => x ? '<span class="pill on">yes</span>' : '<span class="pill bad">no</span>';
   const patch = (o, label) => o.patched ? '<span class="pill on">applied</span>'
-    : o.installed ? `<span class="pill bad">lost &mdash; run ${label}</span>`
+    : o.installed ? '<span class="pill bad">lost &mdash; run ' + label + '</span>'
     : '<span class="pill off">not installed</span>';
   const rows = [
-    ['bookmarks.db', `${data.bookmarks.db_mb} MB`],
-    ['bookmarks.jsonl', `${data.bookmarks.jsonl_mb} MB`],
+    ['bookmarks.db', data.bookmarks.db_mb + ' MB'],
+    ['bookmarks.jsonl', data.bookmarks.jsonl_mb + ' MB'],
     ['fieldtheory patch', patch(data.patches.fieldtheory, 'fix-fieldtheory.js')],
     ['twitter-cli patch', patch(data.patches['twitter-cli'], 'fix-twitter-cli.js')],
     ['auth_token set', yn(data.credentials.TWITTER_AUTH_TOKEN)],
@@ -829,12 +1137,12 @@ async function loadStatus() {
     ['node on PATH', yn(data.tools.node)],
     ['scheduled tasks', data.tasks.length ? data.tasks.map(esc).join(', ') : '<span class="dim">none found</span>'],
   ];
-  el('statuskv').innerHTML = rows.map(([k, v]) => `<div>${esc(k)}</div><div>${v}</div>`).join('');
+  el('statuskv').innerHTML = rows.map(([k, v]) => '<div>' + esc(k) + '</div><div>' + v + '</div>').join('');
   const {data: lg} = await api('/api/logs');
   el('logs').innerHTML = lg.logs.length ? lg.logs.map(l =>
-    `<details class="run"><summary><span class="chev">›</span><span class="mono">${esc(l.file)}</span></summary>
-     <pre style="margin:0;border:0;border-radius:0">${esc(l.lines.join('\n'))}</pre></details>`).join('')
-    : 'no logs yet';
+    '<details class="run"><summary><span class="tw-c">&rsaquo;</span><span class="mono">' + esc(l.file) + '</span></summary>' +
+    '<pre style="border:0;border-radius:0;margin:0">' + esc(l.lines.join('\n')) + '</pre></details>').join('')
+    : '<p class="dim">no logs yet</p>';
 }
 
 /* ── settings ───────────────────────────────────────────────────────────── */
@@ -844,16 +1152,15 @@ async function loadSettings() {
   const set = Object.entries(data.credentials).filter(([, v]) => v).map(([k]) => k);
   el('envstate').textContent = set.length ? 'currently set: ' + set.join(', ') : 'none set';
   const btn = el('envsave');
-  if (data.env_writable) {
-    btn.disabled = false; el('envlock').textContent = '';
-  } else {
+  if (data.env_writable) { btn.disabled = false; el('envlock').textContent = ''; }
+  else {
     btn.disabled = true;
-    el('envlock').textContent = 'Locked. Writing credentials is off. Restart the panel with FT_ALLOW_ENV_WRITE=1 to enable.';
+    el('envlock').textContent = 'Locked. Restart the panel with FT_ALLOW_ENV_WRITE=1 to enable.';
   }
 }
 async function saveWatchlist() {
   const r = await api('/api/watchlist', {text: el('watchlist').value});
-  toast(r.status === 200 ? 'watchlist saved' : 'save failed', r.status !== 200);
+  toast(r.status === 200 ? 'watchlist file saved' : 'save failed', r.status !== 200);
 }
 async function saveEnv() {
   const set = {};
@@ -862,17 +1169,17 @@ async function saveEnv() {
   if (c) set.TWITTER_CT0 = c;
   if (!Object.keys(set).length) return toast('nothing typed, values unchanged', true);
   const r = await api('/api/env', {set});
-  toast(r.status === 200 ? 'written: ' + (r.data.written || []).join(', ') : (r.data.error || 'failed'),
-        r.status !== 200);
+  toast(r.status === 200 ? 'written: ' + (r.data.written || []).join(', ') : (r.data.error || 'failed'), r.status !== 200);
   if (r.status === 200) { el('f-token').value = ''; el('f-ct0').value = ''; loadSettings(); }
 }
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
 el('q-words').value = 'hiring';
-showFields();
 renderQuery();
+fillSourceSelect(el('a-source'), 'live');
+fillSourceSelect(el('e-source'), 'live');
 loadCommands();
-loadSearches();
+loadSearches().then(loadLists).then(loadDashboard);
 loadResults(1);
 </script>
 </html>

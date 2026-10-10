@@ -30,41 +30,62 @@
       "time": "09:40",
       "days_back": 7,
       "limit": 50,
-      "handles_file": "watchlist.txt",
-      "notes": "Reads every account in watchlist.txt, no query. Highest signal."
+      "notes": "Reads every account in the all-watchlist list, no query.",
+      "list": "all-watchlist"
     },
     {
       "name": "list-1908587200419422252",
       "source": "list",
       "enabled": false,
-      "list_id": "1908587200419422252",
       "every_days": 2,
       "time": "10:00",
       "days_back": 7,
       "limit": 50,
-      "notes": "X list. Disabled until you confirm you want it."
+      "notes": "X list. Disabled until you confirm you want it.",
+      "list": "x-list-1908587200419422252"
     },
     {
       "name": "list-1814831941901758764",
       "source": "list",
       "enabled": false,
-      "list_id": "1814831941901758764",
       "every_days": 2,
       "time": "10:05",
       "days_back": 7,
       "limit": 50,
-      "notes": "X list. Disabled until you confirm you want it."
+      "notes": "X list. Disabled until you confirm you want it.",
+      "list": "x-list-1814831941901758764"
     },
     {
       "name": "list-1901503315307069643",
       "source": "list",
       "enabled": false,
-      "list_id": "1901503315307069643",
       "every_days": 2,
       "time": "10:10",
       "days_back": 7,
       "limit": 50,
-      "notes": "X list. Disabled until you confirm you want it."
+      "notes": "X list. Disabled until you confirm you want it.",
+      "list": "x-list-1901503315307069643"
+    },
+    {
+      "name": "caracas",
+      "source": "bookmarks",
+      "every_days": 1,
+      "time": "09:00",
+      "days_back": 7,
+      "min_likes": 0,
+      "enabled": false
+    },
+    {
+      "name": "kolomental",
+      "source": "live",
+      "query": "hiring, kolo, mental",
+      "every_days": 1,
+      "time": "09:00",
+      "days_back": 7,
+      "min_likes": 0,
+      "limit": 50,
+      "notes": "built in the query builder",
+      "enabled": false
     }
   ]
 }

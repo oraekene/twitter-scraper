@@ -5,3 +5,6 @@ data/
 *.jsonl
 # local run state, not worth sharing
 searches-state.json
+# screenshots and reference images, not code
+current_throwaway/
+inspiration_use/

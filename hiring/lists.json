@@ -1,0 +1,88 @@
+{
+  "lists": [
+    {
+      "name": "all-watchlist",
+      "kind": "handles",
+      "note": "Everything that was in watchlist.txt",
+      "handles": [
+        "simononchain",
+        "vasuman",
+        "kanekallaway",
+        "tonychang430",
+        "fuzailkazi_",
+        "inanksm",
+        "0x6080604052",
+        "armankhon",
+        "Keanaalabre",
+        "jeff_weinstein",
+        "official_cumi",
+        "TheJobfather__",
+        "AramideOyekunle",
+        "AbrahamOkah2",
+        "amosuibk",
+        "v_garg_s",
+        "comma_ai",
+        "trillium_labs",
+        "nader_dabit"
+      ]
+    },
+    {
+      "name": "hiring-founders",
+      "kind": "handles",
+      "note": "Founders and operators who post openings themselves",
+      "handles": [
+        "simononchain",
+        "vasuman",
+        "kanekallaway",
+        "tonychang430",
+        "fuzailkazi_",
+        "inanksm",
+        "0x6080604052",
+        "armankhon",
+        "Keanaalabre",
+        "jeff_weinstein"
+      ]
+    },
+    {
+      "name": "recruiters",
+      "kind": "handles",
+      "note": "Recruiters and job aggregators",
+      "handles": [
+        "official_cumi",
+        "TheJobfather__",
+        "AramideOyekunle",
+        "AbrahamOkah2",
+        "amosuibk",
+        "v_garg_s"
+      ]
+    },
+    {
+      "name": "companies",
+      "kind": "handles",
+      "note": "Companies that post openings often",
+      "handles": [
+        "comma_ai",
+        "trillium_labs",
+        "nader_dabit"
+      ]
+    },
+    {
+      "name": "x-list-1908587200419422252",
+      "kind": "xlist",
+      "note": "Your X list. Disabled in searches until you turn it on.",
+      "list_id": "1908587200419422252"
+    },
+    {
+      "name": "x-list-1814831941901758764",
+      "kind": "xlist",
+      "note": "Your X list. Disabled in searches until you turn it on.",
+      "list_id": "1814831941901758764"
+    },
+    {
+      "name": "x-list-1901503315307069643",
+      "kind": "xlist",
+      "note": "Your X list. Disabled in searches until you turn it on.",
+      "list_id": "1901503315307069643"
+    }
+  ]
+}

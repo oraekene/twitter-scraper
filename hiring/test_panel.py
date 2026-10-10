@@ -67,7 +67,12 @@ def main():
     assert 'prefers-reduced-motion' in html, 'no reduced-motion handling'
     assert 'prefers-reduced-transparency' in html, 'no reduced-transparency handling'
     assert 'api/results?page=' in js, 'results pagination is not wired up'
-    assert len(re.findall(r'@media \(hover: hover\)', html)) == 0 or True
+    # light mode is the requirement, so a dark-only token set is a failure
+    assert 'color-scheme: light' in html, 'the page is not light mode'
+    assert '--bg:        #f6f7f9' in html, 'the light background token is missing'
+    # navigation and the lists surface must both exist
+    for need in ('class="side"', 'data-tab="lists"', 'data-tab="dashboard"', '/api/lists'):
+        assert need in html, 'missing from the page: ' + need
 
     print(f'test_panel ok, {len(REQUIRED_OPS)} operators, {len(wanted)} ids checked')
 
