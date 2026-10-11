@@ -9,6 +9,12 @@ appear in RUNNABLE below, and that table is the complete list of what a browser
 request can start. Everything else in the UI is text to copy. Credentials are
 write-only: /api/env reports whether each key is set, never its value, and
 PUT /api/env writes the file without ever returning it.
+
+/api/fetch is the same idea with parameters. It takes a key from FETCH below and
+builds an argv list from it. Every value the browser sends is checked by
+build_argv against the field that declared it, and the result is handed to
+subprocess as a list, so there is no shell and no way to splice in a new
+command. Adding a flag to crawl_tweets.py means adding one line to FETCH.
 """
 
 import json
@@ -16,7 +22,9 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
+import time
 import webbrowser
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -32,15 +40,123 @@ RUNNABLE = {
     'fieldtheory-index':   ['fieldtheory', 'index'],
     'fieldtheory-stats':   ['fieldtheory', 'stats'],
     'fieldtheory-folders': ['fieldtheory', 'folders'],
-    'sync-bookmarks':      ['python', os.path.join(ROOT, 'sync_bookmarks.py')],
-    'crawl-threads':       ['python', os.path.join(ROOT, 'crawl_tweets.py'),
-                            'threads', '--limit', '200', '--top', '20'],
     'tests':               ['python', '-c', 'import subprocess,sys;'
                             'r=[subprocess.run([sys.executable,f],capture_output=True).returncode'
                             ' for f in ["test_sync.py","test_crawl.py","test_weekly.py"]];'
                             'print("exit codes:",r);sys.exit(max(r))'],
     'fix-fieldtheory':     ['node', os.path.join(HERE, 'fix-fieldtheory.js')],
     'fix-twitter-cli':     ['node', os.path.join(HERE, 'fix-twitter-cli.js')],
+}
+
+# Section 1 of COMMANDS.md as data, so the page cannot drift from the scripts.
+#
+# base     the argv after "python", without ROOT. The first element is the
+#          script name, the rest are fixed subcommand words.
+# quick    show this one on the dashboard as well as on the Fetch tab.
+# fields   every parameter the command accepts. kind is text, int, float or
+#          flag. flag names the argparse option when it is not --<name>, and
+#          positional marks the one value that is a bare word. A field whose
+#          flag is absent and which is not positional still gets --<name>,
+#          so adding a parameter cannot silently become a stray argument.
+#          Leave a value blank to drop the parameter and use the script default.
+FETCH = {
+    'sync-bookmarks': {
+        'label': 'Pull new bookmarks',
+        'why': 'Repeat until it stops saying "max runtime reached".',
+        'base': ['sync_bookmarks.py'],
+        'quick': True,
+        'fields': [
+            {'name': 'max-minutes', 'label': 'Minutes per pass', 'kind': 'int',
+             'default': 240, 'min': 1, 'max': 1440,
+             'help': 'Fieldtheory stops here and saves a cursor, so run it again.'},
+            {'name': 'count', 'label': 'Bookmarks to fetch from X', 'kind': 'int',
+             'default': 100000, 'min': 1, 'max': 200000,
+             'help': 'How many to ask twitter-cli for in one go.'},
+        ],
+    },
+    'crawl-threads': {
+        'label': 'Expand every bookmarked thread',
+        'why': 'Expand full threads behind every bookmarked tweet. Resumable.',
+        'base': ['crawl_tweets.py', 'threads'],
+        'quick': True,
+        'fields': [
+            {'name': 'limit', 'label': 'Threads this run', 'kind': 'int',
+             'default': 200, 'min': 1, 'max': 5000,
+             'help': 'out\\threads-index.json remembers what is done, so rerun for the next batch.'},
+            {'name': 'top', 'label': 'Replies kept per thread', 'kind': 'int',
+             'default': 20, 'min': 0, 'max': 500},
+            {'name': 'max', 'flag': '-n', 'label': 'Tweets fetched per thread', 'kind': 'int',
+             'default': 100, 'min': 1, 'max': 1000},
+            {'name': 'delay', 'label': 'Seconds between calls', 'kind': 'float',
+             'default': 1.5, 'min': 0, 'max': 60,
+             'help': 'X answers 429 when calls come too fast. 1.5 is safe.'},
+        ],
+    },
+    'crawl-account': {
+        'label': "Pull every tweet from an account",
+        'why': "Pull every tweet from an account, yours or anyone's.",
+        'base': ['crawl_tweets.py', 'account'],
+        'quick': True,
+        'fields': [
+            {'name': 'handle', 'label': 'Handle', 'kind': 'text', 'positional': True,
+             'default': '', 'required': True, 'pattern': r'[A-Za-z0-9_]{1,15}',
+             'placeholder': 'AScully789'},
+            {'name': 'max', 'flag': '-n', 'label': 'Tweets to pull', 'kind': 'int',
+             'default': 2000, 'min': 1, 'max': 100000},
+        ],
+    },
+    'crawl-replies': {
+        'label': 'Top replies to one tweet',
+        'why': 'Top N replies to one tweet, ranked by engagement.',
+        'base': ['crawl_tweets.py', 'replies'],
+        'fields': [
+            {'name': 'tweet_id', 'label': 'Tweet id', 'kind': 'text', 'positional': True,
+             'default': '', 'required': True, 'pattern': r'\d{5,25}',
+             'placeholder': '2108246041548018053'},
+            {'name': 'top', 'label': 'Replies to keep', 'kind': 'int',
+             'default': 10, 'min': 1, 'max': 500},
+            {'name': 'max', 'flag': '-n', 'label': 'Replies fetched', 'kind': 'int',
+             'default': 200, 'min': 1, 'max': 1000},
+            {'name': 'save', 'label': 'Save to out\\', 'kind': 'flag', 'default': True},
+        ],
+    },
+    'crawl-replies-all': {
+        'label': 'Top replies to every bookmark',
+        'why': 'Same batch pass as threads, but ranked by engagement. Resumable.',
+        'base': ['crawl_tweets.py', 'replies-all'],
+        'quick': True,
+        'fields': [
+            {'name': 'limit', 'label': 'Tweets this run', 'kind': 'int',
+             'default': 200, 'min': 1, 'max': 5000,
+             'help': 'out\\replies-index.json remembers what is done, so rerun for the next batch. '
+                     'Separate from the thread index, so the two passes never block each other.'},
+            {'name': 'top', 'label': 'Replies kept per tweet', 'kind': 'int',
+             'default': 10, 'min': 1, 'max': 500},
+            {'name': 'max', 'flag': '-n', 'label': 'Replies fetched', 'kind': 'int',
+             'default': 200, 'min': 1, 'max': 1000},
+            {'name': 'delay', 'label': 'Seconds between calls', 'kind': 'float',
+             'default': 1.5, 'min': 0, 'max': 60,
+             'help': 'X answers 429 when calls come too fast. 1.5 is safe.'},
+            {'name': 'redo', 'label': 'Ignore the index and start again', 'kind': 'flag',
+             'default': False,
+             'help': 'Turn it on when the last run kept fewer replies than you want now.'},
+        ],
+    },
+    'crawl-thread': {
+        'label': 'Full thread behind one tweet',
+        'why': 'Full thread behind one tweet.',
+        'base': ['crawl_tweets.py', 'thread'],
+        'fields': [
+            {'name': 'tweet_id', 'label': 'Tweet id', 'kind': 'text', 'positional': True,
+             'default': '', 'required': True, 'pattern': r'\d{5,25}',
+             'placeholder': '2108246041548018053'},
+            {'name': 'max', 'flag': '-n', 'label': 'Tweets fetched', 'kind': 'int',
+             'default': 100, 'min': 1, 'max': 1000},
+            {'name': 'top', 'label': 'Replies to keep', 'kind': 'int',
+             'default': 20, 'min': 0, 'max': 500},
+            {'name': 'save', 'label': 'Save to out\\', 'kind': 'flag', 'default': True},
+        ],
+    },
 }
 
 # Keys whose presence matters in .env. Values are never sent to the browser.
@@ -118,6 +234,60 @@ def parse_commands():
     return out
 
 
+class BadValue(ValueError):
+    """A field value the browser sent that the field will not accept."""
+
+
+def build_argv(job, params):
+    """Turn a FETCH entry plus browser values into an argv list.
+
+    Nothing here is ever joined into a string for a shell. Every value is
+    matched against the field that declared it: a text field against its
+    pattern, a number against its bounds. A value that does not fit raises
+    BadValue and the caller answers 400, so the subprocess never starts.
+
+    A blank value means "leave the parameter off", which is how you get the
+    script's own default rather than the panel's.
+    """
+    base = list(job['base'])
+    argv = [sys.executable, os.path.join(ROOT, base[0])] + base[1:]
+    for f in job['fields']:
+        name = f['name']
+        if f['kind'] == 'flag':
+            raw = params.get(name, False)
+            # A flag only has two states. Anything else is a broken client, and
+            # ignoring it would start a run with the flag silently off, which is
+            # the one mistake here that would touch the wrong data.
+            if raw in (True, 'true', 'on', '1'):
+                argv.append(f.get('flag') or '--' + name)
+            elif raw not in (False, '', None, 'false', 'off', '0', 0):
+                raise BadValue(f"{f['label']} must be on or off")
+            continue
+        raw = str(params.get(name, '')).strip()
+        if not raw:
+            if f.get('required'):
+                raise BadValue(f"{f['label']} is required")
+            continue
+        if f['kind'] == 'text':
+            value = raw.lstrip('@')
+            if not re.fullmatch(f['pattern'], value):
+                raise BadValue(f"{f['label']} is not a valid {f['label'].lower()}")
+        else:
+            try:
+                value = int(raw) if f['kind'] == 'int' else float(raw)
+            except ValueError:
+                raise BadValue(f"{f['label']} must be a number")
+            if value < f.get('min', value) or value > f.get('max', value):
+                raise BadValue(f"{f['label']} must be between {f.get('min')} and {f.get('max')}")
+            # argparse takes 3.0 for a float field, but print it as 3 anyway.
+            value = str(int(value)) if f['kind'] == 'float' and value == int(value) else str(value)
+        if f.get('positional'):
+            argv.append(value)
+        else:
+            argv += [f.get('flag') or '--' + name, value]
+    return argv
+
+
 def patch_status():
     out = {}
     for name, (path, marker) in PATCH_FILES.items():
@@ -179,6 +349,46 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
     lock = threading.Lock()
     jobs = {}
 
+    def start(key, argv, timeout=7200):
+        """Run argv in the background and stream its output into jobs[key].
+
+        Shared by /api/command and /api/fetch so both behave the same way. The
+        old version waited for the whole process before showing anything, which
+        on a 200 thread crawl meant minutes of a blank panel with no way to tell
+        a slow run from a stuck one. Lines are appended as they arrive and the
+        last 400 are kept, because the crawl prints one line per thread.
+        """
+        def work():
+            jobs[key] = {'state': 'running', 'output': ['starting...'], 'argv': argv}
+            try:
+                env = dict(os.environ, PYTHONIOENCODING='utf-8')
+                # Resolve argv[0] first. fieldtheory and twitter are .CMD shims
+                # on Windows, and CreateProcess will not run those by bare name,
+                # so every command on the panel died with FileNotFoundError
+                # until this line went in. which() finds the real path.
+                exe = shutil.which(argv[0]) or argv[0]
+                p = subprocess.Popen([exe, *argv[1:]], cwd=ROOT, stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT, text=True,
+                                     encoding='utf-8', errors='replace', env=env)
+                deadline = time.monotonic() + timeout
+                for line in p.stdout:
+                    with lock:
+                        j = jobs[key]
+                        j['output'] = (j['output'] + [line.rstrip('\n')])[-400:]
+                    if time.monotonic() > deadline:
+                        p.kill()
+                        with lock:
+                            jobs[key]['output'].append('killed after the time limit')
+                        break
+                p.wait()
+                with lock:
+                    jobs[key]['state'] = 'done' if p.returncode == 0 else 'failed'
+            except Exception as e:
+                with lock:
+                    jobs[key] = {'state': 'failed', 'output': [f'{type(e).__name__}: {e}'],
+                                 'argv': argv}
+        threading.Thread(target=work, daemon=True).start()
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):
             pass
@@ -237,6 +447,8 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                 return self._send(200, {'commands': parse_commands(),
                                         'runnable': sorted(RUNNABLE),
                                         'outdir': os.path.join(ROOT, 'out')})
+            if path == '/api/fetch':
+                return self._send(200, {'jobs': [{'key': k, **j} for k, j in FETCH.items()]})
             if path == '/api/status':
                 return self._send(200, status())
             if path == '/api/settings':
@@ -334,21 +546,22 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                     return self._send(400, {'error': 'that command is not on the allowlist'})
                 if jobs.get(key, {}).get('state') == 'running':
                     return self._send(409, {'error': 'already running'})
-
-                def work():
-                    jobs[key] = {'state': 'running', 'output': ['starting...']}
-                    try:
-                        env = dict(os.environ, PYTHONIOENCODING='utf-8')
-                        r = subprocess.run(RUNNABLE[key], cwd=ROOT, capture_output=True,
-                                           text=True, encoding='utf-8', errors='replace',
-                                           timeout=3600, env=env)
-                        jobs[key] = {'state': 'done' if r.returncode == 0 else 'failed',
-                                     'output': (r.stdout or '').splitlines()[-60:]}
-                    except Exception as e:
-                        jobs[key] = {'state': 'failed', 'output': [f'{type(e).__name__}: {e}']}
-
-                threading.Thread(target=work, daemon=True).start()
+                start(key, RUNNABLE[key])
                 return self._send(200, {'ok': True, 'started': key})
+
+            if path == '/api/fetch':
+                key = body.get('key')
+                job = FETCH.get(key)
+                if not job:
+                    return self._send(400, {'error': 'that fetch is not on the allowlist'})
+                if jobs.get(key, {}).get('state') == 'running':
+                    return self._send(409, {'error': 'already running'})
+                try:
+                    argv = build_argv(job, body.get('params') or {})
+                except BadValue as e:
+                    return self._send(400, {'error': str(e)})
+                start(key, argv)
+                return self._send(200, {'ok': True, 'started': key, 'argv': argv})
 
             if path == '/api/run-query':
                 q = (body.get('query') or '').strip()

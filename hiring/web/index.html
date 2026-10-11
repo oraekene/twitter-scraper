@@ -306,6 +306,18 @@ pre {
 .kv { display: grid; grid-template-columns: 210px 1fr; gap: var(--s3) var(--s4); font-size: 13.5px; }
 .kv > div:nth-child(odd) { color: var(--fg-3) }
 
+/* ── fetch jobs ─────────────────────────────────────────────────────────── */
+.grid2 { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.job .body { display: grid; gap: var(--s3) }
+.job .fields { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.job .cell { min-width: 0 }
+.job .cell .field { width: 100% }
+.job .cell.wide { grid-column: 1/-1 }
+.job .help { margin: 5px 0 0; font-size: 12px; line-height: 1.45 }
+.job .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); height: 100%; }
+.job .check input { width: auto; }
+.job output { max-height: 200px; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+
 /* ── toast + dialog ─────────────────────────────────────────────────────── */
 #toast {
   position: fixed; left: 50%; bottom: var(--s6); z-index: 60;
@@ -380,6 +392,9 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
         Query Builder</button>
 
       <div class="navlabel">Read</div>
+      <button class="navbtn" data-tab="fetch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
+        Fetch</button>
       <button class="navbtn" data-tab="results">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
         Results</button>
@@ -427,10 +442,30 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
         <div class="tiles" id="dash-tiles"></div>
 
         <div class="card">
+          <header><div><h2>Keep everything up to date</h2>
+            <p class="sub">The three you run by hand. Every parameter is on the Fetch tab</p></div>
+            <div class="actions"><button class="sm" onclick="go('fetch')">Open Fetch</button></div></header>
+          <div class="body" id="dash-fetch"></div>
+        </div>
+
+        <div class="card">
           <header><div><h2>Recent runs</h2><p class="sub">Latest output from every search</p></div>
             <div class="actions"><button class="sm" onclick="go('results')">See all</button></div></header>
           <div class="body" id="dash-recent"></div>
         </div>
+      </section>
+
+      <!-- FETCH -->
+      <section class="tab" id="tab-fetch">
+        <div class="banner">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5"/><path d="M4 20h16"/></svg></div>
+          <div>
+            <b>Section 1 of COMMANDS.md, with every parameter</b>
+            <div class="t">These five commands and every flag they accept. Leave a box blank to
+              use the script's own default. Output appears here as it runs.</div>
+          </div>
+        </div>
+        <div id="fetch-all" class="grid2"></div>
       </section>
 
       <!-- SEARCHES -->
@@ -758,6 +793,7 @@ const PAGES = {
   searches:  ['Searches', 'Each one has its own source, schedule, and options'],
   lists:     ['Lists', 'Reusable groups shared by any number of searches'],
   builder:   ['Query Builder', 'Every X search operator in one readable query'],
+  fetch:     ['Fetch', 'Section 1 of COMMANDS.md, with every parameter'],
   results:   ['Results', 'What every scheduled run produced'],
   commands:  ['Commands', 'Everything in COMMANDS.md, and what can be run here'],
   status:    ['Status', 'Patches, credentials, tools, and scheduled tasks'],
@@ -773,8 +809,79 @@ function go(tab) {
   if (tab === 'settings') loadSettings();
   if (tab === 'results') loadResults(PAGE);
   if (tab === 'dashboard') loadDashboard();
+  if (tab === 'fetch' && !JOBS.length) loadFetch();
 }
 document.querySelectorAll('.navbtn').forEach(b => b.onclick = () => go(b.dataset.tab));
+
+/* ── fetch ──────────────────────────────────────────────────────────────── */
+let JOBS = [];
+async function loadFetch() {
+  const {data} = await api('/api/fetch');
+  JOBS = data.jobs;
+  el('fetch-all').innerHTML = JOBS.map(j => jobCard(j)).join('');
+  el('dash-fetch').innerHTML =
+    '<div class="grid2">' + JOBS.filter(j => j.quick).map(j => jobCard(j, true)).join('') + '</div>';
+}
+function jobCard(j, compact) {
+  const id = 'f-' + j.key + (compact ? '-q' : '');
+  const fields = j.fields.map(f => {
+    const fid = `${id}-${f.name}`;
+    const box = f.kind === 'flag'
+      ? `<label class="check"><input type="checkbox" id="${fid}" data-job="${j.key}"> <span>${esc(f.label)}</span></label>`
+      : `<div class="field">
+           <label for="${fid}">${esc(f.label)}</label>
+           <input id="${fid}" data-job="${j.key}" data-kind="${f.kind}"
+             ${f.required ? 'required' : ''} ${f.min !== undefined ? `min="${f.min}"` : ''}
+             ${f.max !== undefined ? `max="${f.max}"` : ''}
+             ${f.kind === 'float' ? 'step="any"' : ''}
+             value="${esc(f.default)}" placeholder="${esc(f.placeholder || '')}"></div>`;
+    return `<div class="cell${f.kind === 'text' ? ' wide' : ''}">${box}
+      ${f.help && !compact ? `<p class="hint help">${esc(f.help)}</p>` : ''}</div>`;
+  }).join('');
+  return `<div class="card job">
+    <header><div><h2>${esc(j.label)}</h2><p class="sub">${esc(j.why)}</p></div></header>
+    <div class="body">
+      <div class="fields">${fields}</div>
+      <div class="row"><button class="primary" onclick="runFetch('${j.key}', '${id}')">Run</button>
+        <span class="spacer"></span><span class="pill off" id="st-${id}">idle</span></div>
+      <output id="out-${id}">nothing run yet</output>
+    </div></div>`;
+}
+function collect(jobKey, prefix) {
+  const out = {};
+  JOBS.find(j => j.key === jobKey).fields.forEach(f => {
+    const box = el(`${prefix}-${f.name}`);
+    if (!box) return;
+    out[f.name] = f.kind === 'flag' ? box.checked : box.value;
+  });
+  return out;
+}
+async function runFetch(key, prefix) {
+  const params = collect(key, prefix);
+  const badge = el('st-' + prefix), out = el('out-' + prefix);
+  const r = await api('/api/fetch', {key, params});
+  if (r.status !== 200) {
+    badge.textContent = r.status === 409 ? 'already running' : 'rejected';
+    badge.className = 'pill bad';
+    out.textContent = (r.data.error || 'failed');
+    return toast(r.data.error || 'failed', true);
+  }
+  // The server built the argv and sends it back, so what is shown is what runs.
+  out.textContent = '$ ' + r.data.argv.join(' ');
+  badge.textContent = 'running'; badge.className = 'pill brand';
+  let n = 0;
+  const t = setInterval(async () => {
+    const j = await api('/api/job?job=' + encodeURIComponent(key));
+    if (n++ % 3 === 0 || j.data.state !== 'running')
+      out.textContent = (j.data.output || []).join('\n') || j.data.state;
+    if (j.data.state !== 'running') {
+      clearInterval(t);
+      badge.textContent = j.data.state;
+      badge.className = 'pill ' + (j.data.state === 'done' ? 'on' : 'bad');
+      toast(key + ': ' + j.data.state, j.data.state !== 'done');
+    }
+  }, 1200);
+}
 
 /* ── commands ───────────────────────────────────────────────────────────── */
 let POLL = null;
@@ -1179,6 +1286,7 @@ renderQuery();
 fillSourceSelect(el('a-source'), 'live');
 fillSourceSelect(el('e-source'), 'live');
 loadCommands();
+loadFetch();
 loadSearches().then(loadLists).then(loadDashboard);
 loadResults(1);
 </script>

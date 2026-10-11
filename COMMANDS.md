@@ -11,7 +11,18 @@ Two tools. `fieldtheory` is the brain (local database, search, markdown). `twitt
 | `python crawl_tweets.py threads --limit 200 --top 20` | Expand full threads behind every bookmarked tweet. Resumable. |
 | `python crawl_tweets.py account <handle> -n 2000` | Pull every tweet from an account, yours or anyone's. |
 | `python crawl_tweets.py replies <id> --top 10` | Top N replies to one tweet, ranked by engagement. |
+| `python crawl_tweets.py replies-all --limit 200 --top 10` | Same batch pass over every bookmark, ranked. Resumable. |
 | `python crawl_tweets.py thread <id> --save` | Full thread behind one tweet. |
+
+All five are buttons on the control panel. The four you run by hand are on the
+Dashboard, and all six with every parameter are on the **Fetch** tab. Start the
+panel with `python hiring\ctl.py serve`.
+
+The two corpus passes are separate on purpose. `threads` marks a tweet done in
+`out\threads-index.json`, so if `replies-all` shared that index it would find
+nothing left to do. It keeps `out\replies-index.json` instead, ranks by
+engagement rather than fetch order, and takes `--redo` for when you want more
+replies than the last run kept.
 
 ## 2. Find things you bookmarked
 
@@ -102,6 +113,8 @@ Each line in the JSONL is one bookmark with these fields: `id`, `tweetId`, `url`
 | `python test_crawl.py` | Confirms thread splitting and reply ranking. |
 | `python hiring\pat.py` | Confirms the regex guard still rejects a broken pattern. |
 | `python hiring\search.py --selfcheck` | Confirms every hiring pattern matches its own probe. |
+| `python hiring\test_panel.py` | Confirms the page parses and the Fetch tab matches the manifest. |
+| `python hiring\test_api.py` | Confirms every route, every rejection, and the argv each job builds. |
 | `node hiring\fix-fieldtheory.js` | Re-applies the search fix below. Run after `npm update -g fieldtheory`. |
 
 ## 9. Find hiring posts and job openings

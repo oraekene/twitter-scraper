@@ -8,6 +8,7 @@ the environment or .env, so cookies never hit disk beyond that one file.
   python crawl_tweets.py thread 2108246041548018053
   python crawl_tweets.py replies 2108246041548018053 --top 5
   python crawl_tweets.py threads --limit 200          # every bookmarked thread
+  python crawl_tweets.py replies-all --limit 200 --top 10   # every bookmarked tweet
 """
 
 import argparse
@@ -138,6 +139,41 @@ def cmd_threads(a) -> None:
         print(f"[{i}/{len(todo)}] {tid} {seen.get(tid, {})}")
 
 
+def cmd_replies_all(a) -> None:
+    """Walk the bookmark cache and keep the top replies to each bookmark.
+
+    Separate from `threads` on purpose. That pass keeps the first N replies in
+    fetch order and marks the tweet done in threads-index.json, so a later
+    replies pass would skip every bookmark the thread pass had already touched.
+    This one ranks by engagement and keeps its own index, so the two passes can
+    run in any order and neither blocks the other.
+    """
+    if not BOOKMARKS.exists():
+        raise SystemExit(f"no bookmark cache at {BOOKMARKS}")
+    done = OUT / "replies-index.json"
+    seen = json.loads(done.read_text()) if done.exists() else {}
+    raw = BOOKMARKS.read_text(encoding="utf-8")
+    rows = [json.loads(line) for line in raw.split("\n") if line.strip()]
+    # redo is for when the earlier pass ran with a smaller --top than you now
+    # want. Without it those bookmarks are done and you would never see more.
+    todo = [r for r in rows if a.redo or r["tweetId"] not in seen][: a.limit]
+    print(f"{len(todo)} bookmarked tweets to pull replies for ({len(seen)} done)")
+    for i, row in enumerate(todo, 1):
+        tid = row["tweetId"]
+        try:
+            tweets = twitter("tweet", tid, "-n", str(a.max))
+            _, replies = split_thread(tid, tweets)
+            ranked = sorted(replies, key=engagement, reverse=True)
+            save(f"replies-{tid}.json",
+                 {"root": row, "topReplies": ranked[: a.top], "ranked": len(ranked)})
+            seen[tid] = {"replies": len(ranked), "kept": min(len(ranked), a.top)}
+        except SystemExit as e:
+            print(f"  {tid} failed: {e}")
+        done.write_text(json.dumps(seen, indent=2), encoding="utf-8")
+        time.sleep(a.delay)
+        print(f"[{i}/{len(todo)}] {tid} {seen.get(tid, {})}")
+
+
 def main() -> None:
     load_env()
     if not os.environ.get("TWITTER_AUTH_TOKEN"):
@@ -171,6 +207,15 @@ def main() -> None:
     allt.add_argument("--top", type=int, default=20)
     allt.add_argument("--delay", type=float, default=1.5, help="seconds between calls")
     allt.set_defaults(fn=cmd_threads)
+
+    rall = sub.add_parser("replies-all", help="top replies to every bookmarked tweet")
+    rall.add_argument("--limit", type=int, default=50)
+    rall.add_argument("-n", "--max", type=int, default=200)
+    rall.add_argument("--top", type=int, default=10)
+    rall.add_argument("--delay", type=float, default=1.5, help="seconds between calls")
+    rall.add_argument("--redo", action="store_true",
+                      help="ignore the index and go over the first --limit again")
+    rall.set_defaults(fn=cmd_replies_all)
 
     args = p.parse_args()
     args.fn(args)

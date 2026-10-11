@@ -16,6 +16,8 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAGE = os.path.join(HERE, 'web', 'index.html')
+sys.path.insert(0, HERE)
+import serve
 
 # every operator the builder must offer. Chips are markup (data-op=), the
     # rest are arrays in the script. Kept here so adding one to the JS without
@@ -74,7 +76,35 @@ def main():
     for need in ('class="side"', 'data-tab="lists"', 'data-tab="dashboard"', '/api/lists'):
         assert need in html, 'missing from the page: ' + need
 
-    print(f'test_panel ok, {len(REQUIRED_OPS)} operators, {len(wanted)} ids checked')
+    # ── fetch tab ──────────────────────────────────────────────────────────
+    # The page renders the jobs from /api/fetch, so a manifest entry with no
+    # nav button, or a tab nothing routes to, is the failure this catches.
+    assert 'data-tab="fetch"' in html, 'no Fetch nav button'
+    assert 'id="tab-fetch"' in html, 'no fetch section'
+    assert '/api/fetch' in js, 'the page never calls /api/fetch'
+    assert "'fetch':" in js or 'fetch:' in js, 'fetch is missing from PAGES, so go() would throw'
+    # Both corpus passes must be marked quick, or the dashboard loses the one
+    # batch command that covers replies.
+    quick = [k for k, j in serve.FETCH.items() if j.get('quick')]
+    assert set(quick) == {'sync-bookmarks', 'crawl-threads', 'crawl-account',
+                          'crawl-replies-all'}, f'dashboard jobs are {quick}'
+    # the batch replies command needs its own index, or the thread pass blocks it
+    subcommands = {j['base'][1] for j in serve.FETCH.values() if len(j['base']) > 1}
+    assert 'replies-all' in subcommands, 'no batch replies job on the panel'
+    # every field must carry a kind the renderer knows about, or it renders
+    # nothing and the parameter silently does not exist
+    kinds = {'text', 'int', 'float', 'flag'}
+    for key, job in serve.FETCH.items():
+        assert job['fields'], key + ' has no fields'
+        for f in job['fields']:
+            assert f['kind'] in kinds, f'{key}.{f["name"]} has kind {f["kind"]}'
+            if f['kind'] == 'text':
+                assert f.get('pattern'), f'{key}.{f["name"]} is text with no pattern'
+                assert f.get('required'), f'{key}.{f["name"]} is text and not required'
+            assert 'default' in f, f'{key}.{f["name"]} has no default to prefill'
+
+    print(f'test_panel ok, {len(REQUIRED_OPS)} operators, {len(wanted)} ids checked, '
+          f'{len(serve.FETCH)} fetch jobs, {len(quick)} on the dashboard')
 
 
 if __name__ == '__main__':

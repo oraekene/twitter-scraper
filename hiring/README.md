@@ -10,10 +10,10 @@ cd "C:\Users\rotim\Documents\twitter scraper\hiring"
 python ctl.py serve
 ```
 
-Opens `http://127.0.0.1:8765`. Eight sections in a left sidebar: Dashboard,
-Searches, Lists, Query Builder, Results, Commands, Status, Settings. Light mode.
-Bound to loopback on purpose, because running anything here uses your `.env`
-credentials, so nothing leaves this machine.
+Opens `http://127.0.0.1:8765`. Nine sections in a left sidebar: Dashboard,
+Searches, Lists, Query Builder, Fetch, Results, Commands, Status, Settings.
+Light mode. Bound to loopback on purpose, because running anything here uses your
+`.env` credentials, so nothing leaves this machine.
 
 If something already holds port 8765, use `--port 8791`.
 
@@ -22,8 +22,62 @@ and `lists.json` directly and the standard library serves it. QMD has no web pag
 either; what you remember is its MCP Inspector.
 
 The Commands tab lists every command in `COMMANDS.md`, read from the file so the
-page cannot drift from it. Only the nine on the allowlist can be started from the
-page. Everything else is there to copy.
+page cannot drift from it. Only the seven on the allowlist can be started from
+the page. Everything else is there to copy. The Fetch tab starts the six
+commands in section 1.
+
+## Fetch
+
+The Fetch tab runs section 1 of `COMMANDS.md`: sync bookmarks, expand threads,
+pull replies for one tweet or for the whole corpus, and pull one thread. Every
+parameter those scripts accept is a box on the card, with the number you
+normally use already filled in. The four you run by hand also sit on the
+Dashboard.
+
+Leave a box blank and the parameter is dropped, so the script uses its own
+default rather than the number the panel prefilled.
+
+Output streams into the card as it runs, so a 200 thread crawl shows its
+progress instead of sitting blank. The card shows the exact command the server
+built before it starts.
+
+### The two corpus passes are separate on purpose
+
+`threads` and `replies-all` both walk the same 94,415 bookmarks in batches and
+both resume where they left off. They deliberately do not share an index.
+
+`threads` writes `out\threads-index.json` and marks each tweet done the moment
+it has been expanded. A replies pass reading that index would find nothing left
+to do and would report success while writing nothing, which is the kind of
+silent zero this toolkit has hit three times already. So `replies-all` keeps
+`out\replies-index.json` and neither pass blocks the other.
+
+They also differ in what they keep. `threads` saves the first N replies in fetch
+order, which is whatever X returned first. `replies-all` sorts by the same
+engagement score `crawl_tweets.py replies` uses, so a viral reply outranks a
+quiet one. Use `--redo` on the panel card, or `--redo` on the command, when a
+later run should keep more replies than the last one did.
+
+### Adding a parameter is one line
+
+The five jobs live in `FETCH` in `serve.py`. Each field is a name, a label, a
+kind (`text`, `int`, `float` or `flag`), a default, and bounds. The page builds
+its forms from that table over `/api/fetch`, so adding a flag to `crawl_tweets.py`
+means adding one entry here.
+
+`build_argv` checks every value the browser sends against the field that declared
+it: text against its pattern, a number against its bounds, a required field
+against being blank. A value that does not fit is answered with 400 and the
+subprocess never starts. The result is handed to `subprocess` as a list, so there
+is no shell and no way to splice in a different command. `test_api.py` checks
+the argv each job builds and every rejection path.
+
+`RUNNABLE` still holds the fixed commands with no parameters. Both run through
+the same background launcher now, which streams output. That also fixed a bug
+that predates this: `fieldtheory` and `twitter` are `.CMD` shims on Windows and
+`CreateProcess` will not run one by bare name, so every command on the Commands
+tab died with `FileNotFoundError`. The launcher resolves the path with
+`shutil.which` first.
 
 ## Lists
 
@@ -265,8 +319,8 @@ it. The commands are in the last lines of each script.
 | `search.py` | The engine. Classifier and the four fetch modes. |
 | `serve.py` | The localhost server. Standard library only, loopback only. |
 | `web/index.html` | The page itself. One file, no build, no dependencies. |
-| `test_panel.py` | Checks the page parses, is light mode, and every operator is wired. |
-| `test_api.py` | Boots the server on a spare port and checks every route and rejection. |
+| `test_panel.py` | Checks the page parses, is light mode, every operator is wired, and the Fetch tab matches the manifest. |
+| `test_api.py` | Boots the server on a spare port and checks every route, every rejection, and the argv each fetch job builds. |
 | `test_credentials.py` | Proves the credential write path, against a temp file only. |
 | `lists.json` | Your named lists. One source of truth for the panel. |
 | `searches.json` | Your searches. Safe to edit by hand, but the CLI and page are easier. |

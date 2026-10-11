@@ -69,6 +69,60 @@ def test_save_and_resume_index():
             c.OUT = cwd / "out"
 
 
+def _todo(rows, seen, limit, redo=False):
+    """Mirror of the todo selection in cmd_threads and cmd_replies_all."""
+    return [r["tweetId"] for r in rows if redo or r["tweetId"] not in seen][:limit]
+
+
+def _rows(ids):
+    return [{"tweetId": i} for i in ids]
+
+
+def test_replies_all_resumes_from_its_own_index():
+    """The replies pass must not be blocked by the thread pass.
+
+    Both walk the same bookmark file. If they shared an index, the thread pass
+    would mark every tweet done and the replies pass would silently find
+    nothing to do, which is the exact bug that made this command worth adding.
+    """
+    rows = _rows(["1", "2", "3", "4", "5"])
+    assert _todo(rows, {}, 2) == ["1", "2"], "first batch"
+    seen = {"1", "2"}
+    assert _todo(rows, seen, 2) == ["3", "4"], "second batch resumes"
+    seen |= {"3", "4"}
+    assert _todo(rows, seen, 2) == ["5"], "last batch is short, not an error"
+    seen.add("5")
+    assert _todo(rows, seen, 2) == [], "nothing left"
+
+
+def test_replies_redo_goes_back_over_done_tweets():
+    """A bigger --top on a later run must still be able to re-fetch."""
+    rows = _rows(["1", "2", "3"])
+    seen = {"1", "2", "3"}
+    assert _todo(rows, seen, 2, redo=True) == ["1", "2"]
+    assert _todo(rows, seen, 10, redo=True) == ["1", "2", "3"]
+
+
+def test_thread_and_replies_indexes_are_separate_files():
+    """The real commands name these two files. If they ever collide, the
+    replies pass dies silently, so assert the names stay apart."""
+    src = Path(__file__).parent / "crawl_tweets.py"
+    text = src.read_text(encoding="utf-8")
+    assert '"threads-index.json"' in text
+    assert '"replies-index.json"' in text
+    assert text.count("OUT / \"threads-index.json\"") == 1
+    assert text.count("OUT / \"replies-index.json\"") == 1
+
+
+def test_replies_all_ranks_by_engagement():
+    """Unlike threads, which keeps fetch order, this pass ranks first."""
+    tweets = [tweet("alice", likes=500), tweet("alice", likes=1),
+              tweet("low", likes=2), tweet("high", retweets=100)]
+    _, replies = c.split_thread("1", tweets)
+    ranked = sorted(replies, key=c.engagement, reverse=True)
+    assert [t["author"]["screenName"] for t in ranked] == ["high", "low"]
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):

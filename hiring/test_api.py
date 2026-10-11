@@ -49,6 +49,20 @@ checks = [
     ('unknown list edit','/api/list/edit', {'name': 'nope', 'handles': ['a']}, 404),
     ('search on list',   '/api/add',       {'name': 'tmp-s', 'source': 'watchlist', 'list': 'recruiters'}, 200),
     ('duplicate search', '/api/add',       {'name': 'tmp-s', 'source': 'live'}, 400),
+    # /api/fetch over HTTP. Only values the manifest must REFUSE, because every
+    # value it accepts starts a real crawl that would hit X and write to out\.
+    # The accepted values are checked against build_argv itself, further down.
+    ('unknown fetch',    '/api/fetch',     {'key': 'rm-rf', 'params': {}}, 400),
+    ('missing handle',   '/api/fetch',     {'key': 'crawl-account', 'params': {}}, 400),
+    ('handle injection', '/api/fetch',     {'key': 'crawl-account', 'params': {'handle': 'a; rm -rf'}}, 400),
+    ('tweet id letters', '/api/fetch',     {'key': 'crawl-thread', 'params': {'tweet_id': 'abc123'}}, 400),
+    ('tweet id missing', '/api/fetch',     {'key': 'crawl-replies', 'params': {}}, 400),
+    ('limit not number', '/api/fetch',     {'key': 'crawl-threads', 'params': {'limit': 'ten'}}, 400),
+    ('limit too big',    '/api/fetch',     {'key': 'crawl-threads', 'params': {'limit': 999999}}, 400),
+    ('limit below min',  '/api/fetch',     {'key': 'crawl-threads', 'params': {'limit': 0}}, 400),
+    ('delay not float',  '/api/fetch',     {'key': 'crawl-threads', 'params': {'delay': 'fast'}}, 400),
+    ('redo needs bool',  '/api/fetch',     {'key': 'crawl-replies-all', 'params': {'redo': 'maybe'}}, 400),
+    ('reply top zero',   '/api/fetch',     {'key': 'crawl-replies-all', 'params': {'top': 0}}, 400),
 ]
 bad = 0
 for label, path, body, want in checks:
@@ -64,6 +78,54 @@ s2, b2 = call('/api/lists')
 print(f'lists after cleanup: {len(b2["lists"])}')
 names = [x['name'] for x in b2['lists']]
 print('tmp artifacts left:', [n for n in names if n.startswith('tmp')] or 'none')
+
+# Accepted values go through build_argv directly. Over HTTP they would start a
+# real crawl against X, which a test has no business doing.
+import serve
+argv_cases = [
+    ('crawl-threads',   {'limit': 200, 'top': 20, 'max': 100, 'delay': 1.5},
+     ['threads', '--limit', '200', '--top', '20', '-n', '100', '--delay', '1.5']),
+    ('crawl-threads',   {'limit': 5, 'top': '', 'max': 50, 'delay': 2},
+     ['threads', '--limit', '5', '-n', '50', '--delay', '2']),
+    ('crawl-threads',   {'limit': '', 'top': '', 'max': '', 'delay': 3.0},
+     ['threads', '--delay', '3']),
+    ('crawl-threads',   {'limit': '', 'top': '', 'max': '', 'delay': 3},
+     ['threads', '--delay', '3']),
+    ('crawl-account',   {'handle': 'AScully789', 'max': 2000},
+     ['account', 'AScully789', '-n', '2000']),
+    ('crawl-account',   {'handle': '@comma_ai', 'max': ''}, ['account', 'comma_ai']),
+    ('crawl-thread',    {'tweet_id': '2108246041548018053', 'max': 100, 'top': 20, 'save': True},
+     ['thread', '2108246041548018053', '-n', '100', '--top', '20', '--save']),
+    ('crawl-thread',    {'tweet_id': '2108246041548018053', 'max': '', 'top': '', 'save': False},
+     ['thread', '2108246041548018053']),
+    ('crawl-replies',   {'tweet_id': '2108246041548018053', 'top': 10, 'max': 200, 'save': True},
+     ['replies', '2108246041548018053', '--top', '10', '-n', '200', '--save']),
+    ('crawl-replies',   {'tweet_id': '2108246041548018053', 'top': 10, 'max': 200, 'save': False},
+     ['replies', '2108246041548018053', '--top', '10', '-n', '200']),
+    ('crawl-replies-all', {'limit': 200, 'top': 10, 'max': 200, 'delay': 1.5, 'redo': False},
+     ['replies-all', '--limit', '200', '--top', '10', '-n', '200', '--delay', '1.5']),
+    ('crawl-replies-all', {'limit': 5, 'top': '', 'max': '', 'delay': 2, 'redo': True},
+     ['replies-all', '--limit', '5', '--delay', '2', '--redo']),
+    ('crawl-replies-all', {'limit': '', 'top': '', 'max': '', 'delay': '', 'redo': False},
+     ['replies-all']),
+    ('sync-bookmarks',  {'max-minutes': 240, 'count': 100000},
+     ['--max-minutes', '240', '--count', '100000']),
+    ('sync-bookmarks',  {'max-minutes': 60, 'count': ''}, ['--max-minutes', '60']),
+]
+for key, params, want in argv_cases:
+    got = serve.build_argv(serve.FETCH[key], params)[2:]
+    ok = got == want
+    bad += not ok
+    print(f"{'ok ' if ok else 'FAIL'} argv {key:15} {' '.join(got)}")
+    if not ok:
+        print(f'       want: {" ".join(want)}')
+
+# Every job must name a script that exists, or the button fails only on click.
+for key, job in serve.FETCH.items():
+    path = os.path.join(os.path.dirname(HERE), job['base'][0])
+    ok = os.path.exists(path)
+    bad += not ok
+    print(f"{'ok ' if ok else 'FAIL'} script {job['base'][0]}")
 
 proc.terminate()
 try:
