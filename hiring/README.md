@@ -41,6 +41,20 @@ Output streams into the card as it runs, so a 200 thread crawl shows its
 progress instead of sitting blank. The card shows the exact command the server
 built before it starts.
 
+### Destructive flags are confirmed by the server, not the page
+
+One flag can lose work: `--rebuild` on the sync, which throws away the cursor
+and re-downloads every bookmark. It is marked `destructive` in the manifest, and
+the server refuses to build its argv unless the request carries an explicit
+confirmation.
+
+The check is in `serve.py`, not in the browser, on purpose. A confirm dialog in
+the page is a suggestion: anyone can edit the HTML, replay the request with
+curl, or replay it from the devtools console. A destructive run that depends on
+the client behaving is one reload away from happening by accident. The page
+still asks, because asking is good manners, but the answer that counts is the
+server's.
+
 ### The two corpus passes are separate on purpose
 
 `threads` and `replies-all` both walk the same 94,415 bookmarks in batches and
@@ -64,13 +78,13 @@ The five jobs live in `FETCH` in `serve.py`. Each field is a name, a label, a
 kind (`text`, `int`, `float` or `flag`), a default, and bounds. The page builds
 its forms from that table over `/api/fetch`, so adding a flag to `crawl_tweets.py`
 means adding one entry here.
-
-`build_argv` checks every value the browser sends against the field that declared
-it: text against its pattern, a number against its bounds, a required field
-against being blank. A value that does not fit is answered with 400 and the
-subprocess never starts. The result is handed to `subprocess` as a list, so there
-is no shell and no way to splice in a different command. `test_api.py` checks
-the argv each job builds and every rejection path.
+`build_argv` checks every value the browser sends against the field that
+declared it: text against its pattern, a number against its bounds, a flag
+against on or off, a required field against being blank. A value that does not
+fit is answered with 400 and the subprocess never starts. The result is handed
+to `subprocess` as a list, so there is no shell and no way to splice in a
+different command. `test_api.py` checks the argv each job builds and every
+rejection path.
 
 `RUNNABLE` still holds the fixed commands with no parameters. Both run through
 the same background launcher now, which streams output. That also fixed a bug
@@ -78,6 +92,7 @@ that predates this: `fieldtheory` and `twitter` are `.CMD` shims on Windows and
 `CreateProcess` will not run one by bare name, so every command on the Commands
 tab died with `FileNotFoundError`. The launcher resolves the path with
 `shutil.which` first.
+
 
 ## Lists
 

@@ -91,6 +91,12 @@ def main():
     # the batch replies command needs its own index, or the thread pass blocks it
     subcommands = {j['base'][1] for j in serve.FETCH.values() if len(j['base']) > 1}
     assert 'replies-all' in subcommands, 'no batch replies job on the panel'
+    # --rebuild is the only flag that can lose work, so it must be marked or the
+    # server will run it without asking
+    destructive = {f['name'] for j in serve.FETCH.values() for f in j['fields']
+                   if f.get('destructive')}
+    assert destructive == {'rebuild'}, f'unexpected destructive flags: {destructive}'
+    assert '428' in js, 'the page does not handle the confirm-required response'
     # every field must carry a kind the renderer knows about, or it renders
     # nothing and the parameter silently does not exist
     kinds = {'text', 'int', 'float', 'flag'}
@@ -99,8 +105,12 @@ def main():
         for f in job['fields']:
             assert f['kind'] in kinds, f'{key}.{f["name"]} has kind {f["kind"]}'
             if f['kind'] == 'text':
+                # A pattern is what keeps a value from becoming a path or a
+                # flag. required is for the one text field that has no sensible
+                # blank, which today is a handle or a tweet id.
                 assert f.get('pattern'), f'{key}.{f["name"]} is text with no pattern'
-                assert f.get('required'), f'{key}.{f["name"]} is text and not required'
+                if f.get('required'):
+                    assert f['kind'] == 'text', f'{key}.{f["name"]} is required but not text'
             assert 'default' in f, f'{key}.{f["name"]} has no default to prefill'
 
     print(f'test_panel ok, {len(REQUIRED_OPS)} operators, {len(wanted)} ids checked, '

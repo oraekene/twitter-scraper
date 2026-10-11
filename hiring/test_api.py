@@ -63,6 +63,12 @@ checks = [
     ('delay not float',  '/api/fetch',     {'key': 'crawl-threads', 'params': {'delay': 'fast'}}, 400),
     ('redo needs bool',  '/api/fetch',     {'key': 'crawl-replies-all', 'params': {'redo': 'maybe'}}, 400),
     ('reply top zero',   '/api/fetch',     {'key': 'crawl-replies-all', 'params': {'top': 0}}, 400),
+    # rebuild is destructive. It must be refused without an explicit confirm,
+    # because a browser dialog alone can be skipped by editing the page.
+    ('rebuild unconfirmed', '/api/fetch',  {'key': 'sync-bookmarks', 'params': {'rebuild': True}}, 428),
+    ('rebuild as string',   '/api/fetch',  {'key': 'sync-bookmarks', 'params': {'rebuild': 'yes'}}, 400),
+    # a folder name holding a path separator must not reach the ft call
+    ('folder traversal',    '/api/fetch',  {'key': 'sync-bookmarks', 'params': {'folder': '../etc'}}, 400),
 ]
 bad = 0
 for label, path, body, want in checks:
@@ -111,6 +117,15 @@ argv_cases = [
     ('sync-bookmarks',  {'max-minutes': 240, 'count': 100000},
      ['--max-minutes', '240', '--count', '100000']),
     ('sync-bookmarks',  {'max-minutes': 60, 'count': ''}, ['--max-minutes', '60']),
+    ('sync-bookmarks',  {'max-minutes': 240, 'count': '', 'target-adds': 500, 'gaps': True},
+     ['--max-minutes', '240', '--target-adds', '500', '--gaps']),
+    ('sync-bookmarks',  {'max-minutes': '', 'count': '', 'rebuild': True},
+     ['--rebuild']),
+    ('sync-bookmarks',  {'max-minutes': '', 'count': '', 'folder': 'AI stuff', 'folders': True},
+     ['--folders', '--folder', 'AI stuff']),
+    ('sync-bookmarks',  {'max-minutes': 30, 'count': '', 'delay-ms': 1200, 'media': True,
+                         'skip-md': True},
+     ['--max-minutes', '30', '--delay-ms', '1200', '--media', '--skip-md']),
 ]
 for key, params, want in argv_cases:
     got = serve.build_argv(serve.FETCH[key], params)[2:]

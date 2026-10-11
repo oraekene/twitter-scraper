@@ -14,7 +14,7 @@ Two tools. `fieldtheory` is the brain (local database, search, markdown). `twitt
 | `python crawl_tweets.py replies-all --limit 200 --top 10` | Same batch pass over every bookmark, ranked. Resumable. |
 | `python crawl_tweets.py thread <id> --save` | Full thread behind one tweet. |
 
-All five are buttons on the control panel. The four you run by hand are on the
+All six are buttons on the control panel. The four you run by hand are on the
 Dashboard, and all six with every parameter are on the **Fetch** tab. Start the
 panel with `python hiring\ctl.py serve`.
 
@@ -23,6 +23,25 @@ The two corpus passes are separate on purpose. `threads` marks a tweet done in
 nothing left to do. It keeps `out\replies-index.json` instead, ranks by
 engagement rather than fetch order, and takes `--redo` for when you want more
 replies than the last run kept.
+
+### The sync has more knobs than it used to
+
+`python sync_bookmarks.py --help` lists them all. The ones that change what a
+sync does, rather than just how much of it runs:
+
+| Flag | What it does |
+|---|---|
+| `--target-adds 500` | Stop after 500 new bookmarks. Gentler on rate limits than a time limit. |
+| `--gaps` | Backfill quoted tweets, truncated articles, and linked article text. |
+| `--folders` / `--folder "AI stuff"` | Sync your X folder tags, or just one folder. |
+| `--rebuild` | Full re-crawl of everything. Slow, and it throws your cursor away. |
+| `--delay-ms 1200` | Milliseconds between requests. The default is 600. Raise it if X answers 429. |
+| `--media` | Download images and video. Off by default because it is slow. |
+| `--skip-md` | Stop after the database sync. Use `fieldtheory md --changed` to catch up cheaply. |
+
+`--rebuild` is the only one that can lose work, so the panel asks you to confirm
+it, and the server refuses to run it without that confirmation even if the page
+is bypassed.
 
 ## 2. Find things you bookmarked
 

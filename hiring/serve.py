@@ -72,6 +72,40 @@ FETCH = {
             {'name': 'count', 'label': 'Bookmarks to fetch from X', 'kind': 'int',
              'default': 100000, 'min': 1, 'max': 200000,
              'help': 'How many to ask twitter-cli for in one go.'},
+            {'name': 'target-adds', 'label': 'Stop after N new bookmarks', 'kind': 'int',
+             'default': '', 'min': 1, 'max': 100000,
+             'help': 'Gentler on rate limits than a time limit. Leave blank for no limit.'},
+            {'name': 'max-pages', 'label': 'Max pages per pass', 'kind': 'int',
+             'default': '', 'min': 1, 'max': 100000,
+             'help': 'Blank means no page cap.'},
+            {'name': 'delay-ms', 'label': 'Milliseconds between requests', 'kind': 'int',
+             'default': '', 'min': 0, 'max': 60000,
+             'help': 'Fieldtheory uses 600. Raise it if X starts answering 429.'},
+            {'name': 'gaps', 'label': 'Backfill gaps', 'kind': 'flag', 'default': False,
+             'help': 'Fetches quoted tweets, truncated articles, and linked article text.'},
+            {'name': 'folders', 'label': 'Also sync X folder tags', 'kind': 'flag', 'default': False,
+             'help': 'Needed before fieldtheory list --folder shows anything.'},
+            {'name': 'folder', 'label': 'Only this folder', 'kind': 'text',
+             'default': '', 'pattern': r'[^<>:"/\\|?*]{1,80}',
+             'placeholder': 'AI stuff',
+             'help': 'Leave blank for every folder.'},
+            {'name': 'classify', 'label': 'Classify after syncing', 'kind': 'flag', 'default': False,
+             'help': 'Runs the LLM classifier. Costs tokens.'},
+            {'name': 'engine', 'label': 'LLM engine', 'kind': 'text',
+             'default': '', 'pattern': r'[A-Za-z0-9_-]{1,40}',
+             'placeholder': 'claude or codex'},
+            {'name': 'media', 'label': 'Download images and video', 'kind': 'flag', 'default': False,
+             'help': 'Off by default because it is slow. Existing media is not deleted.'},
+            {'name': 'media-max-bytes', 'label': 'Media size cap in bytes', 'kind': 'int',
+             'default': '', 'min': 1, 'max': 2147483647,
+             'help': 'Per asset. Fieldtheory default is 200 MB. Blank uses its default.'},
+            {'name': 'skip-profile-images', 'label': 'Skip profile pictures', 'kind': 'flag',
+             'default': False},
+            {'name': 'skip-md', 'label': 'Skip the markdown export', 'kind': 'flag', 'default': False,
+             'help': 'Stops after the database sync. fieldtheory md --changed is the fast way back.'},
+            {'name': 'rebuild', 'label': 'Full re-crawl, discard the cursor', 'kind': 'flag',
+             'default': False, 'destructive': True,
+             'help': 'Re-downloads every bookmark from scratch. Slow, and your cursor is gone.'},
         ],
     },
     'crawl-threads': {
@@ -556,8 +590,17 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                     return self._send(400, {'error': 'that fetch is not on the allowlist'})
                 if jobs.get(key, {}).get('state') == 'running':
                     return self._send(409, {'error': 'already running'})
+                params = body.get('params') or {}
+                # A destructive flag has to be confirmed here, not in the page.
+                # Anything that reaches the browser can be edited or replayed
+                # with curl, so a confirm dialog on its own is a suggestion.
+                risky = [f['label'] for f in job['fields']
+                         if f.get('destructive') and params.get(f['name']) in
+                         (True, 'true', 'on', '1')]
+                if risky and body.get('confirm') is not True:
+                    return self._send(428, {'error': 'confirm required', 'confirm': risky})
                 try:
-                    argv = build_argv(job, body.get('params') or {})
+                    argv = build_argv(job, params)
                 except BadValue as e:
                     return self._send(400, {'error': str(e)})
                 start(key, argv)

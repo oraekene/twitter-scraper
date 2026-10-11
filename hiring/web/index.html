@@ -316,6 +316,8 @@ pre {
 .job .help { margin: 5px 0 0; font-size: 12px; line-height: 1.45 }
 .job .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); height: 100%; }
 .job .check input { width: auto; }
+.job .check.danger { color: var(--bad); font-weight: 550; }
+.job .hint.help.warn { color: var(--bad); }
 .job output { max-height: 200px; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
 
 /* ── toast + dialog ─────────────────────────────────────────────────────── */
@@ -827,7 +829,8 @@ function jobCard(j, compact) {
   const fields = j.fields.map(f => {
     const fid = `${id}-${f.name}`;
     const box = f.kind === 'flag'
-      ? `<label class="check"><input type="checkbox" id="${fid}" data-job="${j.key}"> <span>${esc(f.label)}</span></label>`
+      ? `<label class="check${f.destructive ? ' danger' : ''}">
+           <input type="checkbox" id="${fid}" data-job="${j.key}"> <span>${esc(f.label)}</span></label>`
       : `<div class="field">
            <label for="${fid}">${esc(f.label)}</label>
            <input id="${fid}" data-job="${j.key}" data-kind="${f.kind}"
@@ -836,7 +839,7 @@ function jobCard(j, compact) {
              ${f.kind === 'float' ? 'step="any"' : ''}
              value="${esc(f.default)}" placeholder="${esc(f.placeholder || '')}"></div>`;
     return `<div class="cell${f.kind === 'text' ? ' wide' : ''}">${box}
-      ${f.help && !compact ? `<p class="hint help">${esc(f.help)}</p>` : ''}</div>`;
+      ${f.help && !compact ? `<p class="hint help${f.destructive ? ' warn' : ''}">${esc(f.help)}</p>` : ''}</div>`;
   }).join('');
   return `<div class="card job">
     <header><div><h2>${esc(j.label)}</h2><p class="sub">${esc(j.why)}</p></div></header>
@@ -859,7 +862,15 @@ function collect(jobKey, prefix) {
 async function runFetch(key, prefix) {
   const params = collect(key, prefix);
   const badge = el('st-' + prefix), out = el('out-' + prefix);
-  const r = await api('/api/fetch', {key, params});
+  let r = await api('/api/fetch', {key, params});
+  // 428 means a destructive box is ticked. Ask, then send confirm, which the
+  // server checks for itself, so editing this page cannot skip the question.
+  if (r.status === 428) {
+    const what = (r.data.confirm || ['this']).join(', ');
+    if (!confirm('This is destructive and cannot be undone:\n\n' + what +
+                 '\n\nAre you sure you want to run it?')) return;
+    r = await api('/api/fetch', {key, params, confirm: true});
+  }
   if (r.status !== 200) {
     badge.textContent = r.status === 409 ? 'already running' : 'rejected';
     badge.className = 'pill bad';
