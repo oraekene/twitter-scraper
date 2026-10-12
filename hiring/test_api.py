@@ -49,6 +49,16 @@ checks = [
     ('unknown list edit','/api/list/edit', {'name': 'nope', 'handles': ['a']}, 404),
     ('search on list',   '/api/add',       {'name': 'tmp-s', 'source': 'watchlist', 'list': 'recruiters'}, 200),
     ('duplicate search', '/api/add',       {'name': 'tmp-s', 'source': 'live'}, 400),
+    # A query is data, so a bad one is refused when it is saved, not when it runs.
+    # Without this the panel would happily store a query that matches nothing.
+    ('bookmarks no query', '/api/add',     {'name': 'tmp-q', 'source': 'bookmarks'}, 400),
+    ('bookmarks bad fts', '/api/add',      {'name': 'tmp-q', 'source': 'bookmarks',
+                                             'query': r'"hiring" OR \bhire\b'}, 400),
+    ('live no query',     '/api/add',      {'name': 'tmp-q', 'source': 'live'}, 400),
+    ('live x operators',  '/api/add',      {'name': 'tmp-q', 'source': 'live',
+                                             'query': 'hiring from:comma_ai min_faves:10'}, 200),
+    ('edit to bad query', '/api/edit',     {'name': 'hiring-bookmarks',
+                                             'patch': {'query': r'\bhiring\b'}}, 400),
     # /api/fetch over HTTP. Only values the manifest must REFUSE, because every
     # value it accepts starts a real crawl that would hit X and write to out\.
     # The accepted values are checked against build_argv itself, further down.
@@ -80,10 +90,19 @@ for label, path, body, want in checks:
 s, _ = call('/api/lists')
 call('/api/list/delete', {'name': 'tmp-x'})
 call('/api/delete', {'name': 'tmp-s'})
+call('/api/delete', {'name': 'tmp-q'})
 s2, b2 = call('/api/lists')
 print(f'lists after cleanup: {len(b2["lists"])}')
 names = [x['name'] for x in b2['lists']]
 print('tmp artifacts left:', [n for n in names if n.startswith('tmp')] or 'none')
+
+# A rejected edit must not leave the config half-changed.
+s3, b3 = call('/api/searches')
+kept = next(x for x in b3['searches'] if x['name'] == 'hiring-bookmarks')
+ok = '\\b' not in kept['query'] and kept['query'].count(' OR ') == 80
+bad += not ok
+print(f"{'ok ' if ok else 'FAIL'} rejected edit left the saved query alone "
+      f"({kept['query'].count(' OR ') + 1} phrases)")
 
 # Accepted values go through build_argv directly. Over HTTP they would start a
 # real crawl against X, which a test has no business doing.

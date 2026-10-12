@@ -378,7 +378,8 @@ def tail(path, n=25):
     return open(path, encoding='utf-8', errors='replace').read().splitlines()[-n:]
 
 
-def run(config, load, save, load_state, run_one, load_lists, save_lists, port=8765):
+def run(config, load, save, load_state, run_one, load_lists, save_lists, port=8765,
+        check=None):
     host = '127.0.0.1'
     lock = threading.Lock()
     jobs = {}
@@ -521,6 +522,11 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                         return self._send(400, {'error': 'name already exists'})
                     entry = {k: v for k, v in body.items() if v not in ('', None, [], {})}
                     entry.setdefault('enabled', True)
+                    if check:
+                        try:
+                            check(entry)
+                        except ValueError as e:
+                            return self._send(400, {'error': str(e)})
                     cfg['searches'].append(entry)
                     save(cfg)
                 return self._send(200, {'ok': True})
@@ -534,6 +540,11 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                                      if v not in ('', None)}
                             s.update(patch)
                             cfg['searches'][i] = s
+                            if check:
+                                try:
+                                    check(s)
+                                except ValueError as e:
+                                    return self._send(400, {'error': str(e)})
                             save(cfg)
                             return self._send(200, {'ok': True})
                 return self._send(404, {'error': 'no such search'})

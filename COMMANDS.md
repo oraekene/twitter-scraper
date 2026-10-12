@@ -157,11 +157,15 @@ every list-enumeration endpoint, so ids must be copied by hand.
 The engine underneath is `hiring\search.py`, which also runs standalone:
 
 ```
-python hiring\search.py                     # your bookmarks
-python hiring\search.py --json out\h.json   # same, full text, nothing truncated
-python hiring\search.py --live --min-likes 30 --days 7 --md -
+python hiring\search.py --search hiring-bookmarks   # your bookmarks
+python hiring\search.py --search hiring-bookmarks --json out\h.json   # full text
+python hiring\search.py --live --search hiring-live --min-likes 30 --days 7 --md -
 python hiring\search.py --watchlist hiring\watchlist.txt
 ```
+
+Every query is a field on a saved search in `hiring\searches.json`, and the panel edits it. There is no phrase set built into the code, so `--search NAME` is the normal way to run one.
+
+Every regex it classifies with is in `hiring\patterns.json`, one group per decision, each pattern paired with a probe it must match. A pattern that does not match its probe stops the whole file loading, so `python hiring\search.py --selfcheck` is the check.
 
 Three traps it already handles, all found on 2026-10-09. Join the search table on `rowid`, never on
 `b.id`, because `bookmarks.id` is TEXT and the wrong join takes 382 seconds to return zero rows.

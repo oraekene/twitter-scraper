@@ -2,11 +2,15 @@
 
 Three modes, all sharing the same classifier:
 
-    python search.py                       bookmarks, the default, about 30 seconds
-    python search.py --json out.json       same, but full text, no truncation
-    python search.py --live                search X itself, not your bookmarks
-    python search.py --watch aakashgupta   read one account's posts directly
-    python search.py --selfcheck           check every pattern, touch no database
+    python search.py --query '"hiring" OR "open role"'   bookmarks, the default mode
+    python search.py --query '"hiring" OR "open role"' --json out.json
+    python search.py --live --search hiring-live         X itself, not your bookmarks
+    python search.py --watch aakashgupta                 read one account's posts
+    python search.py --selfcheck                          check every pattern and query
+
+There is no built-in phrase set. Every query is named in searches.json and is
+read from there, so the panel and ctl.py run the same thing this does. Use
+--query to pass one by hand, --search to name a saved one.
 
 Bookmarks come from the Field Theory SQLite index. Live mode shells out to the
 twitter CLI. Watch mode reads one account, which is the only live path that
@@ -27,154 +31,36 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from pat import pat, pat_any, pat_fts, selfcheck as pat_selfcheck
+from pat import pat, groups, fts_query, selfcheck as pat_selfcheck
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.expandvars(r'%USERPROFILE%\.fieldtheory\bookmarks\bookmarks.db')
 OUTDIR = os.path.join(os.path.dirname(HERE), 'out')
 DEFAULT_MD = os.path.join(OUTDIR, 'hiring_bookmarks.md')
+CONFIG = os.path.join(HERE, 'searches.json')
 
-# Recall. FTS5 takes plain phrases, not regex, so this is the wide net and the
-# patterns below are what narrow it down.
-CORE = pat_fts(
-    'we are hiring two engineers for the team',
-    'hiring', 'hire', 'hires', 'hired',
-    'vacancy', 'vacancies', 'job opening', 'job openings', 'job post', 'job posts',
-    'job listing', 'job listings', 'job search', 'job board', 'job seeker', 'job seekers',
-    'open role', 'open roles', 'open position', 'open positions',
-    'we are hiring', "we're hiring", 'now hiring', 'hiring now',
-    'we are looking for', "we're looking for", 'looking for a', 'looking for an',
-    'join our team', 'join the team', 'join us', 'apply now', 'apply here', 'apply below',
-    'recruiter', 'recruiting', 'recruitment', 'candidate', 'candidates',
-    'applicant', 'applicants', 'application', 'applications',
-    'interview', 'interviews', 'interviewed', 'interviewing',
-    'onboarding', 'layoff', 'layoffs', 'laid off', 'laying off', 'reorg', 'headcount',
-    'referral', 'referrals', 'offer letter', 'backfill',
-    'unemployed', 'unemployment', 'job hunting', 'job hunt',
-    'hiring manager', 'open to work', 'open to applicants', 'open to remote',
-    'internship', 'internships', 'work visa', 'h1b',
-    'salary range', 'salary band', 'comp range', 'comp band',
-    'full time role', 'full time position', 'full time job',
-    'new grad', 'new graduate', 'new graduates', 'hiring partners',
-)
+# Every pattern lives in patterns.json, one probe and regex per pair, and every
+# one is proved against its probe at import. Nothing here is hardcoded except the
+# ROLE template, which is built from the TITLE_WORDS list in that file, and the
+# order the groups are tested in, which is a decision rather than a setting.
+PATTERNS = os.path.join(HERE, 'patterns.json')
+G = groups(PATTERNS)
 
-# Precision: someone is offering a role.
-OFFER = pat_any(
-    "we're hiring",                       r"\bwe(?:'re|’re|\s+are)\s+(?:hiring|looking\s+for|recruiting)\b",
-    "hiring two engineers",               r"\bhiring\s+(?:\d+|a|an|two|three|four|five|several|multiple|more)?\s*(?:[A-Za-z]+\s*){0,3}?"
-                                           r"(?:engineers?|developers?|designers?|managers?|researchers?|scientists?|"
-                                           r"specialists?|operators?|interns?|founders?|sales|marketing|growth|support|"
-                                           r"operations|people|builders?|techs?|roles?|positions?|heads?|leads?)",
-    "Monzo is hiring",                    r"(?<!\bno\sone\s)(?<!\bnobody\s)(?<!\beveryone\s)(?<!\bnothing\s)\bis\s+hiring\b",
-    "they are hiring",                    r"(?<!\bno\sone\s)(?<!\bnobody\s)\bare\s+hiring\b",
-    "join our team",                      r"\bjoin\s+(?:our|the|my)\b[^.?!]{0,25}\bteam\b",
-    "join us",                            r"\bjoin\s+us\b",
-    "come join the frontier",             r"\bcome\s+join\b",
-    "apply here",                         r"\bapply\s+(?:now|here|today|below|via|at)\b",
-    "drop your work below",               r"\bdrop\s+your\b[^.?!]{0,20}\b(?:work|below|here|portfolio)",
-    "DM me to apply",                     r"\bDM\s+me\b[^.?!]{0,40}\b(?:apply|interest|hiring|role|opportunity|impressive|built)",
-    "reply below if interested",          r"\breply\s+(?:with|below|if|to)\b[^.?!]{0,30}\b(?:interest|apply|portfolio|experience|work|interested)",
-    "we are growing the team",            r"\bwe\s+are\s+(?:growing|building|looking)\b[^.?!]{0,25}\bteam\b",
-    "3 open positions",                   r"\bopen(?:ing)?\s+(?:role|roles|position|positions|job|jobs)\b",
-    "2 open roles",                       r"\bopen\s+position(?:s)?\b",
-    "job posting link",                   r"\bjob\s+(?:opening|post|posting|listing|listings)\b",
-    "3 vacancies",                        r"\bvacanc(?:y|ies)\b",
-    "looking for a founding engineer",    r"\blooking\s+for\s+(?:a|an|someone|talent|engineers?|builders?|people|one)\b",
-    "seeking an engineer",                r"\bseeking\b[^.?!]{0,25}\b(?:engineer|developer|designer|hiring|talent|applicant)",
-    "hiring partners",                    r"\bhiring\s+partner(?:s)?\b",
-    'our first new hire',                 r"\bnew\s+hire(?:s)?\b",
-    "I'm hiring someone",                 r"\bI(?:'m|’m|\s+am)\s+(?:hiring|looking\s+for)\b",
-    "hiring someone for a role",          r"\bhiring\s+(?:someone|for\s+the\s+role|for\s+a\s+role|for\s+roles)\b",
-    "Monzo is looking for",               r"\bis\s+looking\s+for\b",
-)
+OFFER = G['OFFER']              # someone is offering a role
+APPLY_CTA = G['APPLY_CTA']      # how to apply, feeds the apply column
+LAYOFF = G['LAYOFF']            # cuts and reorgs
+LISTY = G['LISTY']              # roundups, boards, hiring partners
+ADVICE = G['ADVICE']            # how to search, interview, negotiate
+CRAFT = G['CRAFT']              # hiring market and process talk
+MISC = G['MISC']                # recruiting that is not hiring, checked first
+MONEY = G['MONEY']              # a salary figure
+PERIOD = G['PERIOD']            # a pay rate per unit of time
+HIRING_VERB = G['HIRING_VERB']  # the word that opens the door
+LOCATION = G['LOCATION']        # where the role is
+LINK = G['LINK']                # an application link
+PAST = G['PAST']                # a word before the hiring word, so it is history
+TITLE_WORDS = G['TITLE_WORDS']  # job titles, plain words not regexes
 
-APPLY_CTA = pat_any(
-    "apply here",                         r"\bapply\b[^.?!]{0,20}\b(?:here|now|today|below|via|dm)",
-    "send me your resume",                r"\bsend\s+(?:me|us|your)\b[^.?!]{0,30}\b(?:resume|cv|portfolio|work|email|dm|message)",
-    "DM me with your work",               r"\bDM\s+me\b[^.?!]{0,40}\b(?:apply|interest|hiring|role|opportunity|impressive|built|resume|work|portfolio)",
-    "reply below if interested",          r"\breply\s+(?:with|below|if|to)\b[^.?!]{0,30}\b(?:interest|apply|portfolio|experience|work|interested)",
-    "hr@swavy.app",                       r"\b[\w.+-]+@[\w.-]+\.\w{2,}",
-    "https://jobs.lever.co/acme/123",     r"https?://\S*(?:lever\.co|greenhouse\.io|ashbyhq|workable|breezy|smartrecruiters|jobvite|hotfix\.jobs|careers|/jobs?)[^\s]*",
-)
-
-LAYOFF = pat_any(
-    "mass layoffs",                       r"\blayoffs?\b",
-    "they laid off 200",                  r"\b(?:laid|laying|lay)\s+off\b",
-    "workforce reduction",                r"\b(?:workforce\s+reduction|job\s+cuts?|downsizing|headcount\s+reduction|redundan(?:cy|cies))\b",
-    "a reorg",                            r"\bre-?org(?:ing)?\b",
-)
-
-LISTY = pat_any(
-    "20 startups hiring right now",       r"\b\d{1,4}\+?\s+(?:companies|startups|roles|jobs|openings|positions|remote\s+jobs)\b",
-    "companies hiring",                   r"\b(?:companies|startups?)\s+hiring\b",
-    "who's hiring thread",                r"\bwho(?:'s|\s+is)\s+hiring\b",
-    "currently hiring",                   r"\b(?:currently|actively)\s+hiring\b",
-    "the YC job board",                   r"\bjob\s+boards?\b",
-    "job newsletter",                     r"\bjob\s+(?:newsletter|alert|aggregator)\b",
-    "list of hiring partners",            r"\b(?:hiring\s+list|list\s+of\s+(?:hiring|jobs|companies))\b",
-    "14 sites for remote jobs",           r"\b14\s+sites\b[^.?!]{0,20}\b(?:remote\s+jobs|jobs|work)",
-)
-
-ADVICE = pat_any(
-    "how to get a job at a startup",      r"\bhow\s+to\s+(?:find|get|land|pass|win|prepare|crush|nail|tackle|source|reach)\b[^.?!]{0,45}\b(?:job|role|hiring|interview|recruit|resume|cv|offer|engineer)",
-    "tips for interviews",                r"\btips?\b[^.?!]{0,20}\b(?:for|on|to)\b[^.?!]{0,30}\b(?:hiring|interview|resume|job|recruit|offer|candidate)",
-    "our hiring process is broken",       r"\bhiring\s+(?:process|tips?|mistakes?|signals?|manager|tactics?|funnel|loops?|bar|boom|freeze|wave|slump|pipeline|season)",
-    "the recruiter said",                 r"\brecruit(?:er|ers)\b[^.?!]{0,25}\b(?:said|told|call|email|reach|message|spoke|asked)",
-    "I got ghosted",                      r"\bghost(?:ed|ing)\b",
-    "the rejection email",                r"\brejection(?:s)?\b[^.?!]{0,25}\b(?:email|letter|after)",
-    "how I got the job",                  r"\bhow\s+(?:i|we|they)\s+(?:got|landed|hired)",
-    "career advice",                      r"\bcareer\s+(?:advice|tip|coach|transition)",
-    "the job market is tight",            r"\b(?:job|hiring)\s+market\b",
-    "networking for a role",              r"\bnetwork(?:ing)?\b[^.?!]{0,35}\b(?:job|role|hiring|referral)",
-    "a referral got them the job",        r"\breferral\b[^.?!]{0,35}\b(?:job|role|hired|got|how)",
-    "email founders instead",             r"\bemail\s+(?:startups?|founders?|founder|ctos?|ceos?)\b[^.?!]{0,35}\b(?:apply|instead|rather)",
-    "find the hiring manager",            r"\bfind\s+the\s+hiring\s+manager\b",
-    "hiring manager on linkedin",         r"\bhiring\s+manager(?:'s)?\b[^.?!]{0,25}\b(?:email|linkedin|find|reach)",
-    "the onboarding doc",                 r"\bonboarding\b",
-    "reading the offer letter",           r"\boffer\s+letter\b",
-    "job applications I sent",            r"\bjob\s+(?:application|applications)\b[^.?!]{0,35}\b(?:sent|rejection|ignored|ghosted|tracking)",
-    "my resume",                          r"\bmy\s+(?:resume|cv)\b",
-    "portfolio matters",                   r"\bportfolios?\b[^.?!]{0,25}\b(?:matter|help|for)",
-)
-
-CRAFT = pat_any(
-    "20 candidates in a pool of 600",     r"\b\d+\s+(?:good\s+|strong\s+)?candidates?\b",
-    "applicants are down",                r"\bapplicants?\b[^.?!]{0,30}\b(?:down|up|flood|volume|drop|surge)",
-    "eye tracking on my resume",          r"\beye\s?track(?:er|ing)\b[^.?!]{0,30}\bresume",
-    "no one is hiring juniors",           r"\bno\s+one\s+is\s+hiring\b",
-    "not hiring juniors",                 r"\bnot\s+hiring\b[^.?!]{0,25}\b(?:juniors?|graduates?|anyone)",
-    "entry level talent",                 r"\bentry[- ]level\b[^.?!]{0,30}\b(?:talent|roles?|jobs?|not\s+ready)",
-    "SWE interviews",                     r"\bswe\s+interviews?\b",
-    "system design interview",            r"\bsystem\s+design\s+interview\b",
-    "unemployment rate",                  r"\bunemployment\s+(?:rate|arcs?)\b",
-    "youth unemployment",                 r"\byouth\s+unemployment\b",
-    "applied to 1150 jobs",               r"\b\d{3,4}\s+(?:jobs?|applications|cold\s?(?:mails?|emails?))\b",
-    "on a work visa",                     r"\b(?:work\s+visa|blue\s+card)\b",
-)
-
-MISC = pat_any(
-    "office vacancy rates",               r"\boffice\s+vacancy\b|\bvacancy\s+rate\b",
-    "the army is hiring new officers",    r"\b(?:military|army|navy|air\s+force|police)\b[^.?!]{0,30}\bhiring\b|\bhiring\s+(?:for\s+an?\s+)?(?:the\s+)?(?:military|army|navy|air\s+force|police)\b",
-    "terrorist recruitment",              r"\bterror(?:ist)?\s+recruitment\b",
-    "recruiting budget",                  r"\brecruiting\s+budget\b|\bmilitary\s+recruiting\b",
-    "recruiting students for the militia", r"\brecruit(?:ing|ment)\b[^.?!]{0,20}\b(?:dating|phase|students|youths|insurgent)",
-)
-
-MONEY = pat(r"$150K-$200K base", r"[$€£₦]\s?[\d][\d,\.]*\s?[kKmM]?\b")
-PERIOD = pat("$4,000/week", r"[$€£₦]\s?[\d][\d,\.]*\s?[kKmM]?\s*(?:/|\ba\b|per)\s*(?:year|yr|month|mo|week|day|hour|hr)")
-HIRING_VERB = pat("hiring 2 engineers", r"\bhiring\b|\bhiring!|\bhire\b|\bseeking\b|\brecruiting\b|\blooking\s+for\b")
-
-TITLE_WORDS = [
-    "software", "frontend", "front-end", "backend", "back-end", "full[- ]?stack", "mobile", "ios",
-    "android", "web", "devops", "sre", "platform", "infra(?:structure)?", "data", "ml",
-    "machine learning", "ai", "llm", "agentic", "product", "design", "designer", "ux", "ui",
-    "marketing", "growth", "sales", "account executive", "customer success", "customer support",
-    "support", "operations", "ops", "finance", "financial", "accounting", "legal", "content",
-    "community", "research", "scientist", "qa", "security", "compliance", "engineering", "engineer",
-    "program manager", "product manager", "project manager", "recruiter", "people", "apprentice",
-    "intern", "teacher", "nurse", "driver", "analyst", "writer", "editor", "video", "hr",
-    "accountant", "founder", "cofounder", "cto", "ceo", "vp", "developer", "architect",
-]
 ROLE = pat(
     "hiring a Founding Product Designer",
     rf"\b(?:(?:senior|sr\.?|staff|principal|junior|jr\.?|lead|associate|contract|freelance|"
@@ -183,9 +69,6 @@ ROLE = pat(
     rf"(?:\s+(?:engineer|engineering|developer|designer|scientist|manager|recruiter|architect|"
     rf"specialist|analyst|writer|officer|teacher|accountant))?\b"
 )
-LOCATION = pat("Remote in SF", r"\b(remote|hybrid|on[- ]?site|in[- ]?person|san francisco|new york|los angeles|austin|boston|seattle|chicago|london|dublin|berlin|paris|toronto|vancouver|amsterdam|lisbon|nigeria|lagos)\b")
-LINK = pat("https://jobs.ashbyhq.com/constellations", r"(?:https?://)?\S*(?:lever\.co|greenhouse\.io|ashbyhq|workable|breezy|smartrecruiters|jobvite|hotfix\.jobs|/jobs?/|careers)[^\s]*")
-PAST = re.compile(r"(?:after|by|since|when|who|and|because|because\s+of|thanks\s+to|hard|difficult)\s+$", re.I)
 
 
 def classify(text):
@@ -209,7 +92,7 @@ def classify(text):
     return 'other'
 
 
-def fetch(db_path, since=None):
+def fetch(db_path, phrase, since=None):
     """One pass over the index.
 
     Join on rowid, never on b.id. bookmarks.id is declared TEXT PRIMARY KEY, so
@@ -229,7 +112,7 @@ def fetch(db_path, since=None):
            b.like_count, b.repost_count, b.reply_count
     FROM bookmarks_fts f JOIN bookmarks b ON b.rowid = f.rowid
     WHERE bookmarks_fts MATCH ?
-    """, (CORE,)).fetchall()
+    """, (phrase,)).fetchall()
     con.close()
     out = [dict(r) for r in rows]
     return [r for r in out if not since or (when(r['posted_at']) or EPOCH) >= since]
@@ -467,7 +350,39 @@ def live_shape_check():
     assert dropped == [], 'normalise_live kept a retweet, so retweeted spam leaks in'
 
 
+def saved_query(name):
+    """Read one saved search out of searches.json and return its query."""
+    with open(CONFIG, encoding='utf-8') as f:
+        cfg = json.load(f)
+    for s in cfg.get('searches', []):
+        if s['name'] == name:
+            q = (s.get('query') or '').strip()
+            if not q:
+                raise SystemExit(
+                    f"search {name!r} has no query. Give it one in the panel's Edit "
+                    f"dialog, or in {os.path.basename(CONFIG)}, then run again.")
+            return q
+    raise SystemExit(f"no search called {name!r} in {os.path.basename(CONFIG)}")
+
+
+def config_queries_check():
+    """Every saved bookmarks query must parse, or the run that needs it fails late.
+
+    Only bookmarks queries are judged. X understands operators FTS5 does not,
+    such as from: and min_faves:, so a live query is left for X to accept.
+    """
+    if not os.path.exists(CONFIG):
+        return
+    with open(CONFIG, encoding='utf-8') as f:
+        cfg = json.load(f)
+    for s in cfg.get('searches', []):
+        if s.get('source') == 'bookmarks' and (s.get('query') or '').strip():
+            fts_query(s['query'], s['name'])
+
+
 def main():
+    # Tweet text is not cp1252. Same fix weekly_scan.py uses.
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[1])
     ap.add_argument('--selfcheck', action='store_true',
                     help='check every pattern against its probe, touch nothing else')
@@ -484,8 +399,10 @@ def main():
     ap.add_argument('--pause', type=float, default=2.0,
                     help='seconds between accounts in watchlist mode, avoids HTTP 429')
     ap.add_argument('--query',
-                    help='live search only. Defaults to the full 81 phrase set, '
-                         'which is sent in batches because X caps a query at 512 characters.')
+                    help='search syntax: quoted phrases with OR, AND, NOT. Goes to '
+                         'bookmarks_fts as a MATCH, or to X as one query.')
+    ap.add_argument('--search', metavar='NAME',
+                    help='use the query of a saved search in searches.json')
     ap.add_argument('--limit', type=int, default=200, help='max tweets in live or watch mode')
     ap.add_argument('--days', type=int, help='only tweets from the last N days')
     ap.add_argument('--since', help='only tweets on or after YYYY-MM-DD')
@@ -497,9 +414,14 @@ def main():
 
     pat_selfcheck()
     live_shape_check()
+    config_queries_check()
     if args.selfcheck:
         print('patterns ok')
         return
+
+    if args.query and args.search:
+        sys.exit('give --query or --search, not both')
+    query = args.query or (saved_query(args.search) if args.search else '')
 
     since = None
     if args.since:
@@ -518,27 +440,34 @@ def main():
         if err:
             sys.exit(f'could not read @{args.watch}: {err}')
     elif args.live:
-        if args.query:
-            # A user query is never split. chunk_phrases exists only for the
-            # built-in 81 phrase set, and splitting a query like
-            # "(a OR b) NOT c" on OR would silently change its meaning.
-            if len(args.query) > 512:
-                sys.exit(f'query is {len(args.query)} characters. X rejects anything '
-                         f'over 512. Shorten it, or drop --query to use the built-in set.')
-            source = f'live X search: {args.query}'
-            rows, err = fetch_live(args.query, args.limit, since, args.min_likes,
-                                   tuple(x for x in args.exclude.split(',') if x))
-            notes = [f'1 query of {len(args.query)} characters']
+        if not query:
+            sys.exit('live search needs a query. Pass --search NAME for a saved one, '
+                     'or --query "..." for a one-off.')
+        # A hand-written query is never split. chunk_phrases splits on OR, so it
+        # would silently change the meaning of "(a OR b) NOT c". A plain OR
+        # chain of saved phrases is the one thing that is safe to batch, which is
+        # what ctl.py does for a saved live search too.
+        exclude = tuple(x for x in args.exclude.split(',') if x)
+        if len(query) > 512:
+            if re.search(r'[()]|\bAND\b|\bNOT\b', query, re.I):
+                sys.exit(f'query is {len(query)} characters and uses brackets, AND or '
+                         f'NOT, so it cannot be split without changing its meaning. '
+                         f'Shorten it to 512 characters.')
+            source = f'live X search: {len(query)} characters, sent in batches'
+            rows, notes = fetch_live_chunked(query, args.limit, since, args.min_likes,
+                                             exclude, args.pause)
+        else:
+            source = f'live X search: {query}'
+            rows, err = fetch_live(query, args.limit, since, args.min_likes, exclude)
+            notes = [f'1 query of {len(query)} characters']
             if err:
                 sys.exit(f'live search failed: {err}\n'
                          f'If this says 404, the patch was lost. Run: node fix-twitter-cli.js')
-        else:
-            source = 'live X search: full phrase set'
-            rows, notes = fetch_live_chunked(CORE, args.limit, since, args.min_likes,
-                                             tuple(x for x in args.exclude.split(',') if x),
-                                             args.pause)
     else:
-        rows = fetch(args.db)
+        if not query:
+            sys.exit('bookmarks mode needs a query. Pass --search NAME for a saved '
+                     'one, or --query "..." for a one-off.')
+        rows = fetch(args.db, fts_query(query, '--query'))
         if since:
             rows = [r for r in rows if (when(r['posted_at']) or EPOCH) >= since]
 
@@ -656,10 +585,15 @@ def main():
             A(f'  <{r["url"]}>')
             A(f'  full text in the JSON export')
 
-        os.makedirs(os.path.dirname(os.path.abspath(args.md)), exist_ok=True)
-        with open(args.md, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(L))
-        print('wrote', args.md)
+        if args.md == '-':
+            # Same contract as --json -: a dash means print it, not a file
+            # literally called "-", which is what this used to write.
+            sys.stdout.write('\n'.join(L))
+        else:
+            os.makedirs(os.path.dirname(os.path.abspath(args.md)), exist_ok=True)
+            with open(args.md, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(L))
+            print('wrote', args.md)
 
     print(f'matched {len(rows)} from {source}', dict(buckets))
 

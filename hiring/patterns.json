@@ -1,0 +1,484 @@
+{
+  "_readme": [
+    "Every regex the hiring search uses. Edit it here or, later, from the panel.",
+    "A pattern is a pair: probe first, then the regex. The probe is real text the",
+    "regex must match. If it does not, the file is refused and nothing runs, so a",
+    "typo cannot quietly return zero rows.",
+    "Two things to know about writing a regex in JSON. A single backslash is an",
+    "escape, so \\b is a backspace character and not a word boundary; write \\\\b.",
+    "And \\d, \\s and \\w are not JSON escapes at all, so they stop the file",
+    "loading, which is loud rather than silent. Use \\\\d, \\\\s, \\\\w.",
+    "All groups match case-insensitively. Order inside a group does not matter.",
+    "The order groups are tested in is code in search.py, not a setting here."
+  ],
+  "groups": {
+    "OFFER": {
+      "note": "Someone is offering a role. Probed pairs: probe text, then regex.",
+      "patterns": [
+        [
+          "we're hiring",
+          "\\bwe(?:'re|’re|\\s+are)\\s+(?:hiring|looking\\s+for|recruiting)\\b"
+        ],
+        [
+          "hiring two engineers",
+          "\\bhiring\\s+(?:\\d+|a|an|two|three|four|five|several|multiple|more)?\\s*(?:[A-Za-z]+\\s*){0,3}?(?:engineers?|developers?|designers?|managers?|researchers?|scientists?|specialists?|operators?|interns?|founders?|sales|marketing|growth|support|operations|people|builders?|techs?|roles?|positions?|heads?|leads?)"
+        ],
+        [
+          "Monzo is hiring",
+          "(?<!\\bno\\sone\\s)(?<!\\bnobody\\s)(?<!\\beveryone\\s)(?<!\\bnothing\\s)\\bis\\s+hiring\\b"
+        ],
+        [
+          "they are hiring",
+          "(?<!\\bno\\sone\\s)(?<!\\bnobody\\s)\\bare\\s+hiring\\b"
+        ],
+        [
+          "join our team",
+          "\\bjoin\\s+(?:our|the|my)\\b[^.?!]{0,25}\\bteam\\b"
+        ],
+        [
+          "join us",
+          "\\bjoin\\s+us\\b"
+        ],
+        [
+          "come join the frontier",
+          "\\bcome\\s+join\\b"
+        ],
+        [
+          "apply here",
+          "\\bapply\\s+(?:now|here|today|below|via|at)\\b"
+        ],
+        [
+          "drop your work below",
+          "\\bdrop\\s+your\\b[^.?!]{0,20}\\b(?:work|below|here|portfolio)"
+        ],
+        [
+          "DM me to apply",
+          "\\bDM\\s+me\\b[^.?!]{0,40}\\b(?:apply|interest|hiring|role|opportunity|impressive|built)"
+        ],
+        [
+          "reply below if interested",
+          "\\breply\\s+(?:with|below|if|to)\\b[^.?!]{0,30}\\b(?:interest|apply|portfolio|experience|work|interested)"
+        ],
+        [
+          "we are growing the team",
+          "\\bwe\\s+are\\s+(?:growing|building|looking)\\b[^.?!]{0,25}\\bteam\\b"
+        ],
+        [
+          "3 open positions",
+          "\\bopen(?:ing)?\\s+(?:role|roles|position|positions|job|jobs)\\b"
+        ],
+        [
+          "job posting link",
+          "\\bjob\\s+(?:opening|post|posting|listing|listings)\\b"
+        ],
+        [
+          "3 vacancies",
+          "\\bvacanc(?:y|ies)\\b"
+        ],
+        [
+          "looking for a founding engineer",
+          "\\blooking\\s+for\\s+(?:a|an|someone|talent|engineers?|builders?|people|one)\\b"
+        ],
+        [
+          "seeking an engineer",
+          "\\bseeking\\b[^.?!]{0,25}\\b(?:engineer|developer|designer|hiring|talent|applicant)"
+        ],
+        [
+          "hiring partners",
+          "\\bhiring\\s+partner(?:s)?\\b"
+        ],
+        [
+          "our first new hire",
+          "\\bnew\\s+hire(?:s)?\\b"
+        ],
+        [
+          "I'm hiring someone",
+          "\\bI(?:'m|’m|\\s+am)\\s+(?:hiring|looking\\s+for)\\b"
+        ],
+        [
+          "hiring someone for a role",
+          "\\bhiring\\s+(?:someone|for\\s+the\\s+role|for\\s+a\\s+role|for\\s+roles)\\b"
+        ],
+        [
+          "Monzo is looking for",
+          "\\bis\\s+looking\\s+for\\b"
+        ]
+      ]
+    },
+    "APPLY_CTA": {
+      "note": "How to apply. Feeds the apply column, not the bucket.",
+      "patterns": [
+        [
+          "apply here",
+          "\\bapply\\b[^.?!]{0,20}\\b(?:here|now|today|below|via|dm)"
+        ],
+        [
+          "send me your resume",
+          "\\bsend\\s+(?:me|us|your)\\b[^.?!]{0,30}\\b(?:resume|cv|portfolio|work|email|dm|message)"
+        ],
+        [
+          "DM me with your work",
+          "\\bDM\\s+me\\b[^.?!]{0,40}\\b(?:apply|interest|hiring|role|opportunity|impressive|built|resume|work|portfolio)"
+        ],
+        [
+          "reply below if interested",
+          "\\breply\\s+(?:with|below|if|to)\\b[^.?!]{0,30}\\b(?:interest|apply|portfolio|experience|work|interested)"
+        ],
+        [
+          "hr@swavy.app",
+          "\\b[\\w.+-]+@[\\w.-]+\\.\\w{2,}"
+        ],
+        [
+          "https://jobs.lever.co/acme/123",
+          "https?://\\S*(?:lever\\.co|greenhouse\\.io|ashbyhq|workable|breezy|smartrecruiters|jobvite|hotfix\\.jobs|careers|/jobs?)[^\\s]*"
+        ]
+      ]
+    },
+    "LAYOFF": {
+      "note": "Cuts and reorgs. Only wins when OFFER does not match.",
+      "patterns": [
+        [
+          "mass layoffs",
+          "\\blayoffs?\\b"
+        ],
+        [
+          "they laid off 200",
+          "\\b(?:laid|laying|lay)\\s+off\\b"
+        ],
+        [
+          "workforce reduction",
+          "\\b(?:workforce\\s+reduction|job\\s+cuts?|downsizing|headcount\\s+reduction|redundan(?:cy|cies))\\b"
+        ],
+        [
+          "a reorg",
+          "\\bre-?org(?:ing)?\\b"
+        ]
+      ]
+    },
+    "LISTY": {
+      "note": "Roundups, job boards, hiring partners.",
+      "patterns": [
+        [
+          "20 startups hiring right now",
+          "\\b\\d{1,4}\\+?\\s+(?:companies|startups|roles|jobs|openings|positions|remote\\s+jobs)\\b"
+        ],
+        [
+          "companies hiring",
+          "\\b(?:companies|startups?)\\s+hiring\\b"
+        ],
+        [
+          "who's hiring thread",
+          "\\bwho(?:'s|\\s+is)\\s+hiring\\b"
+        ],
+        [
+          "currently hiring",
+          "\\b(?:currently|actively)\\s+hiring\\b"
+        ],
+        [
+          "the YC job board",
+          "\\bjob\\s+boards?\\b"
+        ],
+        [
+          "job newsletter",
+          "\\bjob\\s+(?:newsletter|alert|aggregator)\\b"
+        ],
+        [
+          "list of hiring partners",
+          "\\b(?:hiring\\s+list|list\\s+of\\s+(?:hiring|jobs|companies))\\b"
+        ],
+        [
+          "14 sites for remote jobs",
+          "\\b14\\s+sites\\b[^.?!]{0,20}\\b(?:remote\\s+jobs|jobs|work)"
+        ]
+      ]
+    },
+    "ADVICE": {
+      "note": "How to search, interview, negotiate.",
+      "patterns": [
+        [
+          "how to get a job at a startup",
+          "\\bhow\\s+to\\s+(?:find|get|land|pass|win|prepare|crush|nail|tackle|source|reach)\\b[^.?!]{0,45}\\b(?:job|role|hiring|interview|recruit|resume|cv|offer|engineer)"
+        ],
+        [
+          "tips for interviews",
+          "\\btips?\\b[^.?!]{0,20}\\b(?:for|on|to)\\b[^.?!]{0,30}\\b(?:hiring|interview|resume|job|recruit|offer|candidate)"
+        ],
+        [
+          "our hiring process is broken",
+          "\\bhiring\\s+(?:process|tips?|mistakes?|signals?|manager|tactics?|funnel|loops?|bar|boom|freeze|wave|slump|pipeline|season)"
+        ],
+        [
+          "the recruiter said",
+          "\\brecruit(?:er|ers)\\b[^.?!]{0,25}\\b(?:said|told|call|email|reach|message|spoke|asked)"
+        ],
+        [
+          "I got ghosted",
+          "\\bghost(?:ed|ing)\\b"
+        ],
+        [
+          "the rejection email",
+          "\\brejection(?:s)?\\b[^.?!]{0,25}\\b(?:email|letter|after)"
+        ],
+        [
+          "how I got the job",
+          "\\bhow\\s+(?:i|we|they)\\s+(?:got|landed|hired)"
+        ],
+        [
+          "career advice",
+          "\\bcareer\\s+(?:advice|tip|coach|transition)"
+        ],
+        [
+          "the job market is tight",
+          "\\b(?:job|hiring)\\s+market\\b"
+        ],
+        [
+          "networking for a role",
+          "\\bnetwork(?:ing)?\\b[^.?!]{0,35}\\b(?:job|role|hiring|referral)"
+        ],
+        [
+          "a referral got them the job",
+          "\\breferral\\b[^.?!]{0,35}\\b(?:job|role|hired|got|how)"
+        ],
+        [
+          "email founders instead",
+          "\\bemail\\s+(?:startups?|founders?|founder|ctos?|ceos?)\\b[^.?!]{0,35}\\b(?:apply|instead|rather)"
+        ],
+        [
+          "find the hiring manager",
+          "\\bfind\\s+the\\s+hiring\\s+manager\\b"
+        ],
+        [
+          "hiring manager on linkedin",
+          "\\bhiring\\s+manager(?:'s)?\\b[^.?!]{0,25}\\b(?:email|linkedin|find|reach)"
+        ],
+        [
+          "the onboarding doc",
+          "\\bonboarding\\b"
+        ],
+        [
+          "reading the offer letter",
+          "\\boffer\\s+letter\\b"
+        ],
+        [
+          "job applications I sent",
+          "\\bjob\\s+(?:application|applications)\\b[^.?!]{0,35}\\b(?:sent|rejection|ignored|ghosted|tracking)"
+        ],
+        [
+          "my resume",
+          "\\bmy\\s+(?:resume|cv)\\b"
+        ],
+        [
+          "portfolio matters",
+          "\\bportfolios?\\b[^.?!]{0,25}\\b(?:matter|help|for)"
+        ]
+      ]
+    },
+    "CRAFT": {
+      "note": "Hiring market and process talk.",
+      "patterns": [
+        [
+          "20 candidates in a pool of 600",
+          "\\b\\d+\\s+(?:good\\s+|strong\\s+)?candidates?\\b"
+        ],
+        [
+          "applicants are down",
+          "\\bapplicants?\\b[^.?!]{0,30}\\b(?:down|up|flood|volume|drop|surge)"
+        ],
+        [
+          "eye tracking on my resume",
+          "\\beye\\s?track(?:er|ing)\\b[^.?!]{0,30}\\bresume"
+        ],
+        [
+          "no one is hiring juniors",
+          "\\bno\\s+one\\s+is\\s+hiring\\b"
+        ],
+        [
+          "not hiring juniors",
+          "\\bnot\\s+hiring\\b[^.?!]{0,25}\\b(?:juniors?|graduates?|anyone)"
+        ],
+        [
+          "entry level talent",
+          "\\bentry[- ]level\\b[^.?!]{0,30}\\b(?:talent|roles?|jobs?|not\\s+ready)"
+        ],
+        [
+          "SWE interviews",
+          "\\bswe\\s+interviews?\\b"
+        ],
+        [
+          "system design interview",
+          "\\bsystem\\s+design\\s+interview\\b"
+        ],
+        [
+          "unemployment rate",
+          "\\bunemployment\\s+(?:rate|arcs?)\\b"
+        ],
+        [
+          "youth unemployment",
+          "\\byouth\\s+unemployment\\b"
+        ],
+        [
+          "applied to 1150 jobs",
+          "\\b\\d{3,4}\\s+(?:jobs?|applications|cold\\s?(?:mails?|emails?))\\b"
+        ],
+        [
+          "on a work visa",
+          "\\b(?:work\\s+visa|blue\\s+card)\\b"
+        ]
+      ]
+    },
+    "MISC": {
+      "note": "Recruiting that is not hiring. Checked first, wins over everything.",
+      "patterns": [
+        [
+          "office vacancy rates",
+          "\\boffice\\s+vacancy\\b|\\bvacancy\\s+rate\\b"
+        ],
+        [
+          "the army is hiring new officers",
+          "\\b(?:military|army|navy|air\\s+force|police)\\b[^.?!]{0,30}\\bhiring\\b|\\bhiring\\s+(?:for\\s+an?\\s+)?(?:the\\s+)?(?:military|army|navy|air\\s+force|police)\\b"
+        ],
+        [
+          "terrorist recruitment",
+          "\\bterror(?:ist)?\\s+recruitment\\b"
+        ],
+        [
+          "recruiting budget",
+          "\\brecruiting\\s+budget\\b|\\bmilitary\\s+recruiting\\b"
+        ],
+        [
+          "recruiting students for the militia",
+          "\\brecruit(?:ing|ment)\\b[^.?!]{0,20}\\b(?:dating|phase|students|youths|insurgent)"
+        ]
+      ]
+    },
+    "MONEY": {
+      "note": "A salary figure. Needs ROLE or HIRING_VERB as well to mean an opening.",
+      "patterns": [
+        [
+          "$150K-$200K base",
+          "[$€£₦]\\s?[\\d][\\d,\\.]*\\s?[kKmM]?\\b"
+        ]
+      ]
+    },
+    "PERIOD": {
+      "note": "A pay rate per unit of time.",
+      "patterns": [
+        [
+          "$4,000/week",
+          "[$€£₦]\\s?[\\d][\\d,\\.]*\\s?[kKmM]?\\s*(?:/|\\ba\\b|per)\\s*(?:year|yr|month|mo|week|day|hour|hr)"
+        ]
+      ]
+    },
+    "HIRING_VERB": {
+      "note": "The word that opens the door. Must appear in the first 150 characters.",
+      "patterns": [
+        [
+          "hiring 2 engineers",
+          "\\bhiring\\b|\\bhiring!|\\bhire\\b|\\bseeking\\b|\\brecruiting\\b|\\blooking\\s+for\\b"
+        ]
+      ]
+    },
+    "LOCATION": {
+      "note": "Where the role is.",
+      "patterns": [
+        [
+          "Remote in SF",
+          "\\b(remote|hybrid|on[- ]?site|in[- ]?person|san francisco|new york|los angeles|austin|boston|seattle|chicago|london|dublin|berlin|paris|toronto|vancouver|amsterdam|lisbon|nigeria|lagos)\\b"
+        ]
+      ]
+    },
+    "LINK": {
+      "note": "An application link.",
+      "patterns": [
+        [
+          "https://jobs.ashbyhq.com/constellations",
+          "(?:https?://)?\\S*(?:lever\\.co|greenhouse\\.io|ashbyhq|workable|breezy|smartrecruiters|jobvite|hotfix\\.jobs|/jobs?/|careers)[^\\s]*"
+        ]
+      ]
+    },
+    "PAST": {
+      "note": "A word before the hiring word, so the post is about the past, not an opening.",
+      "patterns": [
+        [
+          "we spoke after",
+          "(?:after|by|since|when|who|and|because|because\\s+of|thanks\\s+to|hard|difficult)\\s*$"
+        ]
+      ]
+    },
+    "TITLE_WORDS": {
+      "note": "Job titles pasted into the ROLE regex. Code, not regex: plain words.",
+      "words": [
+        "software",
+        "frontend",
+        "front-end",
+        "backend",
+        "back-end",
+        "full[- ]?stack",
+        "mobile",
+        "ios",
+        "android",
+        "web",
+        "devops",
+        "sre",
+        "platform",
+        "infra(?:structure)?",
+        "data",
+        "ml",
+        "machine learning",
+        "ai",
+        "llm",
+        "agentic",
+        "product",
+        "design",
+        "designer",
+        "ux",
+        "ui",
+        "marketing",
+        "growth",
+        "sales",
+        "account executive",
+        "customer success",
+        "customer support",
+        "support",
+        "operations",
+        "ops",
+        "finance",
+        "financial",
+        "accounting",
+        "legal",
+        "content",
+        "community",
+        "research",
+        "scientist",
+        "qa",
+        "security",
+        "compliance",
+        "engineering",
+        "engineer",
+        "program manager",
+        "product manager",
+        "project manager",
+        "recruiter",
+        "people",
+        "apprentice",
+        "intern",
+        "teacher",
+        "nurse",
+        "driver",
+        "analyst",
+        "writer",
+        "editor",
+        "video",
+        "hr",
+        "accountant",
+        "founder",
+        "cofounder",
+        "cto",
+        "ceo",
+        "vp",
+        "developer",
+        "architect"
+      ]
+    }
+  }
+}

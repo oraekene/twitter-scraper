@@ -50,10 +50,11 @@ function Run-Pass($Name, $ScriptArgs) {
 }
 
 if (-not $WatchlistOnly) {
-    # No -Query means the full 81 phrase set, sent in batches. X caps one query
-    # at 512 characters and the whole set is 1329, so it is split automatically.
+    # The query comes from searches.json, so editing it in the panel changes what
+    # this runs. X caps one query at 512 characters, so a saved search has to fit.
+    $SearchName = if ($Query) { $null } else { 'hiring-live' }
     $searchArgs = @('--live', '--limit', $Limit, '--days', $Days, '--min-likes', $MinLikes)
-    if ($Query) { $searchArgs += @('--query', $Query) }
+    if ($Query) { $searchArgs += @('--query', $Query) } else { $searchArgs += @('--search', $SearchName) }
     Run-Pass 'search' $searchArgs
 }
 Run-Pass 'watchlist' @('--watchlist', (Join-Path $Root 'watchlist.txt'),

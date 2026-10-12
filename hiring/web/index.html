@@ -719,7 +719,7 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
     <div class="grid">
       <div class="field"><label>Source</label><select id="e-source"></select></div>
       <div class="field"><label>List</label><select id="e-list"></select></div>
-      <div class="field" style="grid-column:1/-1"><label>Query</label><input id="e-query"></div>
+      <div class="field" style="grid-column:1/-1"><label>Query. Quoted phrases with OR, AND, NOT. Required for bookmarks and live.</label><textarea id="e-query" rows="4" class="mono"></textarea></div>
       <div class="field" style="grid-column:1/-1"><label>Handles (only when source is watchlist and no list)</label><input id="e-handles"></div>
       <div class="field"><label>Every N days</label><input id="e-every" type="number" min="1"></div>
       <div class="field"><label>Time</label><input id="e-time"></div>
@@ -738,7 +738,7 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
     <div class="grid">
       <div class="field"><label>Name</label><input id="a-name" placeholder="ai-jobs"></div>
       <div class="field"><label>Source</label><select id="a-source"></select></div>
-      <div class="field" style="grid-column:1/-1"><label>Query (live)</label><input id="a-query" placeholder='hiring OR "open role"'></div>
+      <div class="field" style="grid-column:1/-1"><label>Query. Quoted phrases with OR, AND, NOT. Required for bookmarks and live.</label><textarea id="a-query" rows="3" class="mono" placeholder='hiring OR "open role"'></textarea></div>
       <div class="field"><label>List</label><select id="a-list"></select></div>
       <div class="field"><label>Handles</label><input id="a-handles" placeholder="aakashgupta"></div>
       <div class="field"><label>Every N days</label><input id="a-every" type="number" min="1" value="1"></div>
@@ -1004,7 +1004,10 @@ async function delList(name) {
 /* ── searches ───────────────────────────────────────────────────────────── */
 let CURRENT = [];
 function brief(s) {
-  if (s.query) return s.query;
+  if (s.query) {
+    const n = s.query.split(' OR ').length;
+    return n > 1 ? `${n} phrases: ${s.query.slice(0, 28)}...` : s.query;
+  }
   if (s.list) return 'list: ' + s.list;
   if (s.handles) return Array.isArray(s.handles) ? s.handles.join(', ') : s.handles;
   if (s.handles_file) return s.handles_file;
@@ -1017,7 +1020,7 @@ async function loadSearches() {
   el('rows').innerHTML = CURRENT.map(s => `
     <tr>
       <td><span class="strong">${esc(s.name)}</span>${s.notes ? `<br><span class="small dim">${esc(s.notes)}</span>` : ''}</td>
-      <td><span class="pill brand">${esc(s.source)}</span><br><span class="mono small">${esc(brief(s).slice(0, 40))}</span></td>
+      <td><span class="pill brand">${esc(s.source)}</span><br><span class="mono small">${esc(brief(s))}</span></td>
       <td class="small">every ${s.every_days || 1}d<br>${esc(s.time || '09:00')}</td>
       <td><span class="pill ${s.enabled !== false ? 'on' : 'off'}">${s.enabled !== false ? 'on' : 'off'}</span></td>
       <td class="mono small">${esc((data.state[s.name] || {}).last_run || 'never')}</td>

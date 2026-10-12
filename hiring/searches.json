@@ -9,23 +9,25 @@
       "days_back": 8,
       "limit": 50,
       "min_likes": 0,
-      "notes": "Your own saved bookmarks, every day. Local, free, no rate limits."
+      "notes": "Your own saved bookmarks, every day. Local, free, no rate limits.",
+      "query": "\"hiring\" OR \"hire\" OR \"hires\" OR \"hired\" OR \"vacancy\" OR \"vacancies\" OR \"job opening\" OR \"job openings\" OR \"job post\" OR \"job posts\" OR \"job listing\" OR \"job listings\" OR \"job search\" OR \"job board\" OR \"job seeker\" OR \"job seekers\" OR \"open role\" OR \"open roles\" OR \"open position\" OR \"open positions\" OR \"we are hiring\" OR \"we're hiring\" OR \"now hiring\" OR \"hiring now\" OR \"we are looking for\" OR \"we're looking for\" OR \"looking for a\" OR \"looking for an\" OR \"join our team\" OR \"join the team\" OR \"join us\" OR \"apply now\" OR \"apply here\" OR \"apply below\" OR \"recruiter\" OR \"recruiting\" OR \"recruitment\" OR \"candidate\" OR \"candidates\" OR \"applicant\" OR \"applicants\" OR \"application\" OR \"applications\" OR \"interview\" OR \"interviews\" OR \"interviewed\" OR \"interviewing\" OR \"onboarding\" OR \"layoff\" OR \"layoffs\" OR \"laid off\" OR \"laying off\" OR \"reorg\" OR \"headcount\" OR \"referral\" OR \"referrals\" OR \"offer letter\" OR \"backfill\" OR \"unemployed\" OR \"unemployment\" OR \"job hunting\" OR \"job hunt\" OR \"hiring manager\" OR \"open to work\" OR \"open to applicants\" OR \"open to remote\" OR \"internship\" OR \"internships\" OR \"work visa\" OR \"h1b\" OR \"salary range\" OR \"salary band\" OR \"comp range\" OR \"comp band\" OR \"full time role\" OR \"full time position\" OR \"full time job\" OR \"new grad\" OR \"new graduate\" OR \"new graduates\" OR \"hiring partners\""
     },
     {
       "name": "hiring-live",
       "source": "live",
-      "enabled": true,
+      "enabled": false,
       "every_days": 1,
       "time": "09:20",
       "days_back": 7,
       "limit": 50,
       "min_likes": 20,
-      "notes": "X search using the full 81 phrase set, sent in batches. Noisy."
+      "notes": "X search using the full 81 phrase set, sent in batches. Noisy.",
+      "query": "\"hiring\" OR \"hire\" OR \"hires\" OR \"hired\" OR \"vacancy\" OR \"vacancies\" OR \"job opening\" OR \"job openings\" OR \"job post\" OR \"job posts\" OR \"job listing\" OR \"job listings\" OR \"job search\" OR \"job board\" OR \"job seeker\" OR \"job seekers\" OR \"open role\" OR \"open roles\" OR \"open position\" OR \"open positions\" OR \"we are hiring\" OR \"we're hiring\" OR \"now hiring\" OR \"hiring now\" OR \"we are looking for\" OR \"we're looking for\" OR \"looking for a\" OR \"looking for an\" OR \"join our team\" OR \"join the team\" OR \"join us\" OR \"apply now\" OR \"apply here\" OR \"apply below\" OR \"recruiter\" OR \"recruiting\" OR \"recruitment\" OR \"candidate\" OR \"candidates\" OR \"applicant\" OR \"applicants\" OR \"application\" OR \"applications\" OR \"interview\" OR \"interviews\" OR \"interviewed\" OR \"interviewing\" OR \"onboarding\" OR \"layoff\" OR \"layoffs\" OR \"laid off\" OR \"laying off\" OR \"reorg\" OR \"headcount\" OR \"referral\" OR \"referrals\" OR \"offer letter\" OR \"backfill\" OR \"unemployed\" OR \"unemployment\" OR \"job hunting\" OR \"job hunt\" OR \"hiring manager\" OR \"open to work\" OR \"open to applicants\" OR \"open to remote\" OR \"internship\" OR \"internships\" OR \"work visa\" OR \"h1b\" OR \"salary range\" OR \"salary band\" OR \"comp range\" OR \"comp band\" OR \"full time role\" OR \"full time position\" OR \"full time job\" OR \"new grad\" OR \"new graduate\" OR \"new graduates\" OR \"hiring partners\""
     },
     {
       "name": "hiring-watchlist",
       "source": "watchlist",
-      "enabled": true,
+      "enabled": false,
       "every_days": 1,
       "time": "09:40",
       "days_back": 7,
@@ -65,27 +67,6 @@
       "limit": 50,
       "notes": "X list. Disabled until you confirm you want it.",
       "list": "x-list-1901503315307069643"
-    },
-    {
-      "name": "caracas",
-      "source": "bookmarks",
-      "every_days": 1,
-      "time": "09:00",
-      "days_back": 7,
-      "min_likes": 0,
-      "enabled": false
-    },
-    {
-      "name": "kolomental",
-      "source": "live",
-      "query": "hiring, kolo, mental",
-      "every_days": 1,
-      "time": "09:00",
-      "days_back": 7,
-      "min_likes": 0,
-      "limit": 50,
-      "notes": "built in the query builder",
-      "enabled": false
     }
   ]
 }

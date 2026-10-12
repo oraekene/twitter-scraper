@@ -42,7 +42,7 @@ if ($Sync) {
 $Md = Join-Path $RunDir "$Stamp.md"
 $Json = Join-Path $RunDir "$Stamp.json"
 
-& python (Join-Path $Root 'search.py') --days $Days --md $Md --json $Json *>> $Log
+& python (Join-Path $Root 'search.py') --search hiring-bookmarks --days $Days --md $Md --json $Json *>> $Log
 if ($LASTEXITCODE -ne 0) {
     Say "search failed, code $LASTEXITCODE. See $Log"
     exit $LASTEXITCODE

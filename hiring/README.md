@@ -128,6 +128,52 @@ cookie auth on every list-enumeration endpoint, verified 2026-10-10:
 `/i/api/1.1/lists/list.json` answers 401 and `/i/api/2/lists/created.json`
 answers 403. So there is no way to read your list list, ids have to be copied.
 
+## Queries are data, not code
+
+A query is the `query` field of a search in `searches.json`. Nothing about it is
+built into the module. The two hiring searches carry the same 81 phrases, which
+is the wide recall net, and the patterns that narrow a hit down to an opening
+still live in `search.py` because they are classifier logic rather than something
+you search with.
+
+The syntax is the part SQLite FTS5 and X both understand: quoted phrases, `OR`,
+`AND`, `NOT`, parentheses. No regex. `fts_query` in `pat.py` asks FTS5 itself
+whether the query parses and whether it finds a row holding its own first term,
+so a bad edit is refused when you save it and never becomes a silent zero. That
+check runs on `bookmarks` queries only, because X understands operators FTS5 does
+not, such as `from:` and `min_faves:`.
+
+```powershell
+python ctl.py edit hiring-bookmarks --query '"hiring" OR "open role" OR referrals'
+```
+
+## Patterns are data too
+
+Every regex the search uses is in `patterns.json`, one group per what it
+decides: `OFFER` someone is offering a role, `LAYOFF` cuts and reorgs, `ADVICE`,
+`CRAFT`, `LISTY`, `MISC`, plus `MONEY`, `PERIOD`, `LOCATION`, `LINK` and the
+`TITLE_WORDS` list that feeds the `ROLE` template.
+
+Each entry is a pair: a probe, which is real text, then the regex. The regex has
+to match its own probe, and every pair is proved on its own when the file loads,
+so a pattern that matches nothing is refused instead of quietly returning zero
+rows. The refusal names the group and the line number, and nothing runs at all
+while one is broken. `python search.py --selfcheck` and `python ctl.py check`
+both load the file, so both are the guard.
+
+Two things to know before editing a regex in JSON. A single backslash is a JSON
+escape, so `\b` is a backspace character rather than a word boundary and the
+probe will catch it; write `\\b`. And `\d`, `\s` and `\w` are not JSON escapes
+at all, so they stop the file loading, which is loud rather than silent.
+
+Two things deliberately stay in code. The order the groups are tested in is a
+decision, not a setting, because reordering two groups reclassifies tweets that
+match both. And `ROLE` is a template built from `TITLE_WORDS`, so the title list
+is editable and the sentence around it is not.
+
+The panel cannot edit this file yet. It was split out of the code first so the
+probe guard had something to guard, and the Patterns tab comes after.
+
 ## Query Builder
 
 Every X search operator, in one panel, composing a query you can read and edit
@@ -138,9 +184,10 @@ and `within:`, `has:` and `filter:` and `exclude:`, `lang:`, `place:`,
 `geolocation:`, `url:`, `conversation_id:`, `thread_id:`, `topic:`, and cashtags.
 
 Two constraints the panel shows you rather than hiding. X rejects any query over
-512 characters, and a hand-written query is never split into batches, only the
-built-in 81 phrase set is. So a long query is your problem, and the counter goes
-red before you spend a request.
+512 characters, and a query that uses `AND`, `NOT` or brackets is never split into
+batches, because splitting it on `OR` would change what it means. A plain OR
+chain of saved phrases is the one thing that is batched. So a long query is your
+problem, and the counter goes red before you spend a request.
 
 The `list:` operator returns nothing on this account. To read a list, use the
 `list` source instead, which calls the list endpoint directly.
@@ -187,6 +234,10 @@ python ctl.py run --name hiring-live                      # run one
 python ctl.py add --name ai-jobs --source live --query 'hiring OR "we are hiring"' --every-days 3
 python ctl.py add --name aakash --source watchlist --handle aakashgupta
 python ctl.py add --name my-list --source list --list-id 1908587200419422252
+
+python ctl.py edit ai-jobs --query 'hiring OR "open role"' --every-days 5   # change one
+python ctl.py edit ai-jobs --disable                                        # or just stop it
+python ctl.py rm ai-jobs                                                     # delete it
 ```
 
 Sources are `bookmarks`, `live`, `watchlist`, and `list`.
@@ -194,7 +245,7 @@ Sources are `bookmarks`, `live`, `watchlist`, and `list`.
 | Source | Reads | Network | Notes |
 |---|---|---|---|
 | `bookmarks` | your saved tweets | no | free, no rate limits |
-| `live` | X search, full 81 phrase set in batches | yes | noisy, raise `--min-likes` |
+| `live` | X search, one saved query | yes | long OR chains go out in batches, raise `--min-likes` |
 | `watchlist` | every post by accounts you named | yes | no query sent, highest signal |
 | `list` | one X list by numeric id | yes | id comes from `x.com/i/lists/<id>` |
 
@@ -240,43 +291,41 @@ Three of yours are seeded into `searches.json`, disabled until you turn them on.
 ## Run it by hand
 
 ```powershell
-python search.py                                  # your bookmarks
-python search.py --json out\hiring.json           # full text, nothing truncated
-python search.py --days 8 --md -                  # only the last 8 days
-python search.py --watchlist watchlist.txt        # X, from the watchlist
-python search.py --live --min-likes 30 --days 7 --md -   # X search, full phrase set
-python search.py --selfcheck                      # check the code, touch nothing
+python search.py --search hiring-bookmarks                 # your bookmarks, saved query
+python search.py --search hiring-bookmarks --json out\hiring.json   # full text
+python search.py --search hiring-bookmarks --days 8 --md - # only the last 8 days
+python search.py --watchlist watchlist.txt                 # X, from the watchlist
+python search.py --live --search hiring-live --days 7      # X search, saved query
+python search.py --selfcheck                               # check the code, touch nothing
 ```
 
 `search.py` is the engine. `ctl.py` is a scheduler and config layer on top of it,
-so both remain useful on their own.
-
-Truncation is a reading aid in the markdown only. The JSON export always carries
-the whole tweet.
+so both remain useful on their own. Both read the same queries from
+`searches.json`, and there is no phrase set built into the code, so what you edit
+in the panel is what runs from either door.
 
 ## The X half
 
 Two ways in, and they have different shapes.
 
-`--live` searches X for a query. With no `--query` it uses the **full 81 phrase
-set**, the same one the bookmark pass uses, because there is no reason for live
-search to recall less. X caps one query at 512 characters and the set is 1329,
-so it is split into 4 batches and merged. A three second pause sits between
-batches. The report's `Coverage` section shows how each batch did.
+`--live` searches X for one saved query. A saved OR chain longer than 512
+characters is split into batches and merged, because X rejects anything over
+that. A three second pause sits between batches, and the report's `Coverage`
+section shows how each batch did. A query that uses `AND`, `NOT` or brackets is
+never split, because splitting it on `OR` would change what it means.
 
 It found accounts you have never heard of, which is the whole point, but a
 general search for `hiring` is noisy. Raise `--min-likes` to cut the spam.
 
 ```powershell
-python search.py --live --days 7 --min-likes 30 --md -      # full phrase set
+python search.py --live --search hiring-live --days 7 --min-likes 30 --md -
 python search.py --live --query 'hiring OR "open role"' --md -   # one narrow query
 ```
 
 `--watchlist` reads every handle in `watchlist.txt`, one per line. It sends **no
 query at all**: it reads everything the account posts and then classifies each
-post. That is why the watchlist pass does not need the phrase set and is the
-higher signal read, because you chose the accounts. Seed it yourself and add
-handles when a report names an account you do not follow.
+post. That is why it is the higher signal read, because you chose the accounts.
+Seed it yourself and add handles when a report names an account you do not follow.
 
 ### Why search was broken, and what fixes it
 
@@ -338,8 +387,9 @@ it. The commands are in the last lines of each script.
 | `test_api.py` | Boots the server on a spare port and checks every route, every rejection, and the argv each fetch job builds. |
 | `test_credentials.py` | Proves the credential write path, against a temp file only. |
 | `lists.json` | Your named lists. One source of truth for the panel. |
-| `searches.json` | Your searches. Safe to edit by hand, but the CLI and page are easier. |
-| `pat.py` | Regex guard. Every pattern must match its own probe or the run stops. |
+| `patterns.json` | Every regex the search uses, as probe plus pattern pairs. Proved against the probe on load. |
+| `searches.json` | Your searches and their queries. Safe to edit by hand, but the CLI and page are easier. |
+| `pat.py` | Regex and query guard. Every pattern must match its own probe, and every saved query must parse as FTS5, or the run stops. |
 | `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. |
 | `weekly-twitter.ps1` | Standalone X hunt, same. |
 | `watchlist.txt` | Only for the standalone `search.py --watchlist` command. The panel uses lists.json. |

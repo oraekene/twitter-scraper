@@ -5,6 +5,8 @@ dependencies beyond the Python standard library.
 
     python ctl.py list                      show every search
     python ctl.py add --name x --source live --query "hiring" --every-days 3
+    python ctl.py edit x --query "hiring OR \"open role\""   change one
+    python ctl.py rm x                                       delete one
     python ctl.py add --name y --source watchlist --handle aakashgupta
     python ctl.py add --name z --source list --list-id 1908587200419422252
     python ctl.py run --all                 run everything now
@@ -97,8 +99,15 @@ def check(s):
     """Catch a broken config before it costs a network call or a silent zero."""
     if s.get('source') not in SOURCES:
         raise ValueError(f"{s['name']}: source must be one of {SOURCES}, got {s.get('source')!r}")
-    # An empty live query is valid. It means "use the full phrase set", which is
-    # sent in batches because X caps one query at 512 characters.
+    # Nothing is hardcoded, so a search with no query searches for nothing. Both
+    # query sources need one, and a bookmarks query must also be something FTS5
+    # can parse. Live queries are left to X, which understands operators FTS5
+    # does not, such as from: and min_faves:.
+    if s['source'] in ('bookmarks', 'live') and not (s.get('query') or '').strip():
+        raise ValueError(f"{s['name']}: source {s['source']} needs a query. Quoted phrases "
+                         f"with OR. Set it in the panel, or in searches.json.")
+    if s['source'] == 'bookmarks' and (s.get('query') or '').strip():
+        S.fts_query(s['query'], s['name'])
     if s['source'] == 'list':
         if s.get('list') and not find_list(s['list']):
             raise ValueError(f"{s['name']}: no list named {s['list']!r} in lists.json")
@@ -122,12 +131,10 @@ def run_one(s):
     src = s['source']
 
     if src == 'bookmarks':
-        phrase = s.get('query') or S.CORE
-        rows = S.fetch_bookmarks(phrase, since) if hasattr(S, 'fetch_bookmarks') \
-            else S.fetch(S.DB, since)
+        rows = S.fetch(S.DB, S.fts_query(s['query'], s['name']), since)
         notes = ['local database, no network']
     elif src == 'live':
-        rows, notes = S.fetch_live_chunked(s.get('query') or S.CORE, limit, since,
+        rows, notes = S.fetch_live_chunked(s['query'], limit, since,
                                            int(s.get('min_likes', 0)), ('retweets',),
                                            float(s.get('pause', 3.0)))
     elif src == 'watchlist':
@@ -257,6 +264,21 @@ def main():
     p.add_argument('--min-likes', type=int, default=0)
     p.add_argument('--disabled', action='store_true')
 
+    ep = sub.add_parser('edit', help='change a saved search')
+    ep.add_argument('name')
+    ep.add_argument('--query')
+    ep.add_argument('--notes')
+    ep.add_argument('--every-days', type=int)
+    ep.add_argument('--time')
+    ep.add_argument('--days-back', type=int)
+    ep.add_argument('--limit', type=int)
+    ep.add_argument('--min-likes', type=int)
+    ep.add_argument('--enable', action='store_true')
+    ep.add_argument('--disable', action='store_true')
+
+    rp = sub.add_parser('rm', help='delete a saved search')
+    rp.add_argument('name')
+
     lp = sub.add_parser('lists', help='show every list')
     lap = sub.add_parser('mklist', help='create a list')
     lap.add_argument('--name', required=True)
@@ -279,8 +301,6 @@ def main():
     r.add_argument('--name', action='append', default=[])
     r.add_argument('--all', action='store_true')
     r.add_argument('--due', action='store_true')
-
-    args = ap.parse_args()
 
     args = ap.parse_args()
 
@@ -330,6 +350,41 @@ def main():
         cfg['searches'].append(s)
         save(cfg)
         print(f'added {s["name"]}')
+        return
+
+    if args.cmd == 'edit':
+        s = find(cfg, args.name)
+        if not s:
+            sys.exit(f"no search called {args.name!r}")
+        for key in ('query', 'notes', 'time'):
+            v = getattr(args, key)
+            if v is not None:
+                s[key] = v
+        for key in ('every_days', 'days_back', 'limit', 'min_likes'):
+            v = getattr(args, key)
+            if v is not None:
+                s[key] = v
+        if args.enable and args.disable:
+            sys.exit('give --enable or --disable, not both')
+        if args.enable:
+            s['enabled'] = True
+        if args.disable:
+            s['enabled'] = False
+        try:
+            check(s)
+        except ValueError as e:
+            sys.exit(str(e))
+        save(cfg)
+        print(f'edited {s["name"]}')
+        return
+
+    if args.cmd == 'rm':
+        before = len(cfg['searches'])
+        cfg['searches'] = [s for s in cfg['searches'] if s['name'] != args.name]
+        if len(cfg['searches']) == before:
+            sys.exit(f"no search called {args.name!r}")
+        save(cfg)
+        print(f'deleted {args.name}')
         return
 
     if args.cmd == 'lists':
@@ -396,7 +451,7 @@ def main():
     if args.cmd == 'serve':
         import serve
         serve.run(CONFIG, load, save, load_state, run_one, load_lists, save_lists,
-                  args.port)
+                  args.port, check=check)
 
 
 if __name__ == '__main__':
