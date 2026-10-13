@@ -67,6 +67,34 @@
       "limit": 50,
       "notes": "X list. Disabled until you confirm you want it.",
       "list": "x-list-1901503315307069643"
+    },
+    {
+      "name": "concept-hiring",
+      "source": "concept",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:30",
+      "days_back": 30,
+      "limit": 200,
+      "min_likes": 0,
+      "notes": "added by ctl.py",
+      "concept": "tweets remotely hinting at a company hiring or asking for work",
+      "concept_source": "bookmarks",
+      "seed_group": "OFFER,APPLY_CTA"
+    },
+    {
+      "name": "concept-raise",
+      "source": "concept",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:00",
+      "days_back": 7,
+      "limit": 200,
+      "min_likes": 0,
+      "notes": "added by ctl.py",
+      "concept": "tweets hinting at a Series A raise",
+      "seed_group": "OFFER",
+      "concept_source": "bookmarks"
     }
   ]
 }

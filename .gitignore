@@ -5,6 +5,8 @@ data/
 *.jsonl
 # local run state, not worth sharing
 searches-state.json
+# working database for the conceptual search, rebuilt by running it
+hiring/semsearch.db
 # screenshots and reference images, not code
 current_throwaway/
 inspiration_use/

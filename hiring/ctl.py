@@ -39,7 +39,7 @@ CONFIG = os.path.join(HERE, 'searches.json')
 LISTS = os.path.join(HERE, 'lists.json')
 STATE = os.path.join(HERE, 'searches-state.json')
 OUTDIR = os.path.join(os.path.dirname(HERE), 'out', 'searches')
-SOURCES = ('bookmarks', 'live', 'watchlist', 'list')
+SOURCES = ('bookmarks', 'live', 'watchlist', 'list', 'concept')
 
 
 # ---------- config ----------
@@ -117,6 +117,20 @@ def check(s):
         raise ValueError(f"{s['name']}: source watchlist needs a list, handles, or handles_file")
     if s['source'] == 'watchlist' and s.get('list') and not find_list(s['list']):
         raise ValueError(f"{s['name']}: no list named {s['list']!r} in lists.json")
+    # A concept is a sentence, not search syntax, so it must NOT go through
+    # fts_query. That check exists to catch a saved query FTS5 cannot parse, and
+    # a concept never reaches FTS5 as a query: sem.py expands it into one.
+    if s['source'] == 'concept':
+        c = (s.get('concept') or s.get('query') or '').strip()
+        if not c:
+            raise ValueError(f"{s['name']}: source concept needs a concept. A sentence in "
+                             f"plain English, such as 'tweets hinting at a Series A raise'. "
+                             f"Not keywords.")
+        if len(c) > 200:
+            raise ValueError(f"{s['name']}: concept is {len(c)} characters, keep it under 200")
+        if c.lower() in ('hiring', 'layoff', 'advice'):
+            raise ValueError(f"{s['name']}: a concept of one word is what the query sources "
+                             f"are for. Say what the tweets are about.")
     if int(s.get('every_days', 1)) < 1:
         raise ValueError(f"{s['name']}: every_days must be 1 or more")
     if not re.fullmatch(r'\d{2}:\d{2}', s.get('time', '09:00')):
@@ -124,6 +138,75 @@ def check(s):
 
 
 # ---------- running ----------
+def run_concept(s, limit, since):
+    """Run sem.py for a concept and reshape its candidates into the same rows
+    every other source produces, so classify, extract and the markdown writer all
+    keep working unchanged.
+
+    The concept's own verdict wins over the regex buckets when it says hit,
+    because a sentence and a pattern disagree about what counts and the model is
+    the better judge of that. Everything it is unsure about still falls through
+    to the regex tiers, so nothing is lost by trusting it.
+    """
+    import json as _json
+    import sem
+    concept = (s.get('concept') or s.get('query') or '').strip()
+    source = 'x' if s.get('concept_source', 'bookmarks') == 'x' else 'bookmarks'
+
+    # A scheduled run must not depend on a model being reachable. If no seed is
+    # configured, reuse a phrase set from patterns.json so the daily job still
+    # returns something when the model key is empty or out of credit.
+    seed = [q.strip() for q in (s.get('seed') or '').split(',') if q.strip()]
+    if not seed and s.get('seed_group'):
+        pj = os.path.join(HERE, 'patterns.json')
+        try:
+            with open(pj, encoding='utf-8') as f:
+                groups = _json.load(f)['groups']
+            for g in s['seed_group'].split(','):
+                g = g.strip().upper()
+                if g not in groups:
+                    raise ValueError(f'patterns.json has no group {g!r}. It has: '
+                                     f'{", ".join(sorted(groups))}')
+                e = groups[g]
+                seed += e['words'] if 'words' in e else [p[0] for p in e['patterns']]
+        except FileNotFoundError:
+            raise ValueError(f'{s["name"]}: patterns.json is missing, so seed_group '
+                             f'{s["seed_group"]!r} cannot be read')
+
+    log = []
+    cands = sem.run(
+        sem.connect(), concept, source, limit, since,
+        int(s.get('min_likes', 0)), days_back=int(s.get('days_back', 7)),
+        rubric=int(s.get('rubric', 1)), n_queries=int(s.get('queries', 60)),
+        pool_size=int(s.get('pool', 300)), frontier_top=int(s.get('frontier', 0)),
+        seed=seed or None, fresh=True, quiet=True, log=log)
+    rows = []
+    for c in cands:
+        rows.append({
+            'id': c['id'], 'url': c.get('url', ''), 'text': c.get('text', ''),
+            'author_handle': c.get('handle', ''), 'author_name': '',
+            'posted_at': c.get('posted_at', ''),
+            'like_count': c.get('likes', 0) or 0, 'repost_count': c.get('reposts', 0) or 0,
+            'reply_count': c.get('replies', 0) or 0,
+            # kept so the markdown can show why the classifier decided
+            'concept_verdict': c.get('verdict') or 'unjudged',
+            'concept_score': c.get('prob'),
+            'concept_why': c.get('reason') or '',
+            'found_by_queries': c.get('found_by', 0),
+        })
+    # sem.run's own lines go in as coverage, so an empty report says why instead
+    # of just showing a zero.
+    notes = [f'concept {concept!r} over {source}']
+    if seed:
+        notes.append(f'{len(seed)} fixed queries from '
+                     f'{s.get("seed_group") or "seed"}, so this run costs no model call')
+    notes += log
+    if not cands:
+        notes.append('NOTHING FOUND. If there is no model key, set seed_group so the run '
+                     'has queries to work from.')
+    return rows, notes
+
+
 def run_one(s):
     check(s)
     limit = int(s.get('limit', 50))
@@ -133,6 +216,8 @@ def run_one(s):
     if src == 'bookmarks':
         rows = S.fetch(S.DB, S.fts_query(s['query'], s['name']), since)
         notes = ['local database, no network']
+    elif src == 'concept':
+        rows, notes = run_concept(s, limit, since)
     elif src == 'live':
         rows, notes = S.fetch_live_chunked(s['query'], limit, since,
                                            int(s.get('min_likes', 0)), ('retweets',),
@@ -166,7 +251,11 @@ def run_one(s):
 
     for r in rows:
         r.update(S.extract(r))
-        r['bucket'] = S.classify(r.get('text') or '')
+        # A concept hit is an opening by definition of the concept, so the regex
+        # tiers do not get to overrule it. Anything the model was unsure about
+        # falls through to them unchanged.
+        r['bucket'] = ('opening' if r.get('concept_verdict') == 'hit'
+                       else S.classify(r.get('text') or ''))
         r['dt'] = S.when(r.get('posted_at') or '')
 
     os.makedirs(OUTDIR, exist_ok=True)
@@ -218,11 +307,19 @@ def markdown(s, p, rows):
                 bits.append('roles: ' + ', '.join(r['roles'][:3]))
             if r['pay']:
                 bits.append('pay: ' + ' '.join(r['pay'][:2]))
+            # A concept run records why the classifier decided, so the report is
+            # auditable rather than a list you have to take on faith.
+            if r.get('concept_verdict') and r.get('concept_verdict') != 'unjudged':
+                sc = r.get('concept_score')
+                bits.append(f"concept {r['concept_verdict']}"
+                            + (f' {sc:.2f}' if isinstance(sc, (int, float)) else ''))
             head = f"- **@{r['author_handle']}**"
             if r['dt']:
                 head += f" {(datetime.now(timezone.utc) - r['dt']).days}d"
             L.append(head + (f" — {' | '.join(bits)}" if bits else ''))
             L.append(f"  {S.snip(r['text'])}")
+            if r.get('concept_why'):
+                L.append(f"  why: {r['concept_why']}")
             L.append(f"  <{r['url']}>")
         L.append('')
     return '\n'.join(L)
@@ -254,6 +351,15 @@ def main():
     p.add_argument('--name', required=True)
     p.add_argument('--source', required=True, choices=SOURCES)
     p.add_argument('--query', default='')
+    p.add_argument('--concept', default='',
+                   help='source concept only. A sentence in plain English, not keywords.')
+    p.add_argument('--seed', default='',
+                   help='source concept only. Comma separated queries to use instead of '
+                        'generating them, so a scheduled run costs no model call.')
+    p.add_argument('--seed-group', default='',
+                   help='source concept only. Comma separated patterns.json groups to use '
+                        'as the fixed query set, for example OFFER,APPLY_CTA.')
+    p.add_argument('--concept-source', default='bookmarks', choices=('bookmarks', 'x'))
     p.add_argument('--handle', action='append', default=[], help='repeatable')
     p.add_argument('--list', help='a named list from lists.json')
     p.add_argument('--list-id')
@@ -267,6 +373,9 @@ def main():
     ep = sub.add_parser('edit', help='change a saved search')
     ep.add_argument('name')
     ep.add_argument('--query')
+    ep.add_argument('--concept')
+    ep.add_argument('--seed')
+    ep.add_argument('--seed-group')
     ep.add_argument('--notes')
     ep.add_argument('--every-days', type=int)
     ep.add_argument('--time')
@@ -337,6 +446,14 @@ def main():
         }
         if args.query:
             s['query'] = args.query
+        if args.concept:
+            s['concept'] = args.concept
+        if args.seed:
+            s['seed'] = args.seed
+        if args.seed_group:
+            s['seed_group'] = args.seed_group
+        if args.source == 'concept':
+            s['concept_source'] = args.concept_source
         if args.handle:
             s['handles'] = args.handle
         if args.list:
@@ -356,7 +473,7 @@ def main():
         s = find(cfg, args.name)
         if not s:
             sys.exit(f"no search called {args.name!r}")
-        for key in ('query', 'notes', 'time'):
+        for key in ('query', 'notes', 'time', 'concept', 'seed', 'seed_group'):
             v = getattr(args, key)
             if v is not None:
                 s[key] = v

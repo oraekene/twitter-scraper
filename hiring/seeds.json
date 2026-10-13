@@ -1,0 +1,64 @@
+{
+  "_why": [
+    "Few-shot examples for sem.py phase 2. Each entry gives the model tweets that",
+    "genuinely match a concept, so it writes queries backwards from real text",
+    "instead of from the concept name. That is worth more than a better prompt:",
+    "the model cannot know that X indexes 'DM me your work' but not 'open roles'",
+    "unless it has seen both.",
+    "",
+    "Add your own by pasting tweets you already know are good. The best examples",
+    "are the awkward ones: slang, lowercase, missing apostrophes, no role named.",
+    "Ten real examples beat fifty invented ones.",
+    "",
+    "This is few-shot prompting. No embeddings and no fine-tuning are involved."
+  ],
+  "hiring": {
+    "concept": "tweets remotely hinting at a company hiring, or asking for work",
+    "examples": [
+      "We are hiring! 1. Operations: Finance, Operations, Audit expertise 2. Growth: Startup experience.",
+      "Come join the Frontier. We're hiring factory.com/company#careers",
+      "430+ open roles at SpaceXAI across all teams: x.ai/careers/open-r…",
+      "we are hiring interns :) if you're chronically online and unemployed, you might fit the position.",
+      "DM me your work",
+      "We @diabrowser are hiring Prompt Engineers! Slop cannon. Vibecoder. Prototyper.",
+      "Vacancy exists for a fresh graduate for a data analyst role. Interested candidates should send CV to careers@tetramaritime.com",
+      "If you're an AI automation engineer, we'll hire you. Into ANY open role at Zapier.",
+      "This paid internship is open now!!! 100% Remote. Salary: $145/monthly.",
+      "Open positions - Digital Marketing Manager - Product Manager"
+    ]
+  },
+  "funding": {
+    "concept": "tweets announcing or hinting at a funding round, an acquisition, or a raise",
+    "examples": [
+      "We just raised a Series A led by someone with a good fund. AMA.",
+      "Thrilled to share that we raised $4M seed to build the thing nobody has built.",
+      "excited to join the team, can't wait to build ✌️",
+      "Our company was acquired yesterday. Three years of nights paid off.",
+      "raising a seed round, pre-seed traction, looking for a first eng hire",
+      "pre-seed, we are looking for our first design partner, dm me"
+    ]
+  },
+  "complaints": {
+    "concept": "accounts complaining about a product being slow, broken or wasting their time",
+    "examples": [
+      "Cursor has been eating my RAM all morning and the autocomplete is still wrong.",
+      "honestly vite cold starts are a joke",
+      "Vercel charged me for a function that never ran. three times.",
+      "the docs say one thing the code does another",
+      "support has not replied in nine days. nine.",
+      "rewrote it in rust and it does not even compile",
+      "support said 48h. it has been eleven days."
+    ]
+  },
+  "gambling": {
+    "concept": "sportsbook promotion, betting tips, and football gambling talk",
+    "examples": [
+      "punter won again 💰 banker moved to 34 odds",
+      "BOOM!! 🔥🔥🔥",
+      "this game is LOCKED IN. 2 goals or nothing",
+      "banker man is crying rn, corner taken early",
+      "surebet of the day, join my telegram for the slips",
+      "my slip is dead 💀 leg one lost"
+    ]
+  }
+}

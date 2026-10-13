@@ -41,9 +41,12 @@ RUNNABLE = {
     'fieldtheory-stats':   ['fieldtheory', 'stats'],
     'fieldtheory-folders': ['fieldtheory', 'folders'],
     'tests':               ['python', '-c', 'import subprocess,sys;'
-                            'r=[subprocess.run([sys.executable,f],capture_output=True).returncode'
-                            ' for f in ["test_sync.py","test_crawl.py","test_weekly.py"]];'
+                            'jobs=[("test_sync.py",),("test_crawl.py",),("test_weekly.py",),'
+                            '("hiring/pat.py",),("hiring/sem.py","selftest")];'
+                            'r=[subprocess.run([sys.executable,*j],capture_output=True).returncode'
+                            ' for j in jobs];'
                             'print("exit codes:",r);sys.exit(max(r))'],
+    'sem-selftest':        [sys.executable, os.path.join(HERE, 'sem.py'), 'selftest'],
     'fix-fieldtheory':     ['node', os.path.join(HERE, 'fix-fieldtheory.js')],
     'fix-twitter-cli':     ['node', os.path.join(HERE, 'fix-twitter-cli.js')],
 }
@@ -191,10 +194,93 @@ FETCH = {
             {'name': 'save', 'label': 'Save to out\\', 'kind': 'flag', 'default': True},
         ],
     },
+    'sem-search': {
+        'label': 'Concept search',
+        'why': 'Search a concept you can describe in words, with no embeddings. '
+               'Offline against your bookmarks by default, live against X on request.',
+        'base': ['hiring/sem.py', 'search'],
+        'fields': [
+            {'name': 'concept', 'label': 'Concept in plain English', 'kind': 'text',
+             'positional': True, 'default': 'tweets remotely hinting at hiring',
+             'required': True, 'pattern': r'[^<>:"/\\|?*]{3,120}',
+             'placeholder': 'accounts complaining about Cursor performance',
+             'help': 'Never a keyword list. A sentence works best.'},
+            {'name': 'source', 'label': 'Search where', 'kind': 'text', 'default': 'bookmarks',
+             'pattern': r'bookmarks|x',
+             'help': 'bookmarks is free and offline. x spends rate limit on live search.'},
+            {'name': 'seed-group', 'label': 'Seed from patterns.json', 'kind': 'text',
+             'default': '', 'pattern': r'[A-Za-z,]{0,60}',
+             'placeholder': 'OFFER,APPLY_CTA',
+             'help': 'Blank generates queries with a model. A group name reuses the '
+                     'hand-written phrase set instead, which is the apples to apples '
+                     'comparison against the existing module.'},
+            {'name': 'limit', 'label': 'Rows per query', 'kind': 'int',
+             'default': 200, 'min': 1, 'max': 1000},
+            {'name': 'pool', 'label': 'Tweets sent to the classifier', 'kind': 'int',
+             'default': 300, 'min': 1, 'max': 2000,
+             'help': 'The classifier reads this many. Each one is one Jev call.'},
+            {'name': 'queries', 'label': 'Queries to generate', 'kind': 'int',
+             'default': 60, 'min': 5, 'max': 200,
+             'help': 'More is better up to the rate limit. Agreement between queries is '
+                     'the whole ranking signal, so a small number finds nothing.'},
+            {'name': 'frontier', 'label': 'Rerank N unclear with a big model', 'kind': 'int',
+             'default': 0, 'min': 0, 'max': 200,
+             'help': 'Zero skips it. Needs a chat model key in .env, which Jev is not.'},
+            {'name': 'n', 'label': 'Rows to show', 'kind': 'int',
+             'default': 20, 'min': 1, 'max': 200},
+            {'name': 'since', 'label': 'Days back (bookmarks only)', 'kind': 'int',
+             'default': '', 'min': 1, 'max': 3650,
+             'help': 'Counts from when you saved it, not when it was posted.'},
+            {'name': 'min-likes', 'label': 'Minimum likes', 'kind': 'int',
+             'default': 0, 'min': 0, 'max': 1000000},
+            {'name': 'fresh', 'label': 'Only what this run found', 'kind': 'flag',
+             'default': False,
+             'help': 'Off shows everything ever found for the concept. On shows today only.'},
+        ],
+    },
+    'sem-eval': {
+        'label': 'Is the model better than the regex?',
+        'why': 'The adversarial suite. Fourteen tweets that a regex cannot separate, so '
+               'it is the cheapest test that can say whether the model layer earns its cost.',
+        'base': ['hiring/sem.py', 'eval'],
+        'fields': [
+            {'name': 'concept', 'label': 'Concept', 'kind': 'text', 'positional': True,
+             'default': 'hiring', 'required': True, 'pattern': r'[^<>:"/\\|?*]{1,120}'},
+            {'name': 'suite', 'label': 'Suite', 'kind': 'text', 'default': 'adversarial',
+             'pattern': r'gold|adversarial',
+             'help': 'adversarial needs no labels. gold scores a run against labels '
+                     'you recorded with: python sem.py gold <id> hit'},
+        ],
+    },
+    'sem-rerank': {
+        'label': 'Rerank the unclear band',
+        'why': 'Send only the tweets Jev would not commit to, to a big chat model, and '
+               'promote whatever it likes. No retrieval, so it costs nothing but the call.',
+        'base': ['hiring/sem.py', 'rerank'],
+        'fields': [
+            {'name': 'concept', 'label': 'Concept', 'kind': 'text', 'positional': True,
+             'default': 'hiring', 'required': True, 'pattern': r'[^<>:"/\\|?*]{1,120}'},
+            {'name': 'n', 'label': 'Unclear tweets to rerank', 'kind': 'int',
+             'default': 20, 'min': 1, 'max': 200},
+            {'name': 'run', 'label': 'Run number', 'kind': 'int',
+             'default': '', 'min': 1, 'max': 1000000,
+             'help': 'Blank uses the most recent run for this concept.'},
+        ],
+    },
+    'sem-queries': {
+        'label': 'Which queries paid off',
+        'why': 'The scoreboard. Every query with how many top results it has produced, so '
+               'the dead ones are visible and can be retired.',
+        'base': ['hiring/sem.py', 'queries'],
+        'fields': [
+            {'name': 'concept', 'label': 'Concept', 'kind': 'text', 'positional': True,
+             'default': 'hiring', 'required': True, 'pattern': r'[^<>:"/\\|?*]{1,120}'},
+        ],
+    },
 }
 
 # Keys whose presence matters in .env. Values are never sent to the browser.
-ENV_KEYS = ('TWITTER_AUTH_TOKEN', 'TWITTER_CT0')
+ENV_KEYS = ('TWITTER_AUTH_TOKEN', 'TWITTER_CT0', 'TYPESAFE_API_KEY')
 
 # Detect each patch by its real signature, not by a marker comment. The
 # fieldtheory fix has no comment in it, so a marker check reported a working

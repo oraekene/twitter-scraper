@@ -720,6 +720,8 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
       <div class="field"><label>Source</label><select id="e-source"></select></div>
       <div class="field"><label>List</label><select id="e-list"></select></div>
       <div class="field" style="grid-column:1/-1"><label>Query. Quoted phrases with OR, AND, NOT. Required for bookmarks and live.</label><textarea id="e-query" rows="4" class="mono"></textarea></div>
+      <div class="field" style="grid-column:1/-1"><label>Concept. A sentence in plain English. Used by the concept source.</label><textarea id="e-concept" rows="2"></textarea></div>
+      <div class="field"><label>Concept searches</label><select id="e-concept-source"><option value="bookmarks">bookmarks (free)</option><option value="x">live X</option></select></div>
       <div class="field" style="grid-column:1/-1"><label>Handles (only when source is watchlist and no list)</label><input id="e-handles"></div>
       <div class="field"><label>Every N days</label><input id="e-every" type="number" min="1"></div>
       <div class="field"><label>Time</label><input id="e-time"></div>
@@ -739,6 +741,8 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
       <div class="field"><label>Name</label><input id="a-name" placeholder="ai-jobs"></div>
       <div class="field"><label>Source</label><select id="a-source"></select></div>
       <div class="field" style="grid-column:1/-1"><label>Query. Quoted phrases with OR, AND, NOT. Required for bookmarks and live.</label><textarea id="a-query" rows="3" class="mono" placeholder='hiring OR "open role"'></textarea></div>
+      <div class="field" style="grid-column:1/-1"><label>Concept. A sentence in plain English, not keywords. Required for the concept source, and it is what the model expands into search queries.</label><textarea id="a-concept" rows="2" placeholder="tweets hinting at a Series A raise"></textarea></div>
+      <div class="field"><label>Concept searches</label><select id="a-concept-source"><option value="bookmarks">bookmarks (free)</option><option value="x">live X</option></select></div>
       <div class="field"><label>List</label><select id="a-list"></select></div>
       <div class="field"><label>Handles</label><input id="a-handles" placeholder="aakashgupta"></div>
       <div class="field"><label>Every N days</label><input id="a-every" type="number" min="1" value="1"></div>
@@ -775,7 +779,7 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
 const el = (id) => document.getElementById(id);
 const esc = (x) => String(x ?? '').replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const SOURCES = ['bookmarks', 'live', 'watchlist', 'list'];
+const SOURCES = ['bookmarks', 'live', 'watchlist', 'list', 'concept'];
 
 function toast(msg, bad) {
   const t = el('toast');
@@ -1004,6 +1008,9 @@ async function delList(name) {
 /* ── searches ───────────────────────────────────────────────────────────── */
 let CURRENT = [];
 function brief(s) {
+  // A concept search has no query, it has a sentence, so show the sentence.
+  // Without this it shows an empty second line and looks broken.
+  if (s.concept) return s.concept.length > 30 ? s.concept.slice(0, 30) + '...' : s.concept;
   if (s.query) {
     const n = s.query.split(' OR ').length;
     return n > 1 ? `${n} phrases: ${s.query.slice(0, 28)}...` : s.query;
@@ -1038,7 +1045,7 @@ function fillSourceSelect(sel, value) {
 function openAdd() {
   el('a-name').value = '';
   fillSourceSelect(el('a-source'), 'live');
-  el('a-query').value = ''; el('a-handles').value = '';
+  el('a-query').value = ''; el('a-handles').value = ''; el('a-concept').value = '';
   el('a-every').value = 1; el('a-time').value = '09:00';
   el('a-back').value = 7; el('a-likes').value = 0;
   fillListSelects();
@@ -1050,7 +1057,10 @@ async function saveAdd() {
                 days_back: +el('a-back').value || 7, min_likes: +el('a-likes').value || 0,
                 limit: 50};
   const q = el('a-query').value.trim(), h = el('a-handles').value.trim(), l = el('a-list').value;
+  const c = el('a-concept').value.trim();
   if (q) body.query = q;
+  if (c) body.concept = c;
+  if (body.source === 'concept') body.concept_source = el('a-concept-source').value;
   if (h) body.handles = h.split(',').map(x => x.trim().replace(/^@/, '')).filter(Boolean);
   if (l) body.list = l;
   if (!body.name) return toast('name is required', true);
@@ -1065,6 +1075,8 @@ function openEdit(name) {
   fillListSelects();
   el('e-list').value = s.list || '';
   el('e-query').value = s.query || '';
+  el('e-concept').value = s.concept || '';
+  el('e-concept-source').value = s.concept_source || 'bookmarks';
   el('e-handles').value = (s.handles || []).join(', ');
   el('e-every').value = s.every_days || 1;
   el('e-time').value = s.time || '09:00';
@@ -1076,6 +1088,8 @@ function openEdit(name) {
 async function saveEdit() {
   const patch = {source: el('e-source').value, list: el('e-list').value,
                  query: el('e-query').value.trim(),
+                 concept: el('e-concept').value.trim(),
+                 concept_source: el('e-concept-source').value,
                  handles: el('e-handles').value.split(',').map(x => x.trim().replace(/^@/, '')).filter(Boolean),
                  every_days: +el('e-every').value || 1, time: el('e-time').value.trim(),
                  days_back: +el('e-back').value || 7, min_likes: +el('e-likes').value || 0,
