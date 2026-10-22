@@ -56,9 +56,9 @@ def _flags(**kw):
 
 
 def test_sync_flags_match_the_old_hardcoded_call():
-    """The default run must be byte for byte the command the script always ran."""
+    """The default run is incremental from the top, never --continue."""
     got = _flags()
-    assert got == ["sync", "--yes", "--continue", "--no-media", "--max-minutes", "240"], got
+    assert got == ["sync", "--yes", "--no-media", "--max-minutes", "240"], got
 
 
 def test_sync_flags_expose_the_real_knobs():
@@ -71,11 +71,11 @@ def test_sync_flags_expose_the_real_knobs():
     assert "--classify" in _flags(classify=True)
 
 
-def test_sync_flags_rebuild_and_continue_are_exclusive():
-    """They are opposites. Passing both would restart and immediately resume."""
+def test_sync_flags_never_resume_and_rebuild_is_opt_in():
+    """--continue hides new bookmarks behind its old cursor, so never pass it."""
     assert "--rebuild" in _flags(rebuild=True)
     assert "--continue" not in _flags(rebuild=True)
-    assert "--continue" in _flags()
+    assert "--continue" not in _flags()
     assert "--rebuild" not in _flags()
 
 

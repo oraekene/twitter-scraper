@@ -48,11 +48,14 @@ def sync_flags(a) -> list[str]:
     the network or the real database. Credentials are not added here, they are
     the caller's business: --api ignores them entirely.
 
-    --continue and --yes are always on, because this script is meant to be
-    rerun until it stops saying "max runtime reached". --rebuild is the opposite
-    of --continue, so rebuild wins and throws the cursor away on purpose.
+    --yes is always on, because this script is meant to be rerun. The default
+    is an incremental run from the top of the list: it adds what is new and
+    stops at the newest stored bookmark. --continue is deliberately not used,
+    because its saved cursor points at the old end of the list and hides every
+    bookmark added above it (that bug made a week of new bookmarks invisible).
+    --rebuild throws the cursor away and re-scans everything.
     """
-    cmd = ["sync", "--yes", "--rebuild" if a.rebuild else "--continue"]
+    cmd = ["sync", "--yes"] + (["--rebuild"] if a.rebuild else [])
     for on, flag in ((a.gaps, "--gaps"), (a.classify, "--classify"),
                      (a.folders, "--folders"), (a.skip_profile_images,
                                                 "--skip-profile-images")):
@@ -118,8 +121,8 @@ def main() -> int:
     count = len(json.loads((OUT / "bookmarks.json").read_text(encoding="utf-8")))
     print(f"twitter-cli: {count} bookmarks")
 
-    # ponytail: ft stops at --max-minutes and saves a cursor. If it prints
-    # "max runtime reached", run this script again; --continue resumes.
+    # ponytail: ft stops at --max-minutes. If it prints "max runtime reached",
+    # run this script again; the next run starts from the top and continues.
     cmd = [str(NODE), str(FT), *sync_flags(args)]
     # --api reads its own OAuth token and must not be handed cookie values.
     cmd += [] if args.api else ["--cookies", ct0, token]
