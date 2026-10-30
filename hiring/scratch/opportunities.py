@@ -1,15 +1,22 @@
 """Integrate roundup.py into opportunities.py."""
 import json
+import os
 import re
 import sqlite3
 import sys
-from datetime import date
+from datetime import date, datetime
 
 # Import the roundup parser from the same directory
 import roundup
 import dedupe
 
 DB_PATH = "C:/Users/rotim/.fieldtheory/bookmarks/bookmarks.db"
+
+# Single-program rows live in a data file, not in this script, so adding an
+# opportunity never means editing code. The two arrays below are only the seed
+# used the first time that file does not exist.
+MANUAL_PATH = "hiring/opportunities_manual.json"
+CANDIDATES_PATH = "out/single-candidates.md"
 
 # Roundup tweets are discovered from the database, not registered by hand. A
 # roundup is a tweet listing three or more dated opportunities; `roundup.py`
@@ -162,6 +169,68 @@ UNDATED = [
      "$50k in prizes, submit free, open to everyone.",
      "https://x.com/dare_market/status/1984347783000965188"),
 ]
+
+
+def _load_manual():
+    """Read single-program rows from the data file, seeding it from the arrays
+    in this script the first time.
+
+    Dated rows come back as (date, label, program, detail, tweet) and undated as
+    (timing, program, detail, tweet), which is the shape the rest of the script
+    already expects. A row added to the JSON needs no code change.
+    """
+    if os.path.exists(MANUAL_PATH):
+        with open(MANUAL_PATH, encoding="utf-8") as fh:
+            data = json.load(fh)
+        dated = [(datetime.strptime(r["deadline"], "%Y-%m-%d").date(),
+                  r["label"], r["program"], r["detail"], r["tweet"])
+                 for r in data.get("dated", [])]
+        undated = [(r["timing"], r["program"], r["detail"], r["tweet"])
+                   for r in data.get("undated", [])]
+        return dated, undated
+    data = {
+        "dated": [{"deadline": d.isoformat(), "label": label, "program": program,
+                   "detail": detail, "tweet": tweet}
+                  for d, label, program, detail, tweet in DATED],
+        "undated": [{"timing": timing, "program": program, "detail": detail,
+                     "tweet": tweet}
+                    for timing, program, detail, tweet in UNDATED],
+    }
+    with open(MANUAL_PATH, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=1, ensure_ascii=False)
+    print(f"seeded {MANUAL_PATH} with {len(DATED)} dated and {len(UNDATED)} undated rows")
+    return DATED, UNDATED
+
+
+DATED, UNDATED = _load_manual()
+
+
+if "--candidates" in sys.argv:
+    # Propose single-program rows instead of building the list. The program name
+    # is left blank on purpose; naming it is the one judgement a person makes.
+    _cands = roundup.find_single_tweets(
+        DB_PATH, known_tweets={r[4] for r in DATED} | {u[3] for u in UNDATED})
+    _lines = [
+        "# Single-program tweets that look like opportunities",
+        "",
+        f"{len(_cands)} tweet(s) posted in the last 45 days that name an application",
+        "window and a date, and are not already in `opportunities_manual.json`.",
+        "",
+        "Fill the Program column, then add the row to `out/opportunities_manual.json`.",
+        "A tweet whose date has passed belongs in `dated` with `\"label\": \"<date>, closed\"`.",
+        "",
+        "| Posted | Dates in tweet | Money | Evidence | Tweet | Program to fill |",
+        "|---|---|---|---|---|---|",
+    ]
+    for c in _cands:
+        evidence = c["text"].replace("\n", " ").replace("|", "/")[:220]
+        _lines.append(
+            f"| {c['posted']} | {', '.join(c['dates']) or '-'} | "
+            f"{', '.join(c['money']) or '-'} | {evidence} | {c['tweet']} |  |")
+    with open(CANDIDATES_PATH, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(_lines) + "\n")
+    print(f"wrote {CANDIDATES_PATH}: {len(_cands)} candidate(s) to review")
+    sys.exit(0)
 
 
 def load_roundup_rows():

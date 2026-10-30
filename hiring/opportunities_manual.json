@@ -1,0 +1,286 @@
+{
+ "dated": [
+  {
+   "deadline": "2026-10-11",
+   "label": "Oct 11, closed",
+   "program": "a16z Speedrun alpha",
+   "detail": "Up to $250k for students and new grads. The list says apps closed on the Sunday.",
+   "tweet": "https://x.com/justmazer/status/2108622120117015026"
+  },
+  {
+   "deadline": "2026-10-20",
+   "label": "Oct 20, closed",
+   "program": "Bolt Builders Week",
+   "detail": "$10k for the best app shipped on the free weekend.",
+   "tweet": "https://x.com/boltdotnew/status/2111125198577479919"
+  },
+  {
+   "deadline": "2026-10-26",
+   "label": "Oct 26, closed",
+   "program": "Entrepreneur First, The Bridge Residency (Winter 2027)",
+   "detail": "Up to $250k on company formation, or a $10k equity-free fellowship.",
+   "tweet": "https://x.com/kseniam0s/status/2108629257169555512"
+  },
+  {
+   "deadline": "2026-10-27",
+   "label": "Oct 27, closed",
+   "program": "GitLab Life After Code hackathon",
+   "detail": "$45k.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-10-28",
+   "label": "Oct 28, closed",
+   "program": "Anthropic Fellowships (STEM and Conceptual Reasoning)",
+   "detail": "Four months at Anthropic from January 2027.",
+   "tweet": "https://x.com/AnthropicAI/status/2110720940665372825"
+  },
+  {
+   "deadline": "2026-10-30",
+   "label": "Oct 30",
+   "program": "Nebius x NVIDIA Global AI Hackathon",
+   "detail": "$50k. Also in the @juampitech $2.5M roundup.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-11-01",
+   "label": "Nov 1",
+   "program": "a16z Speedrun",
+   "detail": "$500k plus $10m in credits.",
+   "tweet": "https://x.com/vercinyc/status/2114386554403897624"
+  },
+  {
+   "deadline": "2026-11-01",
+   "label": "Nov 1",
+   "program": "Pivotal Q1 2027 Research Fellowship",
+   "detail": "GBP 15k-18k stipend, 15 weeks in London from 18 January, mentors from Anthropic and DeepMind.",
+   "tweet": "https://x.com/pivotal_org/status/2108644575283736780"
+  },
+  {
+   "deadline": "2026-11-02",
+   "label": "Nov 2, 8pm PT",
+   "program": "YC Winter 2027 batch",
+   "detail": "The official YC tweet gives the deadline; the vercinyc roundup repeats it at $500k.",
+   "tweet": "https://x.com/ycombinator/status/2111183078072979886"
+  },
+  {
+   "deadline": "2026-11-02",
+   "label": "Nov 2",
+   "program": "ERA NYC accelerator",
+   "detail": "$150k and four months in New York.",
+   "tweet": "https://x.com/vercinyc/status/2114386554403897624"
+  },
+  {
+   "deadline": "2026-11-03",
+   "label": "Nov 3",
+   "program": "Twitch x OpenAI Codex Hackathon",
+   "detail": "$25k cash plus a TwitchCon stage spot.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-11-03",
+   "label": "Nov 3 (event Nov 3-8)",
+   "program": "Vultr Agent Rush hackathon",
+   "detail": "$9k cash plus $5k credits, $200 free credits for everyone.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-11-05",
+   "label": "Nov 5 (event Nov 5-7)",
+   "program": "ETHGlobal Mumbai",
+   "detail": "$175k. Applications open, no close date given.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-11-07",
+   "label": "Nov 7 (event Nov 7-8)",
+   "program": "Naive Autonomous Company Hackathon at YC",
+   "detail": "$100k+ prizes and a guaranteed YC interview. Registration closing date not stated.",
+   "tweet": "https://x.com/usenaive/status/2114715211244376391"
+  },
+  {
+   "deadline": "2026-11-09",
+   "label": "Nov 9, 9am PST",
+   "program": "Ikigai Grants",
+   "detail": "$50k total, about $5k a check.",
+   "tweet": "https://x.com/alexsaraki/status/2113671979081572512"
+  },
+  {
+   "deadline": "2026-11-13",
+   "label": "Nov 13",
+   "program": "PayPal AI Hackathon",
+   "detail": "$67.5k cash. Also in the @juampitech roundup.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-11-15",
+   "label": "Nov 15",
+   "program": "CMU Africa Certificate in AI",
+   "detail": "Free and online for selected applicants, six courses, starts Jan 17 2027.",
+   "tweet": "https://x.com/hannytalker/status/2111834513269567542"
+  },
+  {
+   "deadline": "2026-11-18",
+   "label": "Nov 18",
+   "program": "Techstars NYC",
+   "detail": "$220k. Techstars' own tweet gives the same date.",
+   "tweet": "https://x.com/Techstars/status/2108271276003405945"
+  },
+  {
+   "deadline": "2026-11-19",
+   "label": "Nov 19",
+   "program": "Meta VR Start Developer Competition",
+   "detail": "$1M cash, Start program members only.",
+   "tweet": "https://x.com/Build3DAO/status/2114326493811945679"
+  },
+  {
+   "deadline": "2026-12-04",
+   "label": "Dec 4",
+   "program": "Kiroween 2026 by Kiro (AWS)",
+   "detail": "$100k cash, online and global, build window opens Oct 30.",
+   "tweet": "https://x.com/suraj_sharma14/status/2114288357140549648"
+  },
+  {
+   "deadline": "2026-12-15",
+   "label": "Dec 15",
+   "program": ".tech No Excuses Fund",
+   "detail": "Up to $1M equity-free. Condition: your build must be live on a .tech domain by this date.",
+   "tweet": "https://x.com/suraj_sharma14/status/2111140118543339982"
+  },
+  {
+   "deadline": "2027-01-31",
+   "label": "Jan 31, 2027",
+   "program": "Mercedes-Benz be-Visioneers Fellowship",
+   "detail": "Fully funded, EUR 15k, travel and accommodation, 69+ eligible countries.",
+   "tweet": "https://x.com/scholarsregion/status/2108236946384515332"
+  }
+ ],
+ "undated": [
+  {
+   "timing": "Rolling",
+   "program": "Basis Fellowship",
+   "detail": "$50k, no equity, no reporting, applications always open.",
+   "tweet": "https://x.com/ivan_nomadz/status/2112892308144157009"
+  },
+  {
+   "timing": "Rolling",
+   "program": "Z Fellows",
+   "detail": "$10k at a $1B cap, no deadline.",
+   "tweet": "https://x.com/suraj_sharma14/status/2111827142270918968"
+  },
+  {
+   "timing": "Rolling",
+   "program": "Thiel Fellowship",
+   "detail": "$250k over two years, 22 and under.",
+   "tweet": "https://x.com/vercinyc/status/2114386554403897624"
+  },
+  {
+   "timing": "Rolling",
+   "program": "Antler NYC",
+   "detail": "$500k+, needs US work authorization.",
+   "tweet": "https://x.com/vercinyc/status/2114386554403897624"
+  },
+  {
+   "timing": "Always open",
+   "program": "Hustle Fund",
+   "detail": "$150k first check.",
+   "tweet": "https://x.com/vercinyc/status/2114386554403897624"
+  },
+  {
+   "timing": "Rolling",
+   "program": "1517 Medici",
+   "detail": "Grants for students and dropouts.",
+   "tweet": "https://x.com/vercinyc/status/2114386554403897624"
+  },
+  {
+   "timing": "Rolling",
+   "program": "Solo Founders Program",
+   "detail": "$100k on an uncapped MFN SAFE, three months in SF from Feb 2027.",
+   "tweet": "https://x.com/suraj_sharma14/status/2111464752581149037"
+  },
+  {
+   "timing": "Rolling",
+   "program": "Afore Founders-in-Residence",
+   "detail": "$250k-$750k on acceptance, eight weeks in SF, next cohort Feb 1 2027.",
+   "tweet": "https://x.com/suraj_sharma14/status/2108852541622493365"
+  },
+  {
+   "timing": "Rolling",
+   "program": "Worldwide Studios Physical AI Fellowship",
+   "detail": "Free, 100 days, AI, robotics or hardware.",
+   "tweet": "https://x.com/TheJobfather__/status/2114397078763806804"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Rockefeller and OpenAI Africa grants",
+   "detail": "$50m pool, up to $2m per organisation, applications open.",
+   "tweet": "https://x.com/theisaacola/status/2110967079574855968"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Gemini Hackathon (Google DeepMind)",
+   "detail": "$20k in prizes plus free model access.",
+   "tweet": "https://x.com/juampitech/status/2111210644573950103"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Meta Global AI Developer Hackathon",
+   "detail": "$1M.",
+   "tweet": "https://x.com/juampitech/status/2111210644573950103"
+  },
+  {
+   "timing": "Not stated",
+   "program": "ElevenLabs Worldwide Hackathon",
+   "detail": "$200k+.",
+   "tweet": "https://x.com/juampitech/status/2111210644573950103"
+  },
+  {
+   "timing": "Not stated",
+   "program": "AWS Developer Hackathon",
+   "detail": "$138k.",
+   "tweet": "https://x.com/juampitech/status/2111210644573950103"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Arbitrum Hackathon",
+   "detail": "$300k.",
+   "tweet": "https://x.com/juampitech/status/2111210644573950103"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Said Aitambarek accelerator and micro-fund",
+   "detail": "$1k-$2k for finalists, zero equity, first cohort forming.",
+   "tweet": "https://x.com/SaidAitambarek/status/2113684256266629298"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Idealab.ai funding",
+   "detail": "Bill Gross offers funds or investor intros for an idea you want to take forward.",
+   "tweet": "https://x.com/Bill_Gross/status/2112910732262277152"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Muse Spark open kernel challenge",
+   "detail": "$100k for the fastest Muse Spark implementation.",
+   "tweet": "https://x.com/danielgross/status/2113351902402613558"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Grok for Startups",
+   "detail": "6 to 12 months of credits across Grok and the API, spend matched 1:1.",
+   "tweet": "https://x.com/ns123abc/status/2113337172031943128"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Finc, international founder investment",
+   "detail": "$100k-$200k for an international founder willing to build in SF.",
+   "tweet": "https://x.com/fdotinc/status/2108295687519805737"
+  },
+  {
+   "timing": "Not stated",
+   "program": "Dare Market competitions",
+   "detail": "$50k in prizes, submit free, open to everyone.",
+   "tweet": "https://x.com/dare_market/status/1984347783000965188"
+  }
+ ]
+}

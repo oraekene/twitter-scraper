@@ -45,10 +45,18 @@ _LIST_MARKER = re.compile(r"(?m)^\s*(?:\d+\.|" + _BULLET + r"|[\-*])\s")
 _MONTH_RE = re.compile(
     r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b", re.I)
 _OPPORTUNITY_WORD = re.compile(
-    r"\b(hackathon|fellowship|accelerator|competition|residency|grant|prize|"
-    r"scholarship|deadline|deadlines|apply|application|applications|cohort|fund)\b",
+    r"\b(grants?|hackathons?|fellowships?|accelerators?|competitions?|"
+    r"residencies?|scholarships?|prizes?)\b",
     re.I,
 )
+
+# A tweet that announces an application window, as opposed to one that merely
+# mentions a fund. This is the difference between "applications close Nov 3" and
+# "Norway's wealth fund is losing billions".
+_APPLY_PHRASE = re.compile(
+    r"\b(apply|applying|applications?|deadline|closes?|closing|now accepting|"
+    r"register|registration|submissions?|submit|cohort|batch)\b", re.I)
+_MONEY = re.compile(r"[$€£]\s?\d[\d,.]*")
 
 
 def _parse_date(text, default_year):
@@ -63,6 +71,29 @@ def _parse_date(text, default_year):
         return m.group(0), datetime.date(year, month, day)
     except ValueError:
         return m.group(0), None
+
+
+def _clean_name(name):
+    """Turn a roundup entry into a program name.
+
+    Entries are written by the poster, not by the program, so the same event
+    arrives as "@neatlogs neathack, up to $10k, oct 10 to 11, online" and as
+    "Soros Fellowship". Handle marks are dropped but the organiser word is kept,
+    because "neathack" alone names nothing.
+    """
+    name = (name or "").strip()
+    name = name.split("|")[0].strip()          # event | organiser
+    name = name.replace("@", "").strip()
+    name = re.sub(r"\s+", " ", name)
+    name = name.strip(" ,.;:-")
+    # A name the poster wrote in lower case reads as a name once it is cased.
+    # Names with digits are left alone, because title-casing mangles brands
+    # like a16z and hack47.
+    if name and name == name.lower() and not any(c.isdigit() for c in name):
+        name = name.title()
+        # "x" is the connector between two organisers, not a word.
+        name = re.sub(r"\bX\b", "x", name)
+    return name
 
 
 def parse_text(text, tid, posted_at):
@@ -97,6 +128,7 @@ def parse_text(text, tid, posted_at):
         # mode". Three or more commas means the tail is metadata, not the name.
         if name.count(",") >= 2:
             name = name.split(",")[0].strip()
+        name = _clean_name(name)
         rows.append({
             "program": name or clean[:40],
             "detail": clean.replace("\n", " "),
@@ -106,6 +138,70 @@ def parse_text(text, tid, posted_at):
             "link": link.group(0) if link else f"https://x.com/{tid}",
         })
     return rows
+
+
+def find_single_tweets(db_path, known_tweets=(), window_days=45):
+    """Tweets that announce one opportunity rather than a list of them.
+
+    A single-program tweet is the one part of the radar that still needs a
+    person, because naming the program is a judgement: "Applications for the YC
+    Winter 2027 batch are now open" names it, "We are hosting the world's first
+    Autonomous Company Hackathon" names it only once you know the account. So
+    this returns the evidence a reader needs, and leaves `program` empty.
+
+    Filter: posted inside the window, an application phrase, a stated date, and
+    not a roundup. Precision is roughly one in three on live data, which is
+    small enough to review in a minute and wide enough not to miss a call.
+    """
+    con = sqlite3.connect(db_path)
+    try:
+        rows = con.execute(
+            "SELECT tweet_id, text, posted_at FROM bookmarks WHERE posted_at LIKE ?",
+            ("% 2026",),
+        ).fetchall()
+    finally:
+        con.close()
+
+    stamps = [d for d in (_posted_dt(w) for _t, _x, w in rows) if d]
+    if not stamps:
+        return []
+    cutoff = max(stamps).toordinal() - window_days
+    # Stored tweets carry a handle ("x.com/ycombinator/status/123") and new ones
+    # are bare ("x.com/123"), so compare the id, not the URL.
+    known = set()
+    for t in known_tweets:
+        m = re.search(r"(\d{6,})\s*$", t or "")
+        if m:
+            known.add(m.group(1))
+
+    out = []
+    for tid, text, when in rows:
+        if not text or len(text) < 40:
+            continue
+        if tid in known:
+            continue
+        url = f"https://x.com/{tid}"
+        posted = _posted_dt(when)
+        if not posted or posted.toordinal() < cutoff:
+            continue
+        if not _APPLY_PHRASE.search(text):
+            continue
+        if not _OPPORTUNITY_WORD.search(text):
+            continue
+        if not _DATE.search(text):
+            continue
+        if len(parse_text(text, tid, when)) >= 3:
+            continue  # a roundup, handled by discover_tweets
+        out.append({
+            "tweet": url,
+            "posted": posted.date().isoformat(),
+            "text": text,
+            "dates": sorted({m.group(0).strip() for m in _DATE.finditer(text)}),
+            "money": sorted({m.group(0) for m in _MONEY.finditer(text)})[:4],
+            "program": "",
+        })
+    out.sort(key=lambda r: r["posted"], reverse=True)
+    return out
 
 
 def parse_tweet(tid, db_path):
