@@ -7,14 +7,25 @@ from datetime import date
 
 # Import the roundup parser from the same directory
 import roundup
+import dedupe
 
 DB_PATH = "C:/Users/rotim/.fieldtheory/bookmarks/bookmarks.db"
 
-# Roundup tweet IDs that compile curated lists
-ROUNDUP_TWEETS = [
+# Roundup tweets are discovered from the database, not registered by hand. A
+# roundup is a tweet listing three or more dated opportunities; `roundup.py`
+# finds them and caches what it tested. These two are seeds, kept so a fresh
+# cache or a replaced database still knows about them.
+SEED_ROUNDUPS = [
     "2114326493811945679",  # Build3DAO 7-hackathon roundup
-    "2114386554403897624",  # vercinyc deadlines list
+    "2114386554403897624",  # vercinyc deadlines list, november edition
 ]
+
+_discovered, _new_roundups = roundup.discover_tweets(
+    DB_PATH, "out/roundup_cache.json", years=("2026",))
+ROUNDUP_TWEETS = _discovered + [t for t in SEED_ROUNDUPS if t not in _discovered]
+if _new_roundups:
+    print(f"roundup: {len(_new_roundups)} newly discovered roundup tweet(s): "
+          + ", ".join(_new_roundups))
 
 # Hand-entered single-program rows (for tweets that are not multi-item roundups)
 DATED = [
@@ -168,13 +179,49 @@ def load_roundup_rows():
 # Parse roundup tweets from the DB and merge them with hand rows
 parsed_roundups = load_roundup_rows()
 
+# Collapse a roundup row that restates a programme already in the hand list.
+# The hand list is curated and ordered, so it is never the side that gets
+# dropped. The roundup row is dropped from the tables but kept in the JSON under
+# `duplicates`, because it often carries the resolved t.co link.
+_hand_keys = {dedupe.norm(r[2]) for r in DATED} | {dedupe.norm(u[1]) for u in UNDATED}
+_kept_roundups, _dropped = [], []
+for _row in parsed_roundups:
+    if dedupe.known(dedupe.norm(_row["program"]), _hand_keys):
+        _dropped.append({"program": _row["program"], "tweet": _row.get("tweet"),
+                         "link": _row.get("link"),
+                         "reason": "same programme already in the hand list"})
+    else:
+        _kept_roundups.append(_row)
+_total_roundup_rows = len(parsed_roundups)
+parsed_roundups = _kept_roundups
+if _dropped:
+    print(f"dedupe: dropped {len(_dropped)} roundup row(s) already in the hand list: "
+          + ", ".join(d["program"] for d in _dropped))
+
+# Remember every programme ever seen, so next week's run recognises one that is
+# no longer in this week's output.
+_registry = dedupe.load_registry()
+_dedupe_today = "2026-10-29"
+_cross = dedupe.remember(
+    [{"program": r[2], "date": r[0], "tweet": r[4]} for r in DATED]
+    + [{"program": u[1], "tweet": u[3]} for u in UNDATED]
+    + [{"program": p.get("program"), "date": p.get("date_str"), "tweet": p.get("tweet")}
+       for p in parsed_roundups],
+    _registry, _dedupe_today)
+dedupe.save_registry(_registry)
+if _cross:
+    print(f"dedupe: {len(_cross)} programme(s) seen in an earlier run:")
+    for _c in _cross:
+        print(f"  {_c['program']}  first seen {_c['first_seen']}  now {_c['new_tweet']}")
+
 rows = sorted(DATED, key=lambda r: r[0])
 assert [r[0] for r in rows] == sorted(r[0] for r in DATED), "not sorted"
 assert all(r[0] and r[2] and r[4].startswith("https://x.com/") for r in rows), "bad row"
 
 out = ["# Recently saved bookmarks: hackathons, funds, grants and scholarships", "",
        "Pool: the 4,198 bookmarks saved since the 9 October export, found by today's sync.",
-       f"Includes {len(parsed_roundups)} items parsed automatically from {len(ROUNDUP_TWEETS)} roundup tweets.",
+       f"Includes {_total_roundup_rows} items parsed automatically from {len(ROUNDUP_TWEETS)} roundup tweets; "
+       f"{len(_dropped)} of those restated a programme already listed and are recorded as duplicates.",
        "Ranked by the deadline each tweet states; past deadlines sit at the top and are marked closed.", "",
        "| # | Deadline | Program | Detail | Tweet |", "|---|---|---|---|---|"]
 for i, (_, label, program, detail, url) in enumerate(rows, 1):
@@ -190,5 +237,7 @@ open(path, "w", encoding="utf-8").write("\n".join(out))
 print(f"{len(rows)} dated, {len(UNDATED)} undated, {len(parsed_roundups)} parsed from roundups, wrote {path}")
 json.dump({"dated": [[str(r[0]), r[1], r[2], r[3], r[4]] for r in rows],
            "undated": [list(u) for u in UNDATED],
-           "parsed_roundups": parsed_roundups},
-          open("out/opportunities-2026-10-29.json", "w", encoding="utf-8"), indent=1)
+           "parsed_roundups": parsed_roundups,
+           "duplicates": _dropped},
+          open("out/opportunities-2026-10-29.json", "w", encoding="utf-8"), indent=1,
+          default=str)
