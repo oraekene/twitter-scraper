@@ -10,6 +10,7 @@ Two tools. `fieldtheory` is the brain (local database, search, markdown). `twitt
 | `python sync_bookmarks.py` | Pull new bookmarks. Repeat until it stops saying "max runtime reached". |
 | `python crawl_tweets.py threads --limit 200 --top 20` | Expand full threads behind every bookmarked tweet. Resumable. |
 | `python crawl_tweets.py account <handle> -n 2000` | Pull every tweet from an account, yours or anyone's. |
+| `python parse_archive.py <zip>` | Turn X's data archive into `out\history-<handle>.jsonl`. The only complete way to get years. |
 | `python crawl_tweets.py replies <id> --top 10` | Top N replies to one tweet, ranked by engagement. |
 | `python crawl_tweets.py replies-all --limit 200 --top 10` | Same batch pass over every bookmark, ranked. Resumable. |
 | `python crawl_tweets.py thread <id> --save` | Full thread behind one tweet. |
@@ -24,6 +25,47 @@ nothing left to do. It keeps `out\replies-index.json` instead, ranks by
 engagement rather than fetch order, and takes `--redo` for when you want more
 replies than the last run kept.
 
+### Whole account history, years back
+
+`twitter user-posts` stops at 200 tweets (`rateLimit.maxCount`, hard cap 500),
+which is three days on a busy account. `crawl_history.py` calls the same client
+directly, keeps the cursor in `out\history-<handle>.state.json`, and appends to
+`out\history-<handle>.jsonl`, so a run can stop and resume.
+
+```
+powershell -File crawl_history.ps1        # @ascully789, since 2023-10-28, detached
+& "$env:APPDATA\uv\tools\twitter-cli\Scripts\python.exe" crawl_history.py <handle> --since 2023-10-28
+```
+
+It must run on the twitter-cli venv python, because that is where the library
+lives. X allows **50 UserTweets calls per 15 minutes** per account and returns
+20 tweets per call, so the ceiling is 200 pages per hour. `--delay 19` sits just
+under the limit instead of wasting windows on 429s.
+
+**X stops the profile timeline at about 1,000 entries.** Measured on
+@ascully789 on 2026-10-28: pages 1-43 return tweets, page 44 and later return
+only cursors, a fresh chain starts working again, and waiting out the rate
+window does not revive the old cursor. That is 2-3 days of a busy account, not
+three years. Search cannot fill the gap either: for one day it returned 19 of
+the 32 tweets the timeline had.
+
+So for years of history use the archive X builds for you, which is complete and
+costs no API traffic. Ask for it in Settings -> Your account -> Download an
+archive of your data, then:
+
+```
+python parse_archive.py twitter-2026-10-29-abc123.zip --since 2023-10-28
+```
+
+It reads `data/tweets.js`, skips retweets unless `--include-retweets`, and
+merges into `out\history-<handle>.jsonl` by id, so the recent tweets the crawler
+already has survive.
+
+Every route was priced and checked on 2026-10-28 in `X-HISTORY-OPTIONS.md`. The
+API is now pay per use at $0.001 per own post, but it stops at about 3,200 posts,
+so the archive remains the only complete option.
+
+
 ### The sync has more knobs than it used to
 
 `python sync_bookmarks.py --help` lists them all. The ones that change what a
@@ -33,6 +75,7 @@ sync does, rather than just how much of it runs:
 |---|---|
 | `--target-adds 500` | Stop after 500 new bookmarks. Gentler on rate limits than a time limit. |
 | `--gaps` | Backfill quoted tweets, truncated articles, and linked article text. |
+| `--gaps-only` | The same backfill without pulling new bookmarks first. |
 | `--folders` / `--folder "AI stuff"` | Sync your X folder tags, or just one folder. |
 | `--rebuild` | Full re-crawl of everything. Slow, and it throws your cursor away. |
 | `--delay-ms 1200` | Milliseconds between requests. The default is 600. Raise it if X answers 429. |
@@ -42,6 +85,12 @@ sync does, rather than just how much of it runs:
 `--rebuild` is the only one that can lose work, so the panel asks you to confirm
 it, and the server refuses to run it without that confirmation even if the page
 is bypassed.
+
+`--gaps` costs one network fetch per bookmark that has a quote or a link, and it
+does not retry what X reports as deleted. A trial run on 2026-11-04 failed about
+four items in five and projected to thirteen hours, so run it in the daytime
+where you can watch it, not overnight, and stop it with Ctrl-C when the failure
+count runs away.
 
 ## 2. Find things you bookmarked
 
@@ -132,6 +181,7 @@ Each line in the JSONL is one bookmark with these fields: `id`, `tweetId`, `url`
 | `python test_crawl.py` | Confirms thread splitting and reply ranking. |
 | `python hiring\pat.py` | Confirms the regex guard still rejects a broken pattern. |
 | `python hiring\search.py --selfcheck` | Confirms every hiring pattern matches its own probe. |
+| `python hiring\opportunities.py --selftest` | Confirms the roundup parser and the report date, no network. |
 | `python hiring\test_panel.py` | Confirms the page parses and the Fetch tab matches the manifest. |
 | `python hiring\test_api.py` | Confirms every route, every rejection, and the argv each job builds. |
 | `node hiring\fix-fieldtheory.js` | Re-applies the search fix below. Run after `npm update -g fieldtheory`. |
@@ -141,7 +191,7 @@ Each line in the JSONL is one bookmark with these fields: `id`, `tweetId`, `url`
 Everything lives in the `hiring` folder. See `hiring\README.md`. Start at the control panel.
 
 ```
-python hiring\ctl.py serve                 # browser control panel on 127.0.0.1:8765
+python hiring\ctl.py serve                 # browser control panel on 127.0.0.1:8770
 python hiring\ctl.py list                  # show every search
 python hiring\ctl.py run --due             # run whatever is due today
 python hiring\ctl.py add --name x --source live --query "hiring" --every-days 3
@@ -164,6 +214,21 @@ python hiring\search.py --watchlist hiring\watchlist.txt
 ```
 
 Every query is a field on a saved search in `hiring\searches.json`, and the panel edits it. There is no phrase set built into the code, so `--search NAME` is the normal way to run one.
+
+The same folder builds a separate list for grants, hackathons, funds and fellowships. It reads the
+same database, so it needs no extra sync:
+
+```
+python hiring\opportunities.py                  # out\opportunities-<date>.md
+python hiring\opportunities.py --live --days 7  # also search X itself
+python hiring\opportunities.py --candidates     # tweets that still need a name
+python hiring\opportunities.py --selftest       # check the parser, no network
+```
+
+A tweet that lists three or more dated programmes is parsed automatically. A tweet that announces one
+programme is not, because naming it is a judgement; `--candidates` lists those and a named row goes
+into `hiring\opportunities_manual.json`. `weekly.ps1` runs the bookmarks pass, `weekly-twitter.ps1`
+runs the live pass.
 
 Every regex it classifies with is in `hiring\patterns.json`, one group per decision, each pattern paired with a probe it must match. A pattern that does not match its probe stops the whole file loading, so `python hiring\search.py --selfcheck` is the check.
 

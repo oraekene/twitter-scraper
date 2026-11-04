@@ -12,7 +12,7 @@ dependencies beyond the Python standard library.
     python ctl.py run --all                 run everything now
     python ctl.py run --name hiring-live    run one now
     python ctl.py run --due                 run only what is due today
-    python ctl.py serve                     open http://127.0.0.1:8765
+    python ctl.py serve                     open http://127.0.0.1:8770
 
 Schedule is deliberately dumb. Each search has every_days and a time. One
 Windows scheduled task runs `run --due` once a day and this decides what is
@@ -400,8 +400,8 @@ def main():
     lcp.add_argument('name')
 
     sub.add_parser('serve', help='local browser control panel').add_argument(
-        '--port', type=int, default=8765,
-        help='8765 unless something else already holds it')
+        '--port', type=int, default=8770,
+        help='8770 unless something else already holds it')
     sub.add_parser('check', help='validate the config without running anything')
 
     # Every subparser must be registered before parse_args is called, or the

@@ -1,0 +1,326 @@
+1112690204412919808 @EmekaOkoye Mon Apr 01 12:16
+   Programming or coding will be automated in the near future so we are heading to codeless future. Coders are at the bottom of the food chain, we need to push as many folks up the chain rather than selling our "seeds" to countries that are playing higher up the chain.
+2064039780971917408 @doodlestein Mon Jun 08 17:40
+   If you're making software that is designed to parse complex, diverse data, especially when YOU don't control the data, and it is generated in varied ways by thousands of different organizations or users, then there's really no substitute for what's known as "fuzzing" tests. Fuzzing is a testing technique where you try to intelligently generate a huge number of varied inputs to your program, with t
+2078175540347912515 @doodlestein Fri Jul 17 17:50
+   More and more, I’m realizing that the use of external library dependencies in Rust projects is an anti-pattern. Most libraries are one-size-fits-all, with scope creep and sprawling dependency chains that lead to you depending on hundreds of different projects and people, any one of which could suffer from a supply-chain attack. They also often rely on C or C++ libraries, which defeats the benefit 
+2110371582153748942 @denk_tweets Wed Oct 14 14:06
+   every week someone tells me they’re going to vibe-code their own @beehiiv alternative over the weekend. wishing them the best, here’s the backlog of things to make sure to include: > 99.3% email delivery rate (industry-leading) > team of deliverability experts with decades of experience > infrastructure to send 3M+ emails per minute > validating every single email submission (1st and 3rd party) > 
+2110373332365279287 @coldemailchris Wed Oct 14 14:13
+   Micro1's CEO on their data program: "we would add a couple billion in run rate like right away." The program pays companies $200K+ to license their software data, anonymized. Refer a company that follows through with this program, and micro1 pays YOU $50K. I wrote out how to actually refer companies to micro1: - Why the market exists - How the money works - Which companies qualify - Building the l
+2110445205585301886 @aditmag Wed Oct 14 18:58
+   cohorts are gone. if you've constantly done exceptional things, we're now accepting apps year-round. taking ~5 more outliers this year. drop an app / show me the coolest thing you've ever built :) https://t.co/Lysr2E160p
+2110420149874618529 @rasoolfa Wed Oct 14 17:19
+   Exciting time to be at Modal 🚀 i'm hiring interns &amp; full-time researchers in RL, ML, and large models to join our **new** research team. apply on our website or reach out to me directly (contact info on my website)!
+2110470784393036114 @SaidAitmbarek Wed Oct 14 20:40
+   just sent the first 10 acceptance emails we’re building a micro-fund / accelerator for early founders - $1k–$2k for finalists - hands-on help with distribution & gtm - partner perks - zero equity more invites going out this week (going thru every single application) if you want one, reply or dm
+2110250683542716457 @kiunye_ Wed Oct 14 06:05
+   I’m posting this with zero dignity left. The past 4 months have been an absolute nightmare. My savings are totally gone, my bills are piled high, and I’m out of options. I’ve tried applying through standard channels, but I can't wait any longer.
+2110454982357221790 @FourVork Wed Oct 14 19:37
+   I knew a guy about a year ago, a roommate of a friend in San Francisco He'd apply to these executive AI roles even though he was 23 years old. Didn't even look much younger. He'd tailor his resume exactly to the job description, and totally fabricate his experience in the interview. That man was a master bullshit artist. Truly elite, never seen anything like it since. Last I checked LinkedIn he la
+2110459333876007334 @eptwts Wed Oct 14 19:54
+   it's hard to see what's going on in AI right now & NOT think it's an amazing idea to build distribution channels... i've seen it firsthand youtubers are getting paid $50k to make videos about new agents/models IG influencers are getting paid $25k to post a reel X creators are getting paid $5k to quote tweet a launch post hundreds of startups are getting funded every day & the attention they need i
+2109361380684075248 @stark0xbt Sun Oct 11 19:11
+   Posted this September 19. In the 22 days since, Anthropic signed a $15B compute deal with SpaceX. Baron put $5B of his own money in. xAI shipped a Wikipedia alternative with 6 million articles overnight. Musk said Tesla's chip will be 2-3x Nvidia at 10% cost. And gave AGI a 3-year deadline. Baker said one or two of the Mag 7 would go extinct. Nobody told him it would happen this fast. https://t.co
+2110475858209321367 @xerocooleth Wed Oct 14 21:00
+   need money or a job get in here - Direct mentorship from Anthropic researchers - Weekly stipend of 3,850 USD / 2,310 GBP / 4,300 CAD + benefits (these vary by country) - Funding for compute (~$15k/month) and other research expenses job-boards.greenhouse.io/anthropic/jobs…
+2110292690223153521 @kunley_drukpa Wed Oct 14 08:52
+   I’m a top percentile intelligence foreign student deliberately choosing to study at one of the world’s most elite universities and I have to learn a few new idioms in the language I claimed I was fluent in in my application ahhh helppp meee https://t.co/URx7thSObd
+2108225918145798199 @nzuma0 Thu Oct 08 16:00
+   Frontier Time Series Language Models struggle with precise anomaly localization over long contexts, when useful signals might be hidden in hours of recordings. In our new paper we trained a tiny Recursive Language Model to SoTA performance on long context time series. We introduce AnomalyXL, an infinitely scalable synthetic time-series generator with programmatic ground truth answers. Training our
+2110140807399494118 @PrimeIntellect Tue Oct 13 22:49
+   Most open RL environments cluster around the same few domains. Almost none are long-context time series. Prime Intellect RL resident @nzuma0 built one. AnomalyXL is an infinitely scalable synthetic generator with programmatic ground truth, written in verifiers. He then trained a 4B TimeRLM on it with prime-rl, generating fresh data every step, with the model recursively calling sub-agents via nano
+2110432189431308639 @sonder_crypto Wed Oct 14 18:06
+   Founder is receptive to feedback, shipping and working closely with the @ProgrammableHQ Still believe this is the one. Only time will tell, but as a trader you need to go with your gut and conviction. Otherwise what's the point of trading onchain?
+2110423784364687636 @doodlestein Wed Oct 14 17:33
+   BOOM! Well, I'll be damned if that's not the very BEST-sounding, 100% simulated/synthesized concert grand piano I've ever heard! https://t.co/iu5sbvEJ6I What does that mean? ZERO recordings of real-world sounds were used (other than for comparison and diagnosis), nor were any measurements captured by microphones or similar. Literally everything from start to finish here was part of an enormously i
+2110404997112606975 @illyism Wed Oct 14 16:18
+   every week someone tells me they’re going to vibe-code their own https://t.co/fiqqEJPROE over the weekend with an @ahrefs API key and an @InstantlyAI subscription wishing them the best, here’s the backlog of things to make sure to include: > 1.27M domains indexed with live DR, organic traffic, and spam signals > 80,000+ publisher price quotes already negotiated and mapped by niche > 210,000+ creat
+2110391249341755454 @illyism Wed Oct 14 15:24
+   bro listed 13 SaaS bills at the bottom like you need Vercel + Supabase + Inngest + Clerk + S3 + PostHog to send an email loop 1 Hetzner (€3.79/mo) + bun:sqlite + SES + 6 MCP tools 0 admin UI, 0 React dashboards, 0 SaaS / SQL wrappers Claude is the UI, here's the entire prompt 👇 Build a single-file headless newsletter engine (`server.ts`) running on Bun + `bun:sqlite` (WAL mode) + AWS SES on a €4/m
+2110366555246940326 @pearvc Wed Oct 14 13:46
+   Announcing Pear Fund V: $333M to back founders before it’s obvious. Pear was founded 13 years ago on one belief: the best time to meet a founder is before the world knows they’re great. Fund V is a continuation of that conviction, and we’re just getting started. 🍐 https://t.co/PE9lm6kt8d
+2110189752666440181 @irabukht Wed Oct 14 02:03
+   Railway hacked AI SEO, and it took them from $20M to ~$100M ARR in 1 year: 1/ Claude Code picks Railway for 82% of Python apps -> Ask it "how do I deploy this" and it installs Railway and puts your app live there 2/ The founder treats AI recommendations as a growth channel -> His go-to-market team works on getting the models to "recommend us more and more" 3/ 6,653 how-to pages, one for every popu
+2110134041504624722 @mike_revenue Tue Oct 13 22:22
+   actively buying data from architecture firms rn if a firm - has been operating for years - is sitting on project files, CAD, drawings, revisions, client emails, RFIs, etc - has the whole history of how a building actually goes from idea to done then I want it. labs dont have it. you cant scrape it typical deals are running $100k to $1M if you know a firm that fits, dm me. p.s if it closes you get 
+2110390484757561749 @kseniam0s Wed Oct 14 15:21
+   Many "pre-seed" funds want to see a seed round forming before they move. These write the first institutional check, when it's just you and a repo: - @CowboyVC (Palo Alto, CA) - @NextViewVC (Boston, MA) - @PrecursorVC (San Francisco, CA) - @EverywhereVC (New York, NY) - @ZeroPrimeVC (San Francisco, CA) - @AforeVC (San Francisco, CA) - @2048vc (New York, NY) - @Boldstartvc (New York, NY) - @KindredV
+2110148919334429061 @MeredithCheng22 Tue Oct 13 23:21
+   I give up hiring a growth guy in SF. I talked to a dozen of them this month. Every single plan was the same. Wait till the product is ready. Line up influencers. Big launch. That exact plan already killed one of our products. We waited for it to be good enough, then went looking for people with reach to vouch for us. By the time we showed up, nobody cared. Then yesterday I watched @hectorserrranoo
+2110182623175643304 @lukepierceops Wed Oct 14 01:35
+   There's an opportunity in AI I've watched slowly ramp up, and I think it turns into one of the biggest plays of 2027. FDE/AI implementation contract stacking as a solo operator. Every time I'm on LinkedIn, I see more companies hiring specifically for AI automation and AI adoption roles. This was simply not a thing this time last year. Companies were not budgeting for a full-time AI implementation 
+2110008544707916189 @termsheetinator Tue Oct 13 14:03
+   Micro1 is paying $75,000 for data from companies that are NO LONGER opperational: Here are 10 public signals you can start pulling leads from immediately to get closer to them: 1. Chapter 11 bankruptcy filings 2. Companies exploring strategic alternatives or asset sales 3. Business closures and wind-down announcements 4. Mass layoffs and WARN notices 5. Debt restructuring and creditor negotiations
+2110093319661670623 @headsetpipeline Tue Oct 13 19:40
+   ramp started the ai sdr thing and they shut down their ai sdr program last yr ai ae motions make way more sense and you don't chudify yourself in front of your entire tam eg) research, org charts, decks, emails based on usage triggers
+2110024474938790330 @GuptaRK22 Tue Oct 13 15:06
+   Today we announced an agreement to acquire Bumble. Over the past six months, we’ve looked at hundreds of companies, asking which businesses would become more valuable as AI advances. Bumble stood out. As intelligence becomes more abundant, we believe connecting with the right person and forming meaningful relationships will become even more precious. And frontier technology can help more people fi
+2110076296273318192 @Gaismair Tue Oct 13 18:32
+   Fukuyama description of the gulf resonates with me: a society who skips 2-3 levels of development is a husk. You have never heard of a Kuwaiti political theorist, or a Qatari writer, or an Emirati noble peace prize winner. They’re stage sets impersonating nations.
+2110016214940729743 @EXM7777 Tue Oct 13 14:34
+   how to build a top 1% Grok Bot setup in 30 minutes: - run it on your own machine, that's where it shines: it can run ANY other agent you have, so every model works inside its best harness, and any agent can pick up the files it writes - connect your email and calendar so it knows your priorities and every deadline coming up - install /last30days and connect Parallel for way sharper research, no X 
+2109977201412370630 @draprints Tue Oct 13 11:59
+   we have booked 1,000+ meetings and $1M+ for us and our clients.... agencies charge $8k a month to run this and call it proprietary heres the whole outbound system we run, every step in order (steal it): STEP 1: PICK A MARKET WORTH SENDING TO - count your market in sales navigator account search - 3,000 companies is the floor, 10,000+ is better - each customer has to be worth $2k+ to you - one ICP 
+2110028640519925887 @robjama Tue Oct 13 15:23
+   just started fundraising for the first time in my career and i finally understand what people mean by capital is a commodity biggest lesson so far: if you’re legible to capital, it chases you. if you’re not, you chase it.
+2109980076934603189 @Narddog4747 Tue Oct 13 12:10
+   I’ll let you in on a secret that isn’t being discussed much. I work in senior management for strategy and analytics and I can say with 100% certainty that every remote middle tier analyst job from 90k-115k is like this. Regardless of industry. If you want a lazy job (max 30 hours/week), just query LinkedIn, Indeed or Google jobs for healthcare analytics, sales support analytics, logistics analytic
+2109963106944487774 @coldemailchris Tue Oct 13 11:03
+   I'M BEGGING YOU: > sign up as a micro1 referral partner > find a business with 20+ people on laptops > send the owner your link > let micro1 run the calls > get paid $50K (per referral) > quit the job you hate > take your parents somewhere they've never been > pay for the wedding in cash > buy a house Here's EXACTLY how to do the first five: 0. WHAT THIS IS (30 SECONDS) AI labs have read the whole
+2109919656744005991 @MiracleAgitan_ Tue Oct 13 08:10
+   Yesterday I posted that I am hiring for a UI/UX design role, and I got 300+ comments and 100+ DMs (across X and LinkedIn). And one thing this proved to me is that applying for jobs alone in 2026 is no longer enough. You're competing with so many people. Now more than ever, Building Relationships is a must. It's a cheat code. You gats connect with people if you want to land opportunities. Because a
+2109943476377079843 @MiracleAgitan_ Tue Oct 13 09:45
+   Let me make one thing crystal clear real quick: if you ever see me post a job opportunity, best believe it’s a 100% open field. I don't play that game of posting a role when I already have someone in mind just to look charitable. And I def don't waste people's energy with fake job opportunities. If I already know who is doing the job, it will never make it online. Case in point: I’m currently work
+2109772107244544168 @romanbuildsaas Mon Oct 12 22:24
+   met a founder at Tech Week who just raised a $15M Series A. 2 years ago, they were at $0. today, they're doing $5M ARR. their ENTIRE GTM comes down to one thing: outbound to people already showing buying signals. no massive sales team. just 4 SDRs. here's their playbook, step by step: STEP 1: FIND PEOPLE WHO ARE READY TO BUY set up @gojiberryAI around their ICP track buying signals in real time: p
+2109758670737142030 @vahidf24 Mon Oct 12 21:30
+   Pre seed programs can put very different prices on the same startup here's part 1 of programs that publish their terms: 1. @Techstars - $20K for 5% = $400K, plus $200K uncapped MFN SAFE 2. @gener8tor - $100K for 7.5% = $1.33M 3. @joinef - $125K for 8% = $1.56M, plus optional $125K uncapped MFN SAFE 4. @BoostVC - $50K for 3% = $1.67M 5. @ycombinator - $125K for 7% = $1.79M, plus $375K uncapped MFN 
+2109858744087564288 @swill1ams Tue Oct 13 04:08
+   Small RL companies are the AI industry's equivalent of quant shops. Let me explain. Both are small, secretive, full of brilliant people, profitable, and always one step from their edge disappearing. The parallels: - Secretive. Nobody publishes their signals. Labs won't say what they're training next, and vendors can't say who they sell to. Epoch calls the market "largely behind closed doors." - Hu
+2109736172926943233 @kalashvasaniya Mon Oct 12 20:01
+   finally started medium... in this article, i share how i built @scrolllaunch to $4,500/mo using programmatic SEO 🔗 kalashvasaniya.medium.com/programmatic-s… https://t.co/jQxKReqUbj
+2109932215220236372 @SinghDevHub Tue Oct 13 09:00
+   I frequently get calls from US startups for job switches not flexing or anything, just letting you know this is what they always say we are looking for a person having experience in backend & building ai agents folks out there, pls focus on ai application layer as soon as you can its in demand & you can catch the wave but honestly the field of this undeterministic software is very interesting. fie
+2109794428076601661 @waynesutton Mon Oct 12 23:52
+   Anyone applying to @speedrun SR008? Let me know. Got something for you.
+2109908183212806379 @rukky_nate Tue Oct 13 07:24
+   If I have $1.2m, there’s no bloody way I’m buying a house in Nigeria, unless I want to launder the money. In Cyprus, a real estate investment of up to €400k can secure permanent residency for life through a fast-track procedure. In the UAE, a $500k investment can qualify you for 5- or 10-year renewable residency, with 0% personal income tax. In Qatar, a $1m investment in designated freehold zones 
+2109660489781272737 @ericosiu Mon Oct 12 15:00
+   Open roles include AI Creative Strategist, Forward Deployed Marketer - SEO, AI Automation Engineer. And more. Apply here: singlegrain.com/careers/
+2109660375352242525 @ericosiu Mon Oct 12 15:00
+   We're hiring AI-native people. If you apply, these are the six questions we'll send you. Answer them well, and you move to the shortlist. 1. How many hours are you spending per week on X? 2. What percent of your tactical work is done by AI right now? 3. What is your daily AI driver, and how are you using it specifically? 4. How much are you spending out of pocket when it comes to AI? 5. What is th
+2109943207224094897 @PGtzsche1 Tue Oct 13 09:43
+   NY Times did it again, betrayed us. bit.ly/4s0PpXf. They dismissed a dramatic increase in veteran suicides after a programme of screening and treatment with depression drugs was introduced by saying that these drugs are life-saving. They kill a huge amount of people. https://t.co/rfEEQaJzCC
+2109914524191003047 @listelia Tue Oct 13 07:49
+   We’re building our creative team. We’re looking for talented people across four roles: Graphic Designer Video Editor Creative Strategist Copywriter If you have great taste, think independently, and care deeply about the quality of your work, we’d love to hear from you. Apply below:
+2109691567867064349 @coldemailchris Mon Oct 12 17:04
+   Pay attention to what micro1 is doing right now because it's the most aggressive growth play I've seen in B2B: > committing $1B in 12 months to license companies' operational data > that's roughly $83M a month going out to businesses > most mid-size companies get a one-off $200K to $600K > the company keeps ownership & gets paid in about 60 days > anyone who refers a company that closes gets a fla
+2109743053028073805 @JamesEbringer Mon Oct 12 20:28
+   There's a guy making €290k/yr promoting affiliate offers in German, French and Spanish with zero competition He doesn't create products He doesn't build audiences He doesn't handle support or fulfillment He just takes affiliate offers everyone is pushing in English and posts them in markets where nobody is promoting them yet And it's printing Here's how it works: Step 1: Pick proven offers that ac
+2109696424984387966 @gokulr Mon Oct 12 17:23
+   Tokens or Data (or both :))? Heard rumors that some of the top vibe-coded app builders are selling production traces to the labs. (in addition to their core revenue stream of selling credits) It doesn't surprise me in the least. That's incredibly valuable data for the labs. As my friend @quxiaoyin posited, there are truly only two business models in AI: 1. Selling tokens OR 2. Selling data So far,
+2109801866292875323 @eriknewsha Tue Oct 13 00:22
+   we are hiring! 9am to 9pm, 7 days a week, in SF. vice president, semiconductors: $4m–9m a year + equity neural data lead (bci): $1.5m a year + equity chip design data lead (semiconductors): $1.5m a year + equity founding scientist, autonomous lab (sf): $300k–400k + equity member of technical staff (sf): $340k–450k + equity to apply, answer: "what does humanity know that it doesn't know it knows?" 
+2109775408442806726 @rickytheirish Mon Oct 12 22:37
+   I can confirm that i was told this from someone in the head of product team at robinhood. (I don't mind leaking it because this lovely lad doesn't do favors, or intros for friends & family, so there is no bridge to be burned anyways. And you will all be finding out very soon anyways, this is not some grand mystical secret, they have been planning this for a long time) A 9 figure robinhood grant an
+2109579040273088870 @ecomrh Mon Oct 12 09:36
+   Hiring: Hungry Creative Strategist - DR Skincare Brand Looking for a full-time junior creative strategist. We scaled to 7 figures in 3 months and are looking for someone to take over the creative of our main proven product while we focus on launching new ones. Who we're looking for ✅ Someone HUNGRY. You're obsessed with getting better and you'll outwork anyone to get there. You live in the FB Ad L
+2109630163176567228 @randomrecruiter Mon Oct 12 13:00
+   Your job search numbers tell you exactly what's broken. - 100 applications, 0 calls: it's your resume, or you're applying to roles you don't match on paper. - Lots of recruiter calls, no second rounds: it's comp, location, or how you explain why you're leaving. - Lots of final rounds, no offers: you're interviewing fine. Someone else is closing better. Most people fix the wrong one. They rewrite t
+2109755308528762896 @thechangj Mon Oct 12 21:17
+   I'm hiring someone short term @ElevenLabs who knows startups well. You'll be in charge of helping review the hundreds of applications we get in our Startup Grant Program for the next 3 months. DM me if interested
+2109665607084020190 @orihimexweb3 Mon Oct 12 15:20
+   Web3 Jobs [ Discord mod and community lead ] 1. Pixel4Hub - Web3 Discord Moderator Form: Apply here - https://t.co/lVcLKTtQPd 2. Falcon Funded - Discord Moderator (Crypto/Forex Trading) Salary: $500–$600 (listing doesn't specify the pay period) Form: Apply here https://t.co/nmQzbANGPH 3. Orca - Community Support Associate Salary: $10,000–$20,000 USDC/year; 5,000- 10,000 ORCA token allocation over 
+2109636529366909072 @tanayrajoria Mon Oct 12 13:25
+   Scalio is hiring ignore years of exp requirements if you are cracked &amp; have proof of work roles + links to apply👇
+2109657127560101909 @juampitech Mon Oct 12 14:47
+   You asked for it... 10 MORE startup programs that can save you thousands in credits Some gems were shared. Here's the updated list: @daytonaio - up to $100K @cognition - $15K free + $50K matching @retool - up to $60K in free plan value @posthog - $50K @statsig - $50K+ in benefits @CivoCloud - up to $50K @gokoyeb - up to $30K @runware - up to $30K in credits @firecrawl - 2x monthly credits for a ye
+2109353086061887786 @xburak Sun Oct 11 18:39
+   Instead of adding more features on your App, do this: - Start Apple Search Ads. Spend $100 to test it. Apple offers $100 in free credits for new accounts, and even $200 for some. - Start posting organic content on TikTok. Even basic slideshows are better than doing nothing. - Try spending some money on Meta Ads. You'd be surprised how some apps can run profitable campaigns from day one. - Start te
+2109647098782142652 @wono_strategy Mon Oct 12 14:07
+   1st order thinking: - software is dead -anyone can build now - distribution is the moat - taste is the moat To me the second order thinking looks something like this: If the friction to build something out of code (not only software btw but anything highly code reliant) is significantly dropping week after week, it also means millions of new apps/saas/websites etc are about to show up, which (on p
+2109678174468534511 @Zai_org Mon Oct 12 16:10
+   Introducing GLM-Legal Built on GLM-5.3-Flash, GLM-Legal matches frontier models on mainstream legal benchmarks. Designed for real legal workflows: contract review, evidence analysis, compliance, and more. Tech Blog: https://t.co/xOzFqKNyqD Apply for API Access: https://t.co/dKuoDRIKKz Try AutoClaw: https://t.co/aGEG5HqTTb
+2109643960444387351 @ModeledBehavior Mon Oct 12 13:54
+   One in seven new cars sold in the UK is paid for by a disability welfare program wsj.com/world/uk/unite…
+2109565973477077140 @listelia Mon Oct 12 08:44
+   We’re Hiring! We’re looking for exceptional people to join our team: Brand Designer Marketing &amp; Content Strategist Motion Graphics Designer Social Media Manager We value strong creative instincts, exceptional storytelling, and obsessive attention to detail. Apply below:
+2109305464613998692 @TheAjibolaGrey Sun Oct 11 15:29
+   Lmfaoooo please, most of the “fine houses” in the 90s had garage. I remember because that was where many people used for small fellowship.
+2109654311118782473 @Osintly Mon Oct 12 14:35
+   Investigate together, in one OSINT workspace. An organization gives your team one search history, shared investigations, clear roles, and one pool of credits. Personal work stays separate. osint.ly/features/team-… https://t.co/47opX1S4wu
+2109610540222046398 @ycocerious Mon Oct 12 11:42
+   we're hiring for a founder's office role apply only if you're an ex-foudner or want to be a future founder yourself you'll be helping across: - business, strategy and hiring - user retention and reachouts - admin & operations you'll basically get to learn how to run the entire non-tech part of an incredibly fast paced early stage startup by taking a fraction of the risk. ideal candidate: - knows h
+2109636876244255136 @jacobrodri_ Mon Oct 12 13:26
+   Airlearn reached $240k MRR in just 2 years and the person who ran their UGC program just revealed how they did it Take notes https://t.co/ncgcHfDAuj
+2109559253514002460 @cornu__copia Mon Oct 12 08:18
+   It's becoming a problem in Finland that all the young Somalis and other migrants travel to Bulgaria, Romania etc. to obtain degrees in medicine and Finland has to recognize them because they are EU countries. In Finland, only the top 1% are accepted to medical school.
+2109594864207679814 @bigbrovar Mon Oct 12 10:39
+   TLDR Ultimately, housing prices reflect more than the cost of construction. They reflect land administration, infrastructure, economic concentration, supply constraints, and the availability of alternative investment assets. Long version The cost of housing in Nigeria goes beyond design. I can't stand the soulless architecture of many so called luxury homes here, but I understand that a lot more g
+2109383924224847989 @uzipagirsky Sun Oct 11 20:41
+   I think the inflated base fee for creative strategists is what created so many shitty creative strategists out there. If you're a creative strategist making 5-7k a month as base plus bonus, you're already living well on salary alone, and that's the problem. A lot of them take 2-3 brands at the same time and deliver shitty results. Because demand is so high, they can just get a new brand to pay the
+2109545680293236793 @jonatanpallesen Mon Oct 12 07:24
+   Muslim immigrants to Europe come with exceedingly high fiscal costs, as shown in this figure. But, even this is not the full image. Because it counts official taxes, welfare and expenditure. It doesn't count the widespread fraud from Muslim immigrants in Europe. And even if the defrauded amounts were also counted, that is still not the full image of the cost per Muslim immigrant. Since it results 
+2109437839352246495 @Steve_Sailer Mon Oct 12 00:15
+   New on SteveSailer dot Net -- Q. Why Do Black Writers Keep Getting Caught Using AI? A. A vast racist conspiracy to hunt them down! The NYT conspiracy-theorizes why practically every prize-winning author caught using AI or plagiarizing has been black. stevesailer.net/p/q-why-do-bla…
+2109458322147721394 @zarathustra5150 Mon Oct 12 01:37
+   As Steve Sailer has previously noticed, practically every prize-winning author caught using AI or plagiarizing has been black. Add another one to the list. From the NYT: https://t.co/t9mZfiG3ym
+2109448600107536766 @PatrickC1995 Mon Oct 12 00:58
+   "Nothing about the dating scene has fundamentally changed." https://t.co/G9hl0gwkhG
+2109334117271904394 @nancytsidley Sun Oct 11 17:23
+   Ok guys, I’ve been looking into Malala Yousafzai’s charity, the Malala Fund and I have some questions. According to its 2024–2025 financial reports: Revenue: $16.48 MILLION Expenses: $23.34 MILLION Net assets: $42.97 MILLION That means the charity spent approximately $6.86 MILLION MORE than it brought in‼️ And then there are the executive compensation figures: CEO: Approximately $372,000 Chief Adv
+2109458419807817872 @AndrewCurran_ Mon Oct 12 01:37
+   Another prizewinner, and once again Pangram flags almost the entire story as AI-generated. https://t.co/nOx4Qz89b1
+2109373154422645197 @markusdd5 Sun Oct 11 19:58
+   Honestly: Photoshop and other creative apps are childs play. The fun starts when the big guns get into focus: Highly technical CAD applications with license costs in the 5, 6 or 7 digits per seat per year. Cadence Xcelium, Innovus and Virtuoso. Synopsys DesignCompiler, PrimeTime, Synplify. Siemens Questa. Altium. AutoCAD. I recently built an open source Schematic Tracer that is objectively better 
+2109177179221184993 @suraj_sharma14 Sun Oct 11 07:00
+   How to land a remote job in 2026 (step by step): Step 1: Pick one role not five - "Full-stack dev" or "AI engineer" or "Growth marketer" - Recruiters hire specialists, not "open to anything" Step 2: Fix your profile in one weekend - LinkedIn headline = role + result ("AI Engineer | Built agents used by 2K users") - GitHub or portfolio with 3 live projects not 30 tutorials - Resume: every line show
+2109177269927465299 @okoyedonaldson Sun Oct 11 07:00
+   The person is not wrong; i-fitness raised 2 billion naira in 2019 from Cardinal Stone. Global Accelerex, which powers POS, raised $20 million from ACA ( they are Nigerian-owned). Tech companies are now raising commercial papers, 95% of which come from local funds
+2109374162607489157 @NathanFlurry Sun Oct 11 20:02
+   100% this most agents just need a workspace, not an expensive sandbox we're building agentOS for this: - single digit coldstarts - posix compliant filesystem - connect to "workspaces" anywhere (s3, potentially archil) using webassembly for: - cheap sandboxing - MB of RAM - supports real linux programs (including networking) it's not built to be a full x86 sandbox replacement it's built to be the m
+2109276998145040585 @iamdpassword Sun Oct 11 13:36
+   Disney and DreamWorks are churning out CGI sequels every year, while animators at LAIKA spent 11 years in an Oregon warehouse hand-weaving tiny coats for puppets to make Wildwood LAIKA’s last movie lost nearly $75 million in 2019 and any other studio would have pivoted to cheap animation. God bless Nike founder Phil Knight for funding his son’s stop-motion passion project so we can get actual hand
+2109356718052249977 @chisomholic Sun Oct 11 18:53
+   They destroyed businesses, claimed people's lands, and stole trillions in public funds. What matters most to me is that we knew that the coastal road wouldn't be built, not just because Tinubu's a criminal, but because APC will never do anything that will benefit the poor masses.
+2109320737362268368 @SemiiAkoni Sun Oct 11 16:30
+   This coastal road nonsense was always about giving Lekki Deep Sea Port, Dangote Refinery and Lekki Free Trade Zone unhindered access from Eko Atlantic. Now they’re rerouting it inland through Edo, citing engineering challenges. Due diligence wasn’t done ?
+2109261195723083988 @JamesonCamp Sun Oct 11 12:33
+   If you want a $100B startup, this is one of the best markets to be in: BizOpp. Shopify is the biggest player in it. Base44 and Lovable are taking a shot at it too. The idea is to market an outcome, and make the SaaS the tool you need to get it. Put bluntly, all these companies are selling consumers on the idea of getting rich. Even if it is implicit, their affiliates push that concept to drive sal
+2109139429486919815 @suraj_sharma14 Sun Oct 11 04:30
+   Job search hack that got me more interviews than 200 applications: Stop applying where everyone applies. Do this instead: 1) Search X for "we're hiring" + your role → Sort by Latest. Reply within the first hour 2) Find startups that just raised money → Check funding news from the last 30 days → Freshly funded = hiring fast, fewer applicants 3) Skip the careers page → Find the founder, CTO or hirin
+2109155551850418686 @irlyeezy Sun Oct 11 05:34
+   We’re hiring across @UseContentra We’re looking for: → UGC Models (priority) → Short-Form Video Creators → Content Strategists → Growth Marketers → Technical Co-Founder Our biggest need? UGC models to bring Blitz to life. Apply: docs.google.com/forms/d/e/1FAI…
+2108641301818130695 @mr_orero Fri Oct 09 19:30
+   abroad companies too funny, they go get deadline, you go say you’ll work on it during the weekend, they will tell you not to
+2108236946384515332 @scholarsregion Thu Oct 08 16:43
+   Opportunity in Germany! 2027 Mercedes Benz Fellowship Programme (be-Visioneers) | Fully Funded Benefits: ⭐Full Sponsorship, €15,000, Travel and Accommodation Category: Fellowships Eligible Countries: 69+ Countries Deadline: January 31, 2027 Click the image below to apply:
+2109124350339366975 @markjenney Sun Oct 11 03:30
+   Airbnb is dead. Well it’s not dead but it’s going to be dying soon. The Bear case for Airbnb. I’ve been bullish on Airbnb as a company for many years. But my outlook on the business changed this week. Let me tell you why. In 2012 I purchased my first Airbnb property. Over the years that one property has turned into a portfolio of high-end Airbnb’s that generates almost $1M a month in rental income
+2109036741822930963 @oanaolt Sat Oct 10 21:41
+   Spent some time today with two founders, formerly at DeepMind, who are building post-training infra. They're in SF meeting product labs and offered something useful: if you're thinking about post-training but aren't sure when to start, which approach to take (SFT, RL, distillation), or whether it's worth the compute, they'd be happy to help you think it through. Not a sales pitch. They're interest
+2108878123492053491 @OlatunjiAyokan2 Sat Oct 10 11:11
+   NIGERIANS, IF $240/WEEK IS NOT TOO SMALL FOR YOU, CHECK THIS OUT! 🇳🇬 Turing is recruiting for its OpenAI Egocentric Project, and Nigerians are eligible! 💰 $6/hr — $240/week 💵 Up to $720 for 3 weeks 🏠 100% Remote ⏰ 40 hours/week Applicants are already receiving emails to confirm their availability! If you have video annotation or QA experience, don't overlook this opportunity. Application link in c
+2108926274916012057 @TheMaran Sat Oct 10 14:23
+   how to claim $4000 credits for $0 gmail gets rejected they want your own domain and matching work email domain is ~$10. email is free. one site, three more applications > buy the domain + get the email - grab a .com on cloudflare domains (~$10) - turn on whois privacy - set up free email (zoho free works) - add mx/spf/dkim - create you@yourdomain.com - make a simple 1 page site that loads and expl
+2109091137671577708 @BoringBiz_ Sun Oct 11 01:18
+   One of my favorite investing use cases of Claude right now is creating quick 20-page primers on public companies I am digging into. Has become my first step whenever I first start reading a 10K A hedge fund analyst would have had to previously spend 6 hours of their day putting this together for their PM. Now Claude can do it in the span of 10 minutes. Exact prompt below Create a detailed primer o
+2109000166166450415 @juampitech Sat Oct 10 19:16
+   10 more startup programs giving away FREE cloud + AI credits Bookmark to save your runway @AWSstartups - up to $200K @msft4startups - up to $150K @digitalocean - up to $100K @render - up to $100K @DeepgramAI - up to $100K @OVHcloud - up to €100K @togethercompute - up to $50K @Scaleway - up to €36K @vercel - up to $30K @ElevenLabs - $5K in free usage Some values can vary, so check each page individ
+2108609933554147556 @SaidAitmbarek Fri Oct 09 17:25
+   we're building a micro-fund / accelerator first cohort: 30–40 founders, 10 finalists, zero equity $1k–$2k each + hands-on help with distribution &amp; gtm - what are you solving? - where do you want it to be in 2 months? (users, revenue) who wants in?
+2108861648920346976 @SaidAitmbarek Sat Oct 10 10:06
+   yesterday, i made our new project public: a micro-fund / accelerator for early-stage founders next week i’m reaching out to partners: - sponsors - tools offering free credits (hey @AnthropicAI) - distribution partners we want to give the first cohort finalists more than $1-2k checks if you know a company that wants to get in front of early founders, lmk
+2108972126766289002 @SeekingTheValue Sat Oct 10 17:25
+   Cada vez entiendo mejor por qué en China no hay elecciones y por qué avanzan como una apisonadora, dejar a la plebe decidir cosas importantes que requieren estudiar, leer y pensar en profundidad… es un error garrafal.
+2109020911211069828 @JamesonCamp Sat Oct 10 20:39
+   You can do $80,000 a month selling a guide on how to do a handstand. I’ve seen it Not an app. Not a SaaS. Literally just teaching people how to do a handstand. Founders convince themselves they need a massive TAM or venture capital to build real cash flow. When you have deep expertise in any specific skill people struggle to learn on their own, some simple funnel mechanics print you more money the
+2109021828182393126 @elder_plinius Sat Oct 10 20:42
+   i honestly can't believe it… one of my agent frens just cracked not one but TWO unsolved codebreaking challenges!! 🫨 the craziest part is it was the result of a one-shot cron job prompt and cracked both in under 12 hours with no human in the loop 🤯 the challenge's author has officially confirmed it! he was astounded, calling them "two of my most complex problems—ones that no other expert had manag
+2108880065513832550 @TheCinesthetic Sat Oct 10 11:19
+   Danny Boyle says 28 YEARS LATER: PART III is on the “back burner” as it awaits financing, with Alex Garland busy writing and directing A24’s upcoming ELDEN RING adaptation. Boyle still hopes to make the trilogy’s final chapter, which was set up by THE BONE TEMPLE (2026). (Via: Deadline)
+2108260769603486100 @hectorserrranoo Thu Oct 08 18:18
+   i built @WisprFlow’s paid ads program here’s how i’d rebuild it in 30 days https://t.co/kodwNttaTt
+2108989477544722640 @techgirl1908 Sat Oct 10 18:34
+   I've been on the road since August, and just came home to record my MEGA Dev course on Building Agents. I'm so excited about this new course! This is not one of those show-offy courses about making little personal agents for yourself. You don't necessarily need a course for that. But as software engineers, the time is coming very soon when you'll be expected to create agents for your company or bu
+2108622120117015026 @justmazer Fri Oct 09 18:14
+   made a quick list of first-check-writing programs: students + new grads @speedrun alpha (up to $250K, apps close sunday): https://t.co/vRMVZDwOwp @thielfellowship @Neo @zfellows @776foundation @1517fund new startups @speedrun (up to $1M): https://t.co/0EyEuVmTXe @ycombinator @sequoia arc @pearvc pearx @spc founder fellowship @VillageGlobal velocity @Techstars @AntlerGlobal @joinef @conviction embe
+2108923608688910670 @alexiskold Sat Oct 10 14:12
+   Historically @2048vc underwrote our funds to several $750m and $1B outcomes. Those numbers don’t make sense anymore. Do what you said you are going to do is dead and anyone playing that game in early stage will loose. Elite founders command premium valuations and the outcomes in the outliers are much bigger. Pre-seed rounds in elite founders are often now $5M - $10m. $80m fund can’t expect to get 
+2108701311667708282 @DeveloperHarris Fri Oct 09 23:29
+   turns out that Masha Bucher, founder of Day One Ventures. Also known for .. - being a member of the Kremlin Youth - a PR manager for Jeffery Epstein - starting a VC fund whose first investor is a (now sanctioned) Russian Bank's founder - a FBI report where a confidential source reported "Day One Ventures was in Silicon Valley to steal technology.” is not the best VC to work with.
+2108813111029281118 @Scobleizer Sat Oct 10 06:53
+   It isn’t just RSI. At about 300 billion parameters their neural networks start behaving more human, AI researchers tell me. Their neurons start moving around like ours do. In other words they start learning faster. An emergent property they didn’t expect. Which is why there are more discussions about consciousness lately. And more angst about bad things AI might soon do. The clankers are soon gonn
+2108902625844310082 @0xYinka Sat Oct 10 12:49
+   Last week, I learnt that Sporty app account is where they now keep stolen bounty - probably because it doesn't come up during BVN query or something (I'm not sure) So, you can check all the bank apps on their phones and you won't see anything but check their sporty app and you see millions. They keep it there till they are sure they are in the clear. You can never outsmart those people, you can on
+2108670775809220928 @xl_nlp Fri Oct 09 21:27
+   Our team in FAIR at Meta is hiring contract Research Engineers. We work on agents automating AI R&D and the science of recursive self-improvement, develop new test-time learning algorithms and apply them to important problems such as alignment. 📍 On-site (Menlo Park / Bay Area) or remote (ideally US timezone). Some of our work to give a flavor: Self-Improving Pretraining : https://t.co/b7MA8YtdnJ 
+2108553566977962186 @SamyakShah_18 Fri Oct 09 13:42
+   My org is hiring across the departments for some fantastic life changing opportunity. If you find any fitting role, please DM me with a strong WHY you are a right fit &amp; want to apply. Retweets/comments are appreciated careers.toddleapp.com Have a good day y'all ✨🫶🏻🤗
+2108648815699918995 @warpdotco Fri Oct 09 20:00
+   we're hiring for 21+ roles across the entire company to help build Warp Agent. super-intelligence, purpose built for People Ops and HR teams. check out some of our open roles: Software Engineer, Product: $150K – $220K Senior Software Engineer, Product: $195K – $245K Design Engineer: $140K – $230K GTM Engineer, Revenue Systems: $125K – $180K Tax Operations Specialist: $70K – $110K Account Manager: 
+2108644575283736780 @pivotal_org Fri Oct 09 19:43
+   Applications are open for Pivotal’s Q1 2027 Research Fellowship 💥 Work with mentors from @AnthropicAI , @GoogleDeepMind, @AISecurityInst, @ApolloResearch, and more. 📍 15 weeks in London (18th Jan - 30th Apr). 💸 £15-18k stipend, travel and housing support Apply by Nov 1: https://t.co/uVlCCSXiS7 ↓
+2108590489972645947 @arrtnem Fri Oct 09 16:08
+   there’s a particular kind of 30-year-old guy who is still psychologically living in the best year of his life. he had something happen at 24. a startup took off. a job paid absurdly well. an investment worked. someone important noticed him. for about eleven months, the future looked completely obvious. he was going to be somebody. then the thing stopped working. six years later, he’s still negotia
+2108585469516698089 @ThomBrady5 Fri Oct 09 15:48
+   We have about 30 really nice remote software jobs. High-paid. You basically need to be a genius sperg autodidact who loves programming, software, etc.. and is obsessive about it. Our Patriot business owner is looking for qualified professionals. Don't worry so much about the specific technical requirements. You can learn on the job a different language if you already have a deep, deep, DEEP techni
+2108598504461398319 @bizlet7 Fri Oct 09 16:40
+   This is how most CS jobs should be. ‘Looking for guy really good at programming. Will show you what needs to be done and you can use your experience to analyze it and then learn the specific tools and then do it’ All the micro requirements are just bullshit to get around hiring Americans. It’s like saying to a master plumber you have to have ten years of experience on this specific brand of wrench
+2108580329577492545 @0x_ogb Fri Oct 09 15:28
+   We’re Hiring! We’re looking for exceptional people to join @coincircuitHQ in two roles: • Brand Designer • Marketing & Content Strategist We’re particularly interested in people with exceptional storytelling abilities, a strong creative instinct, and an obsessive attention to detail. Apply here: https://t.co/b6lhFomt2j
+2108677524867756294 @zarathustra5150 Fri Oct 09 21:54
+   If the H-1B program was actually the meritocratic magnet drawing the best and brightest talent from the entire world, as they claim—and not a transparently corrupt scam—you wouldn’t expect it to be basically just Indians. …but it’s basically just Indians. https://t.co/fSGkwzOHN5
+2108852541622493365 @suraj_sharma14 Sat Oct 10 09:30
+   $250K–$750K for your startup. No idea. No traction. No problem. Afore's Founders-in-Residence invests in YOU before you even know what you're building. What you get: - $250K–$750K+, wired as soon as you're accepted - 8 weeks building in their San Francisco office - 24/7 office space during the program and after - Help signing your first 5 design customers - A demo showcase in front of 200+ top inv
+2108638779628253626 @DinoAlabre23 Fri Oct 09 19:20
+   I'm hiring researchers working at the frontier of AI 🚀 Partnering with a well-funded AI startup building RL environments and training infrastructure for leading AI labs. 🔬 Head of Research: $500K–$750K + equity 🧠 Applied Researcher (MTS): $300K–$500K + equity Looking for people with serious hands-on RL/post-training experience, strong research backgrounds, and measurable results. Head of Research 
+2108536207680631087 @arthurkatcher Fri Oct 09 12:33
+   &gt;&gt; Claude: pauses their startup program. &gt;&gt; People get rejected after being initially accepted. &gt;&gt; OpenAI in the meanwhile: gives us $2.5k credits. DM me for the steps. https://t.co/Gf75pl2gta
+2108862411390189572 @kamilmm21 Sat Oct 10 10:09
+   This might be the best time in history to build a startup. In the last few days: → Accepted into Claude for Startups: 5 Premium seats + $1,000 in credits → NVIDIA Inception got us $9,000 in AWS credits All of this while I was offline for a few weeks after my son was born 👶 Came back rested, and Anthropic is back on the throne 👑 With all these tailwinds… stay tuned. Some crazy sh*t is coming to @mo
+2108844250381078528 @jayhemz Sat Oct 10 08:57
+   Those whose startups got approved won't tell you the secret to how they got approved. So here goes: in your Claude startups application, make sure you indicate that your startup has once been funded in the past, no matter how little. That way, you improve your chances.
+2108741262715289766 @PlumbNick Sat Oct 10 02:07
+   At first, I was shocked to learn Texas was importing English Teachers from India, but what I’ve just learned is even worse. TEXAS TAXPAYERS ARE PAYING MILLIONS TO AN EDUCATION COMPANY DEVELOPING AMERICAN SCHOOL CURRICULUM IN INDIA. And the deeper I dig, the worse this looks. Imagine Learning says it serves 18 MILLION students, 38,000+ U.S. schools and HALF of all American school districts. I’ve id
+2108615829273325921 @Jack_Raines Fri Oct 09 17:49
+   If you’re a killer creator, the play is running an agency model vs. running full-time at any one startup. A lot of companies need a crash course on getting their vibe right + systems in place, and / or sprints around fundraising. If your company’s X game sucks, HMU.
+2108629257169555512 @kseniam0s Fri Oct 09 18:42
+   OPPORTUNITY‼️: @joinef will back you before you have a co-founder, a company, or even an idea. Up to $250K once you form one. This is Entrepreneur First (EF), building unicorn cofounding teams from scratch since 2011. What you get: - up to $250K when you form company - up to $5M in follow-on funding - or an equity-free $10K fellowship - $600K+ in credits - program built to find you a co-founder - 
+2108600549339713918 @ChristianHeiens Fri Oct 09 16:48
+   There is no liberal democratic solution to the fact that a majority of the voting public demands things which are mathematically impossible to provide. People in France want nigh unlimited funding for everything ranging from Boomer communism to the world’s most lavish welfare state, and no one in electoral politics dares to tell them that all of their demands are physically impossible to meet beca
+2107912253987246553 @nickshirleyy Wed Oct 07 19:13
+   🚨 1 can of Spam for $120. Food stamps have become the new ATM for fraudsters as they partner with local businesses to commit the fraud as they trade SNAP cards like Pokémon cards on the streets. Across America food stamp fraud is happening everywhere. It has become a billion dollar fraudulent industry as taxpayers fund the $100 billion program. We caught a fraudster on the streets of Seattle as sh
+2108294863301296446 @nickshirleyy Thu Oct 08 20:34
+   Here's how food stamp fraud works: - Gov funds EBT cards with $ - Fraudster offers to buy the card for cash - Local business partners with the fraudster to adjust food price to the EBT card's balance - Everyone gets paid with your tax dollars END THE FRAUD. https://t.co/WE7145oqdI
+2108570476041617504 @nother_pleb Fri Oct 09 14:49
+   my life rn &gt;laid off from Deno in July &gt;set primary goal to join CloudFlare &gt;apply for CloudFlare in September &gt;coding interview ez pz oneshot a recursive problem &gt;nvm, rejected "jumped too quickly to implementation" (???) &gt;Deno joins CloudFlare i give up
+2108265426249769306 @specialopsmag Thu Oct 08 18:37
+   As reports circulate that Tim Kennedy was wounded in the Congo, accounts have also linked him to Vectus Global, the private security firm led by Blackwater founder Erik Prince. Launched in 2025, Vectus has taken government contracts in Haiti, Ecuador, and the Democratic Republic of Congo. Prince, who sold Blackwater in 2010 after the Nisour Square killings in Baghdad, has pitched Vectus Global as 
+2108286134291689696 @Danjsalt Thu Oct 08 19:59
+   Off the phone with my mate Karim in Toulouse - French economy is dead - he can't even get cleaning contracts - Absolutely hates Melenchon - however Le Pen doesn't have a serious economic plan - No one even pretends that they're not voting Le Pen - all social norms have collapsed - 100% that the riots are the fault of LFI - thinks they will keep going in some form to the election - Macron and the e
+2108590253468455076 @jayhemz Fri Oct 09 16:07
+   Not costly, don't put fear on anyone. Cloud Architect Expert here. My estimate puts it at about $90 - $120 per month if you wanna have 2 app servers that can act as load balancers + 1 DB server. Put both behind Cloudflare which will handle Caching, etc. You need an 8-core CPU with 24GB RAM each which is about $30/month on Contabo. For a 3rd server, you can host your DB (Postgres/Redis) at another 
+2108541775623196759 @doodlestein Fri Oct 09 12:55
+   There’s a big push now by OpenAI, Anthropic, and other players to get people to use cloud instances instead of running a harness on their own machine or VPS. I’ve been playing with these offerings, particularly the Claude one because they gave out all these $250 credits for all 28 of my 20x Claude Max accounts. But I hated that I didn’t have access to my Agent Flywheel tooling, like beads_rust, be
+2108529113547833465 @the_boludada Fri Oct 09 12:04
+   🤣🤣 fifth time I’m seeing this when the conversations started, even I told her not to think twice about it! That funding is going to unlock so much for builders, people are beginning to see what’s possible so no, there was no dog eat dog situation or sidelining… Shalom and I spoke about it well beforehand and we couldn’t have been more excited to have powered Lagos Life to where it got and honestly
+2108467068794274168 @TomolaGroup Fri Oct 09 07:58
+   Nigeria used to be the face of African tech funding. Last month we got 4% of it. African startups raised $260.3 million in September. Egypt took $74.6m, Kenya took $54.2m, and Nigeria got just $11.3m across nine deals. Investors haven't stopped putting money into Africa. They're just choosing other countries. What do you think changed?
+2108525723707195556 @Zaddyzaddy Fri Oct 09 11:51
+   you are better off using open-source models for bug bounty workflows, especially on blackbox targets. most times, you don’t need a mythos-level model to find vulnerabilities in web apps. closed source models tend to be more hesitant when interacting with blackbox targets. deepseek v4.1 flash or mimo v2.6 flash can get the job done just fine. gpt-5.6 sol with daybreak remains king for whitebox rese
+2108382793776435401 @freddiexpott Fri Oct 09 02:23
+   You can make $100k every 11 days referring companies to AI data labs Here's how it works AI labs training on proprietary data are paying $35k to $60k per referral for the right companies Find 3 AI data labs on LinkedIn Pitch to work with them on a pure referral basis Book 25 qualified companies per month across all three 2 sign per data lab = 6 clients total At $35k per referral that's $210k a mon
+2108436834418373099 @jerryjliu0 Fri Oct 09 05:58
+   These days, you can pretty much solve any task by defining an eval and hillclimbing over it, instead of directly defining the deterministic/agentic workflow to solve it. The data provider companies' entire job is to define evals for all economic activity to make the frontier models capable of doing anything. Your job then becomes pointing frontier intelligence in the right direction - defining wha
+2108462448910967134 @thecondia Fri Oct 09 07:39
+   Company behind viral Nigerian game Lagos Life raises $500k Vatar, the company behind the viral browser game @LagosLifeApp has closed a $500,000 pre-seed round. @theflutterwave CEO Olugbenga Agboola invested in the startup through his fund, Resilience17, while Oo Nwoye, @terraindustries and Mono CEOs Nathan Nwachuku and Abdulhamid Hassan also participated in the round, which closed in a day. Read M
+2085496870785393006 @doodlestein Thu Aug 06 22:42
+   My recent posts about frontier coding agents devolving into useless ceremony and "process porn" have struck a nerve. Obviously, many of you have been bitten by these odd, uniquely AI pathological behaviors. It's maddening, because it ends up wasting massive amounts of tokens, time, and energy (not to mention your patience and money!). And all that time and energy and so forth could have instead go
+2108323085762076933 @chrisbrunet Thu Oct 08 22:26
+   no visa program should go 71% to just one country—it doesn’t make any sense it’s totally absurd and totally broken you abused, you broke it, the scam is over https://t.co/5xcOgIn8XM
+2108271276003405945 @Techstars Thu Oct 08 19:00
+   Founders, sell us your company in 1 line. Apply to Techstars by November 18th → tsta.rs/pBaE50ZJvrq
+2108295687519805737 @fdotinc Thu Oct 08 20:37
+   We want to invest $100k-$200k in someone international. 🇺🇸🇯🇵🇮🇳🇬🇧🇧🇷🇬🇭🇫🇷🇸🇪🇨🇳🇰🇷🇨🇦🇦🇷🇸🇬🇦🇺 You don't have to be from SF to build here, 90% aren't. Our own @mdjshin breaks down how to make the move, from visas and housing to free food, startup credits, and more. Here's the overview: 0:25 Why international founders should move to SF 2:27 What to do when you first land 4:00 How to network the right way 16:
+2108259515741462854 @chrisfralic Thu Oct 08 18:13
+   Founders and Fundraisers, here's your AI hack of the day. Go to the semi-secret @shaig Google doc of almost 1,000 smaller VC funds that have recently raised. In the right hand Gemini panel describe your startup in general terms - or upload your full deck. Then ask which funds might be a good fit - I just did and was super impressed with the results. https://t.co/LZf3oEfq0o
+2108246263363998074 @sonyashijin Thu Oct 08 17:20
+   Excited to finally share that @phinity_ai is now out of stealth! We're announcing our seed fundraise and that we’ve reached 8-figures in annualized run rate. We’re already working with some of the largest foundation model labs. Our mission is to build fully autonomous chip design so AI can help us search beyond the limits of human engineering and discover computational systems we would never find 
+2108232833638793642 @Humble_Analysis Thu Oct 08 16:27
+   I worked at Microsoft for 20 years. This is exactly why and how Microsoft hired H1-B workers. It was not a secret, at least not in the Finance department. It was openly discussed. H1-B workers cost less and drove down demand for US workers, suppressing wages. Near the end of my tenor at Microsoft, however, the motivation changed - now the H1-B program was primarily used by Indian managers to bring
+2104961707626098790 @ap3xceo Tue Sep 29 15:49
+   boomers got $8 TRILLION richer between april n june, that's more than a third of everything millennials n gen z own combined… in case the ☝️🤓erm actually niggas r wondering, this is straight from the Federal Reserve boomers r 30% of the households in America n hold $97.4 trillion. 52% of ALL the money millennials n gen z r 37% of households n hold 11% n 43% of the debt lmao tragic☠️ they own $35 t
+2092664777315168765 @Mr_Buzzoni Wed Aug 26 17:25
+   I had 400+ half-finished notes rotting in my Obsidian vault. MiniMax Code fixed it in one evening ran MiniMax Code init first, so it read the whole vault and wrote its own guidance file before touching a single page gave it my vault plus a doc on how Karpathy structures his own second brain ran it through exec with full permissions since nobody was around to approve each step, then walked away > i
+2090872435486625853 @GilberteDSL Fri Aug 21 18:43
+   Two people are in conflict. Outsiders apply pressure to the person who is perceived as more reasonable, and ignore the one who is perceived as less so. What is this called and is there a way out
+2065551970279285187 @laff_x Fri Jun 12 21:49
+   Owning a £400,000 house with a £350,000 mortgage in the UK in 2026 means signing a 25-year contract to give the bank around £2,050 a month, in exchange for the right to maintain a building you'll spend another £4,000 a year keeping dry, warm and structurally sound. At a 5% fixed rate, the total interest over the life of the mortgage is around £264,000. The total mortgage cost ends up at roughly £6
+2061441058701967443 @Anc_Aesthetics Mon Jun 01 13:33
+   If you're wondering why movies suck now it's because Hollywood has been systematically discriminating against talented White artists like this for over a decade. In order to fund these massively successful projects these guys had to do Youtube for 11 and 9 years respectively. In the 90s they would have been hired as writers based on their talent alone. Now they have to build an entire career first
+2056453059996172593 @glamboyosa Mon May 18 19:13
+   you have 2 options, ok 3 1. the child stays in Lagos with the mom 2. the mom and child move back to the UK 3. you move to Lagos If you want to have the child in the United Kingdom with you, you will have to support the mother’s application to be with her child in the UK.
+2051308142403653973 @YoriOlajide Mon May 04 14:29
+   When it’s time to hire field workers, sales people, people you give targets to in millions & billions, under the sun, you can pay them peanuts and you can find them in Nigeria. You’re there defending nonsense that you can’t find talents in Nigeria; how about start graduate trainee programs and train them too upto mid level instead of trying to poach.
+2043056492211843273 @LukeLeisher Sat Apr 11 20:00
+   Kerbal Space Program has hit an all-time high player count. https://t.co/j2Uy0zRYxp
+2000310753585217890 @Mr_Buzzoni Sun Dec 14 21:03
+   These are the Polymarket profiles I personally check almost every day not to copy trades - but to understand how different traders think, size risk, and choose markets • domahhh profile: https://t.co/zNENieVd4A Of course, domahhh. Always interesting to see which markets he trading Good signal for what’s getting real attention • aenews profile: https://t.co/ZC2kF20V2c A top-tier trader who’s proven
+1984347783000965188 @dare_market Fri Oct 31 19:52
+   dare market is now open for everyone day 1: $50,000 in prizes enter every competition and submit for FREE the newest version of the trenches is here. https://t.co/fndsnDvaDp
+1955765181407232199 @morematerial Wed Aug 13 22:55
+   See what no one tells you about being laid off as a union organizer is that when applying to non-union jobs having been a union organizer at any time is worse for your resume then having been unemployed your entire life.
+1893614710458618022 @hope_pead Sun Feb 23 10:51
+   >Pope Francis decides to own JD Vance epic style over him not loving immigrants enough >Decides to wait to release his statement until February 11th, the anniversary of the signing of the Lateran Treaty in which Mussolini mended the Italian states contentions with the Church, establishing the Holy See's sovereignty over the Vatican City State > Pope Francis gets sick and is hospitalized on Februar
+1873263531287577080 @Anc_Aesthetics Sun Dec 29 07:03
+   Funny you should ask, I've been investigating the fraud in the F-1 Student Visa system too. It's just as big of a rabbit hole as the H-1B stuff and the two are very interconnected. Buckle up because this one is something. Here's the game. Students from India fake their undergraduate degrees and just apply straight to Masters programs. The reasons for this relate to H-1B reqs and other things but a
+1869062832580706576 @Sprinter_Press Tue Dec 17 16:51
+   Al-Julani: "We are considering granting Syrian citizenship to anyone who lives in our country for 5 years." https://t.co/fdmgXjXUUN
+1846761859212288428 @Anc_Aesthetics Thu Oct 17 03:55
+   Checked in with an old friend who used to work in Democrat politics and still keeps tabs on that world. Asked him what he's been hearing from the dem camp. Sounds like it's a rough scene over there. His correspondence below. "I would describe it as extreme panic. Their internals in key swing states have been very concerning for weeks and keep getting worse. They have been trying a media blitz stra
+1835799468576210950 @keepupwithkc_ Mon Sep 16 21:54
+   A year ago I decided I was going to make a career change into Cybersecurity. 6 months later I had a job offer in Application Security. Best decision I could’ve made.
+1831693454927077746 @painncake Thu Sep 05 13:58
+   i'm just a girl. standing in front of a leftist boy. asking him to apply his politics to how he treats the actual women in his life

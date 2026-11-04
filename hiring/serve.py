@@ -47,6 +47,9 @@ RUNNABLE = {
                             ' for j in jobs];'
                             'print("exit codes:",r);sys.exit(max(r))'],
     'sem-selftest':        [sys.executable, os.path.join(HERE, 'sem.py'), 'selftest'],
+    'opportunities':       [sys.executable, os.path.join(HERE, 'opportunities.py')],
+    'opportunities-live':  [sys.executable, os.path.join(HERE, 'opportunities.py'), '--live'],
+    'opportunities-review': [sys.executable, os.path.join(HERE, 'opportunities.py'), '--candidates'],
     'fix-fieldtheory':     ['node', os.path.join(HERE, 'fix-fieldtheory.js')],
     'fix-twitter-cli':     ['node', os.path.join(HERE, 'fix-twitter-cli.js')],
 }
@@ -464,7 +467,7 @@ def tail(path, n=25):
     return open(path, encoding='utf-8', errors='replace').read().splitlines()[-n:]
 
 
-def run(config, load, save, load_state, run_one, load_lists, save_lists, port=8765,
+def run(config, load, save, load_state, run_one, load_lists, save_lists, port=8770,
         check=None):
     host = '127.0.0.1'
     lock = threading.Lock()
@@ -844,7 +847,7 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
 
     srv = ThreadingHTTPServer((host, port), Handler)
     print(f'control panel on http://{host}:{port}   (ctrl-c to stop)')
-    if port == 8765:
+    if port == 8770:
         webbrowser.open(f'http://{host}:{port}')
     else:
         print(f'not opening a browser, non-default port. open http://{host}:{port} yourself')

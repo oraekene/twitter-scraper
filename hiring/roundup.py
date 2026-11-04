@@ -17,6 +17,7 @@ import json
 import pathlib
 import re
 import sqlite3
+from datetime import date
 
 # Split strategy depends on the list style. Try blank-line split first; if it
 # yields fewer than 3 items, fall back to single-newline split on bullet markers.
@@ -112,9 +113,12 @@ def parse_text(text, tid, posted_at):
         return []
 
     rows = []
-    default_year = 2026
+    default_year = date.today().year
     if posted_at:
-        m = re.search(r"(\d{4})", posted_at)
+        # The year is written last ("... +0000 2026"). The first four digits in
+        # the string are the UTC offset ("+0000"), so anchoring on 20xx and a
+        # word boundary is what stops every parsed date becoming null.
+        m = re.search(r"\b(20\d{2})\b", posted_at)
         if m:
             default_year = int(m.group(1))
     for item in items:

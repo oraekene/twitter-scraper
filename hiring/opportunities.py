@@ -1,22 +1,33 @@
-"""Integrate roundup.py into opportunities.py."""
+"""Build the opportunities list: grants, hackathons, funds and fellowships.
+
+    python opportunities.py                  # bookmarks, dated today
+    python opportunities.py --days 30        # wider discovery window
+    python opportunities.py --live           # also search X itself
+    python opportunities.py --candidates     # new single-program tweets to name
+    python opportunities.py --selftest       # check the parser, touch nothing
+
+Reads the bookmark database, so sync_bookmarks.py has to run first. Write
+`run --due` from ctl.py and the two weekly scripts for the schedule.
+"""
+import argparse
 import json
 import os
-import re
-import sqlite3
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
-# Import the roundup parser from the same directory
 import roundup
 import dedupe
 
-DB_PATH = "C:/Users/rotim/.fieldtheory/bookmarks/bookmarks.db"
+HERE = Path(__file__).resolve().parent
+OUT = HERE.parent / "out"
+DB_PATH = os.path.expandvars(r"%USERPROFILE%\.fieldtheory\bookmarks\bookmarks.db")
 
 # Single-program rows live in a data file, not in this script, so adding an
 # opportunity never means editing code. The two arrays below are only the seed
 # used the first time that file does not exist.
-MANUAL_PATH = "hiring/opportunities_manual.json"
-CANDIDATES_PATH = "out/single-candidates.md"
+MANUAL_PATH = HERE / "opportunities_manual.json"
+CANDIDATES_PATH = OUT / "single-candidates.md"
 
 # Roundup tweets are discovered from the database, not registered by hand. A
 # roundup is a tweet listing three or more dated opportunities; `roundup.py`
@@ -27,8 +38,108 @@ SEED_ROUNDUPS = [
     "2114386554403897624",  # vercinyc deadlines list, november edition
 ]
 
+# The live pass can only see what it asks for, so this query is the recall net.
+# 340 characters, under X's 512 limit, so one request.
+OPPORTUNITY_QUERY = (
+    '"hackathon" OR "hackathons" OR "grant" OR "grants" OR "fellowship" OR '
+    '"fellowships" OR "accelerator" OR "accelerators" OR "scholarship" OR '
+    '"scholarships" OR "residency" OR "residencies" OR "applications open" OR '
+    '"now accepting" OR "deadline" OR "submissions" OR "cohort"'
+)
+
+
+def _parse_args():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--days", type=int, default=45,
+                    help="how far back a roundup or candidate may be posted")
+    ap.add_argument("--db", default=DB_PATH, help="path to bookmarks.db")
+    ap.add_argument("--live", action="store_true",
+                    help="also search X for new roundups")
+    ap.add_argument("--limit", type=int, default=200,
+                    help="live only, max tweets per batch")
+    ap.add_argument("--min-likes", type=int, default=20,
+                    help="live only, drop posts below this many likes")
+    ap.add_argument("--candidates", action="store_true",
+                    help="list single-program tweets that still need a name")
+    ap.add_argument("--selftest", action="store_true",
+                    help="check the parser, touch nothing else")
+    return ap.parse_args()
+
+
+def output_path(today, live=False):
+    stem = "opportunities-live" if live else "opportunities"
+    return OUT / f"{stem}-{today.isoformat()}.md"
+
+
+def rows_from_live(tweets):
+    """Turn live search rows into roundup rows.
+
+    A live row carries the author handle in its url, which the database rows do
+    not, so the url replaces the bare `x.com/<id>` the parser builds.
+    """
+    out = []
+    for r in tweets:
+        for row in roundup.parse_text(r.get("text", ""), r.get("id", ""),
+                                      r.get("posted_at", "")):
+            row["tweet"] = r.get("url") or row["tweet"]
+            out.append(row)
+    return out
+
+
+def live_roundups(days, limit, min_likes):
+    """Search X and keep only the tweets that list dated opportunities."""
+    import search  # imported here so the bookmarks pass needs no credentials
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    rows, notes = search.fetch_live_chunked(
+        OPPORTUNITY_QUERY, limit=limit, since=since, min_likes=min_likes,
+        exclude=("retweets",))
+    return rows_from_live(rows), notes
+
+
+def selftest():
+    """Prove the date, the parser and the live mapping without a network."""
+    bad = 0
+
+    def check(label, got, want):
+        nonlocal bad
+        ok = got == want
+        bad += 0 if ok else 1
+        print(f"  {'ok ' if ok else 'BAD'} {label}: want {want!r}, got {got!r}")
+
+    check("output name", output_path(date(2026, 11, 4)).name,
+          "opportunities-2026-11-04.md")
+    check("live name", output_path(date(2026, 11, 4), live=True).name,
+          "opportunities-live-2026-11-04.md")
+
+    sample = ("Three things this month:\n\n"
+              "1. Alpha Grant, $5k, oct 20, online https://t.co/aaa\n\n"
+              "2. Beta Hackathon, $10k, nov 3, NYC https://t.co/bbb\n\n"
+              "3. Gamma Fellowship, nov 15 https://t.co/ccc\n")
+    rows = roundup.parse_text(sample, "123", "Sun Oct 25 16:00:12 +0000 2026")
+    check("parse count", len(rows), 3)
+    check("parse date", rows[1]["date_str"], "nov 3")
+    # The year lives at the end of a Twitter timestamp; the first four digits
+    # are the "+0000" offset. Reading the offset as the year made every date
+    # null, which is why this is asserted and not just printed.
+    check("parse date object", rows[1]["date"], date(2026, 11, 3))
+
+    live = rows_from_live([{"id": "999", "url": "https://x.com/a/status/999",
+                            "text": sample,
+                            "posted_at": "Sun Oct 25 16:00:12 +0000 2026"}])
+    check("live keeps handle", live[0]["tweet"], "https://x.com/a/status/999")
+    check("manual rows exist", MANUAL_PATH.exists(), True)
+
+    print(f"selftest: {7 - bad}/7 passed")
+    return 1 if bad else 0
+
+
+args = _parse_args()
+if args.selftest:
+    sys.exit(selftest())
+
 _discovered, _new_roundups = roundup.discover_tweets(
-    DB_PATH, "out/roundup_cache.json", years=("2026",))
+    args.db, OUT / "roundup_cache.json", years=("2026",), window_days=args.days)
 ROUNDUP_TWEETS = _discovered + [t for t in SEED_ROUNDUPS if t not in _discovered]
 if _new_roundups:
     print(f"roundup: {len(_new_roundups)} newly discovered roundup tweet(s): "
@@ -205,18 +316,20 @@ def _load_manual():
 DATED, UNDATED = _load_manual()
 
 
-if "--candidates" in sys.argv:
+if args.candidates:
     # Propose single-program rows instead of building the list. The program name
     # is left blank on purpose; naming it is the one judgement a person makes.
     _cands = roundup.find_single_tweets(
-        DB_PATH, known_tweets={r[4] for r in DATED} | {u[3] for u in UNDATED})
+        args.db, known_tweets={r[4] for r in DATED} | {u[3] for u in UNDATED},
+        window_days=args.days)
     _lines = [
         "# Single-program tweets that look like opportunities",
         "",
-        f"{len(_cands)} tweet(s) posted in the last 45 days that name an application",
-        "window and a date, and are not already in `opportunities_manual.json`.",
+        f"{len(_cands)} tweet(s) posted in the last {args.days} days that name an",
+        "application window and a date, and are not already in",
+        f"`{MANUAL_PATH.name}`.",
         "",
-        "Fill the Program column, then add the row to `out/opportunities_manual.json`.",
+        f"Name the program, then add the row to `{MANUAL_PATH.name}`.",
         "A tweet whose date has passed belongs in `dated` with `\"label\": \"<date>, closed\"`.",
         "",
         "| Posted | Dates in tweet | Money | Evidence | Tweet | Program to fill |",
@@ -227,8 +340,8 @@ if "--candidates" in sys.argv:
         _lines.append(
             f"| {c['posted']} | {', '.join(c['dates']) or '-'} | "
             f"{', '.join(c['money']) or '-'} | {evidence} | {c['tweet']} |  |")
-    with open(CANDIDATES_PATH, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(_lines) + "\n")
+    OUT.mkdir(exist_ok=True)
+    CANDIDATES_PATH.write_text("\n".join(_lines) + "\n", encoding="utf-8")
     print(f"wrote {CANDIDATES_PATH}: {len(_cands)} candidate(s) to review")
     sys.exit(0)
 
@@ -238,7 +351,7 @@ def load_roundup_rows():
     parsed = []
     for tid in ROUNDUP_TWEETS:
         try:
-            p = roundup.parse_tweet(tid, DB_PATH)
+            p = roundup.parse_tweet(tid, args.db)
             parsed.extend(p)
         except Exception as err:
             print(f"Warning: failed to parse roundup tweet {tid}: {err}", file=sys.stderr)
@@ -247,6 +360,16 @@ def load_roundup_rows():
 
 # Parse roundup tweets from the DB and merge them with hand rows
 parsed_roundups = load_roundup_rows()
+
+# A live run adds whatever it found on X. The parser is a pure function of the
+# text, so a searched tweet goes through the same rule as a bookmarked one.
+_live_notes = []
+if args.live:
+    _live_rows, _live_notes = live_roundups(args.days, args.limit, args.min_likes)
+    parsed_roundups.extend(_live_rows)
+    print(f"live: {len(_live_rows)} roundup row(s) from X")
+    for _note in _live_notes:
+        print(f"  {_note}")
 
 # Collapse a roundup row that restates a programme already in the hand list.
 # The hand list is curated and ordered, so it is never the side that gets
@@ -270,7 +393,7 @@ if _dropped:
 # Remember every programme ever seen, so next week's run recognises one that is
 # no longer in this week's output.
 _registry = dedupe.load_registry()
-_dedupe_today = "2026-10-29"
+_dedupe_today = date.today().isoformat()
 _cross = dedupe.remember(
     [{"program": r[2], "date": r[0], "tweet": r[4]} for r in DATED]
     + [{"program": u[1], "tweet": u[3]} for u in UNDATED]
@@ -287,26 +410,52 @@ rows = sorted(DATED, key=lambda r: r[0])
 assert [r[0] for r in rows] == sorted(r[0] for r in DATED), "not sorted"
 assert all(r[0] and r[2] and r[4].startswith("https://x.com/") for r in rows), "bad row"
 
-out = ["# Recently saved bookmarks: hackathons, funds, grants and scholarships", "",
-       "Pool: the 4,198 bookmarks saved since the 9 October export, found by today's sync.",
+# The parsed roundup rows are the automated half of this report, so they go in
+# the tables, not only in the JSON. A pipe in the tweet would break the row.
+_auto_undated = []
+for _p in parsed_roundups:
+    _url = _p.get("tweet") or _p.get("link") or ""
+    _detail = (_p.get("detail") or "").replace("|", "/")[:220]
+    _date = _p.get("date")
+    if _date:
+        rows.append((_date, _p.get("date_str") or _date.isoformat(),
+                     _p["program"], _detail, _url))
+    else:
+        _auto_undated.append((_p.get("date_str") or "Not stated", _p["program"],
+                              _detail, _url))
+rows.sort(key=lambda r: r[0])
+assert all(r[2] and r[4].startswith("https://x.com/") for r in rows), "bad roundup row"
+
+_title = ("Live X search: hackathons, funds, grants and scholarships" if args.live
+          else "Recently saved bookmarks: hackathons, funds, grants and scholarships")
+out = [f"# {_title}", "",
+       f"Pool: {len(ROUNDUP_TWEETS)} roundup tweet(s) posted in the last {args.days} days, "
+       "plus the curated rows in opportunities_manual.json.",
        f"Includes {_total_roundup_rows} items parsed automatically from {len(ROUNDUP_TWEETS)} roundup tweets; "
        f"{len(_dropped)} of those restated a programme already listed and are recorded as duplicates.",
-       "Ranked by the deadline each tweet states; past deadlines sit at the top and are marked closed.", "",
-       "| # | Deadline | Program | Detail | Tweet |", "|---|---|---|---|---|"]
+       "Ranked by the deadline each tweet states; past deadlines sit at the top and are marked closed.", ""]
+if _live_notes:
+    out.append(f"Live search coverage, {len(_live_notes)} batch(es):")
+    out += [f"- {n}" for n in _live_notes]
+    out.append("")
+out += ["| # | Deadline | Program | Detail | Tweet |", "|---|---|---|---|---|"]
 for i, (_, label, program, detail, url) in enumerate(rows, 1):
     out.append(f"| {i} | {label} | {program} | {detail} | {url} |")
 out += ["", "## No deadline in the tweet", "",
         "| Timing | Program | Detail | Tweet |", "|---|---|---|---|"]
-for when, program, detail, url in UNDATED:
+for when, program, detail, url in UNDATED + _auto_undated:
     out.append(f"| {when} | {program} | {detail} | {url} |")
-out.append("")
+out += ["", f"Single-program tweets that need a name are listed in "
+        f"`{CANDIDATES_PATH.name}` after `--candidates` runs.", ""]
 
-path = "out/opportunities-2026-10-29.md"
-open(path, "w", encoding="utf-8").write("\n".join(out))
-print(f"{len(rows)} dated, {len(UNDATED)} undated, {len(parsed_roundups)} parsed from roundups, wrote {path}")
-json.dump({"dated": [[str(r[0]), r[1], r[2], r[3], r[4]] for r in rows],
-           "undated": [list(u) for u in UNDATED],
-           "parsed_roundups": parsed_roundups,
-           "duplicates": _dropped},
-          open("out/opportunities-2026-10-29.json", "w", encoding="utf-8"), indent=1,
-          default=str)
+md_path = output_path(date.today(), args.live)
+json_path = md_path.with_suffix(".json")
+OUT.mkdir(exist_ok=True)
+md_path.write_text("\n".join(out), encoding="utf-8")
+print(f"{len(rows)} dated, {len(UNDATED)} undated, {len(parsed_roundups)} parsed from roundups, wrote {md_path}")
+with open(json_path, "w", encoding="utf-8") as fh:
+    json.dump({"dated": [[str(r[0]), r[1], r[2], r[3], r[4]] for r in rows],
+               "undated": [list(u) for u in UNDATED],
+               "parsed_roundups": parsed_roundups,
+               "duplicates": _dropped},
+              fh, indent=1, default=str)

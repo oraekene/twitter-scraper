@@ -1,0 +1,980 @@
+[
+ {
+  "tweet_id": "1112690204412919808",
+  "text": "Programming or coding will be automated in the near future so we are heading to codeless future. \n\nCoders are at the bottom of the food chain, we need to push as many folks up the chain rather than selling our \"seeds\" to countries that are playing higher up the chain.",
+  "author_handle": "EmekaOkoye",
+  "posted_at": "Mon Apr 01 12:16:32 +0000 2019"
+ },
+ {
+  "tweet_id": "2064039780971917408",
+  "text": "If you're making software that is designed to parse complex, diverse data, especially when YOU don't control the data, and it is generated in varied ways by thousands of different organizations or users, then there's really no substitute for what's known as \"fuzzing\" tests.\n\nFuzzing is a testing technique where you try to intelligently generate a huge number of varied inputs to your program, with the goal of finding parsing bugs that you'd be unlikely to come across if you're only testing with a fixed set of valid inputs.\n\nA naive approach to generating random inputs would be wasteful, since most inputs are trivially invalid and can be quickly rejected.\n\nWhat you really want are inputs that are pathological; ones that are nearly valid but have some bizarre issue that can confuse your parsing rules and trigger code pathways that you'd normally never traverse.\n\nFuzzing used to be a somewhat esoteric approach used by security-focused engineers in high-stakes, sophisticated applications. But now anyone can use it. I have a skill specifically for fuzzing you can try here:\n\nhttps://t.co/4GXFLCYvWD\n\nIt's part of a series of testing-related skills that also includes metamorphic testing, conformance harness testing, golden artifact generation, end-to-end integration testing, etc. \n\nThe skill works across many popular languages and automatically installs the needed tooling for you, instruments your application for fuzzing, and then mounts extended fuzz testing campaigns. \n\nYou can see an example of one in the screenshot, where it's been working for many hours, subjecting three different parsers in my hedge_fund_data_tool to torture tests. \n\nFor instance, my elaborate parser for SEC insider trade forms (i.e., Forms 3, 4, and 5), which is thousands of lines of Rust, has been called over 780 million times, each invocation with a different, optimally selected input designed to best explore all the different possible code paths within the parser.\n\nThere aren't that many forms of this kind in the history of the SEC's EDGAR database, across all companies. The only way to do something like that is with fuzzing. And now you can!",
+  "author_handle": "doodlestein",
+  "posted_at": "Mon Jun 08 17:40:06 +0000 2026"
+ },
+ {
+  "tweet_id": "2078175540347912515",
+  "text": "More and more, I\u2019m realizing that the use of external library dependencies in Rust projects is an anti-pattern. \n\nMost libraries are one-size-fits-all, with scope creep and sprawling dependency chains that lead to you depending on hundreds of different projects and people, any one of which could suffer from a supply-chain attack.\n\nThey also often rely on C or C++ libraries, which defeats the benefit of the strict memory safety that is the major selling point of Rust. This usually results in complex and annoying build processes that create headaches when you want everything to be cross-platform.\n\nAnd even when they don\u2019t use C or C++ libraries, they almost always make liberal use of unsafe code. If you don\u2019t make strict memory safety a basic requirement, it\u2019s easy to slip into bad patterns out of convenience or a sense of misguided pragmatism.\n\nPerhaps worst of all, they are just not performance-optimized the way things can and should be today, with special tricks to optimize performance specifically on Apple silicon or on high-core-count AMD processors. \n\nThose two platforms have very different performance characteristics and need specialized designs to even approach the point of saturating the hardware.\n\nFor my FrankenSearch project, which is the core of my cass tool and also used in various other projects of mine like agent mail and eidetic engine, I have been using the Tantivy library for fast lexical search. \n\nTantivy is sort of a Rust descendant of Lucene, which is the core search system used in Elasticsearch. \n\nI realized recently that many of the things that annoy me about FrankenSearch come from Tantivy, and I hate the feeling that it\u2019s a walled-off dependency that I don\u2019t want to change for the obvious reasons. \n\nSince for my newest projects (e.g., FrankenOCR, FrankenMarkdown, FrankenSim, and FrankenGraphDB), I have a strict \u201cno outside dependencies\u201d rule other than my own projects like Asupersync and FrankenSQLite, I decided that I should start applying a similar standard in my older projects. \n\nThat\u2019s why I decided to create my own specialized lexical search system optimized specifically for FrankenSearch. I\u2019ve made the plan for it and the implementation work is already far along. You can see the plan here:\n\nhttps://t.co/8PHIpapyOU\n\nThis will reduce the number of dependencies by 41 crates, increase safety and security, and dramatically increase performance. \n\nAnd because this module will be part of the core code of the system, it will benefit along with the rest of the projects from my endless continuous performance optimization campaigns, so it will keep getting faster and faster.\n\nAs the plan explains, the biggest wins come from not paying the \u201cgenerality tax.\u201d By not trying to be all things to all people, we can do just what we need in the absolute optimal way possible.",
+  "author_handle": "doodlestein",
+  "posted_at": "Fri Jul 17 17:50:34 +0000 2026"
+ },
+ {
+  "tweet_id": "2110371582153748942",
+  "text": "every week someone tells me they\u2019re going to vibe-code their own @beehiiv alternative over the weekend.\n\nwishing them the best, here\u2019s the backlog of things to make sure to include:\n\n> 99.3% email delivery rate (industry-leading)\n> team of deliverability experts with decades of experience\n> infrastructure to send 3M+ emails per minute\n> validating every single email submission (1st and 3rd party)\n> automated bot-detection to prevent spam signups\n> registering for every mailbox provider\u2019s feedback program\n> ingesting data from said feedback loops and building suppression lists\n> tagging every email so gmail reports complaint rates per newsletter\n> classifying every bounce (hard, soft, mailbox full, DNS failure) and knowing which ones mean \u201ctry again\u201d vs. \u201cnever again\u201d\n> three layers of suppression: global, per-publication, and transactional\n> temporary suppressions that expire on their own, and permanent ones that never do\n> one-click unsubscribe, the way gmail and yahoo now require it\n> warming new IPs and domains on a schedule\n> watching blocklists around the clock, and pulling an IP from rotation the moment it\u2019s listed\n> retrying deferred mail for 24+ hours before calling it a bounce\n> blocking disposable, invalid, and typo\u2019d addresses before they ever reach the list\n> rate limiting every signup endpoint a bot can find\n> filtering bot clicks out of every report (something we pay an ungodly amount of money for)\n> an acquisition source on every subscriber\n> engagement history for every reader, across every post\n> multiple sender addresses for different emails\n> custom domain configuration that is aligned with DKIM, SPF, DMARC\n> a true WYSIWYG editor: what you write is what lands in the inbox, with no HTML required\n> turning that editor into table-based, inline-styled email HTML that holds up in outlook\n> real-time collaborative editing, so the whole team can work on the same issue at once\n> dynamic content: different sections for different readers, all in a single send\n> separate email and web versions of every post, from one draft\n> free and premium versions of the same post, split by a paywall break\n> merge tags that personalize every email, and a simulated subscriber to preview them before you send\n> templates with saved colors, fonts, and spacing, plus a default style for every post\n> columns, tables, buttons, blockquotes, sections, file attachments, and a table of contents with anchor links\n> native embeds for X, youtube, tiktok, instagram, bluesky, stocktwits, and podcast episodes\n> polls, referral blocks, recommendations, and ad slots, built right into the post\n> an AI writer, AI images, and a built-in AI agent one keyboard shortcut away\n> images resized and optimized automatically, however they\u2019re uploaded\n> a live email-size gauge that warns you before gmail clips your newsletter\n> custom HTML blocks, cleaned so a stray script tag can\u2019t break your post\n> automatically hiding anything an inbox can\u2019t handle (video, iframes, audio) in the email version, while keeping it on the web\n> links and embeds made clickable even in outlook, which ignores links wrapped around tables\n> vertical alignment in columns, because a layout that looks off by 4px looks broken to readers\n> converting your newsletter to audio versions for readers who prefer to listen\n> random cohort sends to randomly split your list to test different content and conversion\n> slash commands: type \u201c/\u201d and insert any block without touching a menu\n> markdown and keyboard shortcuts for people who never want to touch a mouse\n> pasting from google docs with the formatting intact\n> search and replace across the whole post\n> comment threads right in the draft, so editors and writers stop living in google docs\n> footnotes and citations that work in the inbox and on the web\n> code blocks, for the technical newsletters\n> an AI writer that rewrites, translates, and fixes spelling and grammar in place\n> autosave, so a closed tab never costs you a draft\n> subject line A/B testing, built into the send flow\n> drag-and-drop images, from your computer, your media library, or a URL\n> rich-text image captions, plus image titles and alt text for accessibility\n> audio files that play inline\n> file attachments, so a PDF can ride along with the issue\n> sections with their own backgrounds, borders, and spacing\n> blockquotes with custom borders, colors, and styles\n> content breaks and dividers that render cleanly in every inbox\n> a REST API for subscribers, posts, segments, automations, and more\n> a send API to create and send newsletters programmatically\n> creating, updating, and deleting subscribers in real time\n> reading and writing custom fields on any subscriber\n> tagging subscribers from your own app\n> enrolling subscribers into automations via API\n> pulling opens, clicks, and engagement for every post\n> fetching post HTML rendered for free vs. premium, email vs. web\n> creating posts from a template, then appending or prepending content\n> fetching segments and every subscriber in them\n> managing tiers and premium subscriptions\n> pulling referral program data and milestones\n> reading poll and survey responses\n> pagination that holds up across millions of records\n> rate limits that protect the platform without blocking real integrations\n> API keys you can create and revoke anytime\n> an MCP server so claude, chatgpt, and other AI tools can work inside beehiiv\n> drafting and editing posts from an AI chat\n> asking for open rates, CTR, and revenue in plain english\n> comparing performance across dozens of posts in one request\n> looking up any subscriber's full history and engagement\n> building segments by describing them\n> creating and editing automations\n> generating AI images straight into your media library\n> managing website pages, redirects, and SEO\n> reading and replying to community posts and DMs\n> reviewing ad offers and ad revenue reports\n> managing podcast shows and episodes\n> creating digital products, coupons, and promo codes\n> running subscriber growth and earnings reports\n> setting up subject line A/B tests\n> deliverability by mailbox provider for any post\n> searching docs without leaving the chat\n> inviting teammates by email\n> admin, member, and contributor roles\n> admins who control billing, exports, integrations, payments, and domains\n> members with full access minus admin permissions\n> contributors limited to drafting posts and automations\n> roles at the workspace or publication level\n> multiple publications under one workspace\n> workspace grouping and search for people on multiple teams\n> multiple authors per post, with bylines\n> guest authors for one-off contributors\n> author profiles with bios, avatars, and social links\n> community roles mapped to workspace roles (admin, manager, moderator)\n> real-time collaboration and comment threads on every draft\n> removing access the moment someone leaves\n> publication transfers between owners, with written consent\n> secure, single-use magic links to log in from desktop\n> a no-code website builder on your own custom domain\n> an AI website builder that works from plain-english prompts or screenshots\n> AI custom elements for live widgets\n> drag-and-drop editing, plus HTML access for full control\n> site-wide theme tokens for fonts, colors, borders, and shadows\n> global navbar, footer, and signup and login modals\n> saving sections, blocks, and pages as reusable templates\n> version history with one-click restore\n> custom pages with their own SEO settings and paywalls\n> redirects, so old links never break\n> custom robots.txt\n> auto-generated meta titles and descriptions for every post\n> google news schema\n> pages up to 80% faster on largest contentful paint\n> image carousels and grids\n> youtube blocks that update when you post new videos\n> an automatic page for every podcast episode\n> pop-ups and gated content to turn visitors into subscribers\n> a visual automation builder, no code required\n> triggers based on signup source, behavior, purchases, and engagement\n> welcome sequences that start the second someone subscribes\n> delays and wait steps\n> branching logic based on subscriber attributes\n> reusable condition sets across automations\n> email steps built in the same editor as your newsletter\n> webhook steps that call your own systems, with automatic retries\n> enrolling subscribers via API\n> per-subscriber journey tracking\n> opens and clicks for every email in every flow\n> editing a draft version while the live automation keeps running\n> comparing draft vs. live before you publish changes\n> reordering steps in bulk\n> segment conditions based on whether an automation started\n> product delivery and follow-ups triggered by purchases\n> selling files, links, guides, templates, and ebooks\n> memberships and time-based products\n> 1:1 coaching sessions and appointments\n> 0% platform fees on every sale\n> a storefront on your beehiiv website\n> products sold inside emails and automations\n> free products that double as lead magnets\n> product variants\n> discount codes and promotion codes\n> product reviews, with moderation\n> product tags for organizing your catalog\n> orders dashboard with buyer details\n> sales totals per product\n> duplicating a product in one click\n> automatic delivery the moment someone buys\n> payouts through stripe\n> live webinars with up to 10,000 attendees\n> ticket sales in 10 currencies\n> native streaming with video, screen sharing, and chat\n> no zoom required\n> up to 5 automated reminder emails\n> calendar invites sent automatically\n> a recording of every session\n> selling the replay as its own product\n> 0% platform fees on tickets\n> free webinars that grow your list\n> discount codes on tickets\n> 1:1 coaching bookings\n> buyers linked to their subscriber profile\n> promoting events in your newsletter and on your site\n> orders and revenue reporting for every event\n> a community built into your newsletter: channels, posts, and comments\n> channels that are free or gated to paid tiers\n> syncing newsletter posts into the community\n> direct messages between you and members\n> threaded comments\n> pinned posts\n> a moderation queue for reported posts and comments\n> banning and unbanning members\n> admin, manager, and moderator roles\n> inviting subscribers, segments, or specific emails\n> surfacing your most engaged subscribers to invite first\n> community metrics: new members, posts, and activity\n> notification emails with your own from name\n> channel ordering and a default channel\n> luma calendar integration for events\n> discord integration that syncs roles with subscription tiers\n> native podcast hosting with zero platform fees\n> distribution to apple podcasts, spotify, and youtube\n> an automatic webpage for every episode\n> automatic transcripts\n> IAB-standard analytics by country, app, and device\n> bot filtering on downloads\n> downloads and unique listeners per episode and per show\n> private feeds for paying subscribers\n> bundling your podcast with your paid subscription\n> importing from other hosts with episode GUIDs preserved\n> RSS redirects so listeners follow you over\n> scheduled episodes\n> apple podcasts categories and metadata\n> podcast players embedded in your posts\n> a full episode library on your site\n> webhooks for episode and private-feed events\n> segments built on behavior, attributes, and engagement\n> dynamic segments that update automatically\n> static segments that stay fixed\n> filtering by acquisition source, including magic links\n> filtering by custom fields and tags\n> filtering by subscription tier and paid trial status\n> filtering by whether an automation started\n> reusable condition sets\n> recalculating a segment on demand\n> sending to a segment, or excluding one\n> segments that power dynamic content inside a single post\n> segments as automation conditions\n> adding a whole segment to a newsletter list\n> multiple newsletter lists in one publication\n> exporting any segment\n> webhooks for new, confirmed, and deleted subscribers\n> upgrade, downgrade, pause, and resume events\n> tier created, deleted, paused, and resumed events\n> newsletter list subscribe and unsubscribe events\n> post sent, scheduled, and updated events\n> survey response events\n> podcast episode published, updated, archived, and deleted events\n> private podcast feed access events\n> choosing exactly which events each endpoint receives\n> a signing secret on every endpoint\n> automatic retries on failed deliveries\n> a log of every delivery attempt\n> manually retrying any failed message\n> disabling an endpoint without deleting it\n> versioned payloads\n> webhook steps inside automations\n> survey forms with multiple question types\n> polls that readers answer with one click, right in the inbox\n> every answer tied to a real subscriber\n> live poll results\n> per-question response breakdowns\n> aggregate results across every survey\n> individual responses you can browse one by one\n> webhooks the moment a survey is submitted\n> survey and poll data available via API\n> polls on the web and in email\n> signup flows that send new subscribers through a survey\n> surveys that tell you what to write next\n> polls for picking topics, products, and pricing\n> response data you can turn into segments\n> no third-party form tool required\n> a library of professionally designed post templates\n> custom colors, fonts, and spacing on every template\n> a default style applied to every new post\n> content outlines baked into templates\n> separate email and web styling\n> theme design tokens per template\n> duplicating templates in one click\n> a custom email footer applied to every post\n> templates with sponsor slots, referral blocks, and recommendations built in\n> creating posts from templates via API\n> template changes picked up instantly by API-created posts\n> website templates\n> saved sections, blocks, and pages for your site\n> welcome email templates\n> templates your whole team shares\n> the largest native ad network for newsletters\n> brands like netflix, hubspot, notion, and nike (and 525+ others)\n> ads available to claim for your upcoming posts\n> dropping an ad into a post with one click\n> earnings and payouts reported for every placement\n> ad revenue reports post by post\n> a history of every opportunity you accepted or declined\n> bot-filtered clicks advertisers can trust\n> custom link parameters for advertiser attribution\n> brand safety review on every campaign\n> payouts to your beehiiv wallet\n> direct sponsorships: selling your own placements\n> sponsorship products with your own formats and pricing\n> scheduled sponsor placements with advertiser details\n> 0% platform fees on paid subscriptions\n> multiple paid tiers\n> monthly and annual plans\n> free trials\n> paid trials, like $1 for 30 days\n> metered paywalls, new york times-style\n> a paywall break inside any post\n> discount offers\n> gift subscriptions\n> group subscriptions: one buyer, many seats\n> custom group deals for teams and companies\n> pausing and resuming subscriptions\n> private podcast feeds and gated community channels as paid perks\n> payouts through stripe connect\n> recommendation network with 60K+ active newsletters\n> getting recommended by thousands of other newsletters\n> free, reciprocal recommendations\n> paid recommendations: pay to grow, or get paid to recommend\n> discovering newsletters to partner with\n> AI-suggested recommendation partners\n> applications for paid recommendations, with accept and reject\n> engagement and spend insights for every partner\n> pausing, resuming, or ending any partnership\n> fraud detection on paid recommendations\n> clawing back payouts for fake subscribers\n> recommendations inside your newsletter, not just at signup\n> attribution for every subscriber a partner sends you\n> one-click subscribes powered by magic links\n> one-click subscribe links, no form needed\n> UTM parameters carried through on every link\n> rate limiting on every request\n> bot detection and honeypots\n> a confirmation step only when a click looks suspicious\n> double opt-in respected\n> redirecting new subscribers straight to your site\n> magic links as a filterable acquisition source\n> links you can drop into other newsletters, socials, and ads\n> login magic links so paid subscribers can read premium posts\n> single-use tokens that expire in minutes\n> rate limits on login requests\n> protection against timing attacks\n> logging in on desktop from a link sent to mobile\n> faster logins across every beehiiv publication\n> embeddable subscribe forms for any website\n> full-width, fixed-width, and slim embeds\n> an attribution script to track where signups come from\n> custom colors, fonts, and styling\n> theme design tokens per form\n> a draft and publish workflow for form changes\n> comparing draft vs. live before publishing\n> multiple forms per publication\n> custom success behavior: a message or a redirect\n> pop-ups on your beehiiv site\n> gating posts to subscribers only\n> readers picking which newsletter lists to join\n> signup flows that run right after subscribing\n> bot protection on every submission\n> forms that work on wordpress, webflow, and anywhere else\n> a customizable link-in-bio page\n> hosted on your own beehiiv site and domain\n> a subscribe form built in\n> your brand colors, fonts, and buttons\n> social links for every platform\n> links to your latest posts\n> links to your products and paid tiers\n> a linktree integration that captures newsletter signups\n> every visitor a potential subscriber\n> traffic from instagram, tiktok, and X turned into owned email subscribers\n> visits tracked in your website analytics\n> signups tagged with their acquisition source\n> mobile-first design\n> no third-party link tool required\n> updated in seconds, from the same dashboard as everything else\n> real-time website analytics, no third-party tools\n> traffic by channel\n> filters for location, device, OS, and referral source\n> website and newsletter analytics in one place\n> breakdowns by page, referrer, and more\n> custom conditions to slice any report\n> AI crawler and bot analytics: what was served vs. blocked\n> control over which crawlers can index your site\n> UTM tracking on every link\n> custom link parameters at the publication level\n> an acquisition source on every subscriber\n> google analytics integration\n> podcast analytics alongside your site\n> trends over time\n> website traffic connected to the subscribers it produced\n> native integrations with linktree, hubspot, manychat, meta, and dozens of other apps\n> human support team with a dozen experts ready to assist with whatever you need\n\noh, and besides having to manage all of this on your own indefinitely forever\u2026 your vibe-coded solution will still require paying for and stitching together a ton of software:\n\n> email sending (sendgrid, amazon SES, postmark)\n> web hosting (vercel, AWS, render)\n> database + queue (supabase, neon, RDS)\n> payments (stripe, memberful)\n> auth (clerk, auth0, supabase auth)\n> monitoring + alerting (sentry, datadog, pagerduty)\n> workflow engine (inngest, temporal, upstash qstash)\n> bot protection (cloudflare)\n> email validation (zerobounce, kickbox)\n> email rendering (litmus, email on acid)\n> click verification (omnivery)\n> media storage + CDN (S3, R2, vercel blob)\n> product analytics (posthog, mixpanel)\n\n\u2026but at least you saved $59/mo not paying for @beehiiv anymore \ud83e\udee1",
+  "author_handle": "denk_tweets",
+  "posted_at": "Wed Oct 14 14:06:08 +0000 2026"
+ },
+ {
+  "tweet_id": "2110373332365279287",
+  "text": "Micro1's CEO on their data program: \"we would add a couple billion in run rate like right away.\"\n\nThe program pays companies $200K+ to license their software data, anonymized.\n\nRefer a company that follows through with this program, and micro1 pays YOU $50K.\n\nI wrote out how to actually refer companies to micro1:\n\n- Why the market exists\n- How the money works\n- Which companies qualify\n- Building the list\n- Writing the outreach\n- Handling objections\n- Getting paid\n- Recruiting other brokers\n\nFull breakdown in the article:",
+  "author_handle": "coldemailchris",
+  "posted_at": "Wed Oct 14 14:13:05 +0000 2026"
+ },
+ {
+  "tweet_id": "2110445205585301886",
+  "text": "cohorts are gone.\n\nif you've constantly done exceptional things, we're now accepting apps year-round. taking ~5 more outliers this year.\n\ndrop an app / show me the coolest thing you've ever built :) https://t.co/Lysr2E160p",
+  "author_handle": "aditmag",
+  "posted_at": "Wed Oct 14 18:58:41 +0000 2026"
+ },
+ {
+  "tweet_id": "2110420149874618529",
+  "text": "Exciting time to be at Modal \ud83d\ude80 i'm hiring interns &amp; full-time researchers in RL, ML, and large models to join our **new** research team. apply on our website or reach out to me directly (contact info on my website)!",
+  "author_handle": "rasoolfa",
+  "posted_at": "Wed Oct 14 17:19:08 +0000 2026"
+ },
+ {
+  "tweet_id": "2110470784393036114",
+  "text": "just sent the first 10 acceptance emails\n\nwe\u2019re building a micro-fund / accelerator for early founders\n\n- $1k\u2013$2k for finalists\n- hands-on help with distribution & gtm\n- partner perks\n- zero equity\n\nmore invites going out this week (going thru every single application)\n\nif you want one, reply or dm",
+  "author_handle": "SaidAitmbarek",
+  "posted_at": "Wed Oct 14 20:40:20 +0000 2026"
+ },
+ {
+  "tweet_id": "2110250683542716457",
+  "text": "I\u2019m posting this with zero dignity left.\n\nThe past 4 months have been an absolute nightmare. My savings are totally gone, my bills are piled high, and I\u2019m out of options. I\u2019ve tried applying through standard channels, but I can't wait any longer.",
+  "author_handle": "kiunye_",
+  "posted_at": "Wed Oct 14 06:05:44 +0000 2026"
+ },
+ {
+  "tweet_id": "2110454982357221790",
+  "text": "I knew a guy about a year ago, a roommate of a friend in San Francisco\n\nHe'd apply to these executive AI roles even though he was 23 years old. Didn't even look much younger.\n\nHe'd tailor his resume exactly to the job description, and totally fabricate his experience in the interview.\n\nThat man was a master bullshit artist. Truly elite, never seen anything like it since.\n\nLast I checked LinkedIn he landed Head of AI Transformation gig at an a16z company, pulling $280k/year\n\nHis entire transformation program was a Claude subscription, some generic .md files and a slide deck about becoming \"AI-first company.\"\n\nAnd he'd casually drop \"MoE,\" \"test-time compute\" and \"harness moat\" into conversations.\n\nActive on linkedIn, always at conferences, partying with execs and telling them  to become an \"AI-first company.\"\n\nJust looked him up on LinkedIn. He's now the CEO of an a16z-backed startup building an \"autonomous workforce.\"\n\nThat guy didn't even know how to run local models, and his AI alignment strategy was writing NEVER HALLUCINATE .md files.\n\nMany such cases.",
+  "author_handle": "FourVork",
+  "posted_at": "Wed Oct 14 19:37:32 +0000 2026"
+ },
+ {
+  "tweet_id": "2110459333876007334",
+  "text": "it's hard to see what's going on in AI right now & NOT think it's an amazing idea to build distribution channels...\n\ni've seen it firsthand\n\nyoutubers are getting paid $50k to make videos about new agents/models\n\nIG influencers are getting paid $25k to post a reel\n\nX creators are getting paid $5k to quote tweet a launch post\n\nhundreds of startups are getting funded every day & the attention they need is scarce, put two and two together",
+  "author_handle": "eptwts",
+  "posted_at": "Wed Oct 14 19:54:50 +0000 2026"
+ },
+ {
+  "tweet_id": "2109361380684075248",
+  "text": "Posted this September 19. In the 22 days since, Anthropic signed a $15B compute deal with SpaceX. Baron put $5B of his own money in. xAI shipped a Wikipedia alternative with 6 million articles overnight. Musk said Tesla's chip will be 2-3x Nvidia at 10% cost. And gave AGI a 3-year deadline.\n\nBaker said one or two of the Mag 7 would go extinct. Nobody told him it would happen this fast.\n https://t.co/FQIEkPxzPY",
+  "author_handle": "stark0xbt",
+  "posted_at": "Sun Oct 11 19:11:57 +0000 2026"
+ },
+ {
+  "tweet_id": "2110475858209321367",
+  "text": "need money or a job get in here\n\n- Direct mentorship from Anthropic researchers\u00a0\n- Weekly stipend of 3,850 USD / 2,310 GBP / 4,300 CAD + benefits (these vary by country)\n- Funding for compute (~$15k/month) and other research expenses\n\njob-boards.greenhouse.io/anthropic/jobs\u2026",
+  "author_handle": "xerocooleth",
+  "posted_at": "Wed Oct 14 21:00:29 +0000 2026"
+ },
+ {
+  "tweet_id": "2110292690223153521",
+  "text": "I\u2019m a top percentile intelligence foreign student deliberately choosing to study at one of the world\u2019s most elite universities and I have to learn a few new idioms in the language I claimed I was fluent in in my application ahhh helppp meee https://t.co/URx7thSObd",
+  "author_handle": "kunley_drukpa",
+  "posted_at": "Wed Oct 14 08:52:39 +0000 2026"
+ },
+ {
+  "tweet_id": "2108225918145798199",
+  "text": "Frontier Time Series Language Models struggle with precise anomaly localization over long contexts, when useful signals might be hidden in hours of recordings.\n\nIn our new paper we trained a tiny Recursive Language Model to SoTA performance on long context time series.\n\nWe introduce AnomalyXL, an infinitely scalable synthetic time-series generator with programmatic ground truth answers. \n\nTraining our RLM formulation on this RL environment transfers to real world anomaly detection in Software Observability, ECG and Sleep data.\n\n\ud83e\uddf5\ud83d\udc47",
+  "author_handle": "nzuma0",
+  "posted_at": "Thu Oct 08 16:00:02 +0000 2026"
+ },
+ {
+  "tweet_id": "2110140807399494118",
+  "text": "Most open RL environments cluster around the same few domains. Almost none are long-context time series.\n\nPrime Intellect RL resident @nzuma0 built one. AnomalyXL is an infinitely scalable synthetic generator with programmatic ground truth, written in verifiers.\n\nHe then trained a 4B TimeRLM on it with prime-rl, generating fresh data every step, with the model recursively calling sub-agents via nano-rlm to localize anomalies across 131k datapoints. It transfers zero-shot to ECG, sleep and observability data.",
+  "author_handle": "PrimeIntellect",
+  "posted_at": "Tue Oct 13 22:49:07 +0000 2026"
+ },
+ {
+  "tweet_id": "2110432189431308639",
+  "text": "Founder is receptive to feedback, shipping and working closely with the @ProgrammableHQ \n\nStill believe this is the one.\n\nOnly time will tell, but as a trader you need to go with your gut and conviction.\n\nOtherwise what's the point of trading onchain?",
+  "author_handle": "sonder_crypto",
+  "posted_at": "Wed Oct 14 18:06:58 +0000 2026"
+ },
+ {
+  "tweet_id": "2110423784364687636",
+  "text": "BOOM! Well, I'll be damned if that's not the very BEST-sounding, 100% simulated/synthesized concert grand piano I've ever heard!\n\nhttps://t.co/iu5sbvEJ6I\n\nWhat does that mean? ZERO recordings of real-world sounds were used (other than for comparison and diagnosis), nor were any measurements captured by microphones or similar.\n\nLiterally everything from start to finish here was part of an enormously intricate physics simulation of a piano: its geometry, materials, moving parts, and acoustic radiation.\n\nOh, and I did the same thing for a full drum kit and cymbals. The cymbals are modelled using the estimated geometry and dimpling pattern of a real Zildjian splash cymbal, together with estimated profile details and literature-based properties for B20 bronze alloy.\n\nFor the most extreme audio quality, you can pre-render to WAV files or similar. But after many, many rounds of iterative performance optimization, I now have the wasm version running at better than real-time, so it sounds really good live in the browser as well!\n\nThis is a big deal. It's shockingly hard to get truly realistic-sounding audio from synthesized instruments. The real world is just too complicated. What people usually end up doing is spending hundreds or thousands of dollars to buy these massive libraries of recorded sounds of a real piano, which takes up many gigs of space and is super slow to use.\n\nThe worst part of that approach isn't the size of the files, the cost of the sample packs, or the inelegance of the approach. It's that EVEN THAT is a massive simplification, because they are recording each key separately at various key velocities and so forth.\n\nThat means they are missing the very complex interaction effects that arise in a real piano when you play certain keys at the same time or after one another. The energy persists in the instrument and conditions the next sounds.\n\nIt's subtle but real and you pick up on it when it's missing. And yes, they do try to capture some of this, but they use very lossy methods with more simplified approximations that are way more primitive than what I'm doing here with FrankenSim.\n\nI've invested a massive amount of time and focus on ensuring that the energy accounting is correct in these simulations.\n\nAnd the same thing goes for drums! There are complex interaction effects. These sorts of things are emergent and \"just fall out\" when everything is simulated for REAL using the actual underlying physics.\n\nSo why haven't other companies and people done this? I'm not actually sure; it's kind of insane when you consider all those people working at Yamaha, Roland, Korg, Moog, etc. But my guess is that it's because it's super hard and complicated to get all the physics right and to program it the right way so that it's tractable without needing crazy amounts of compute.\n\nAnyway, take a look at this demo site I set up. It's a lot of fun to play with, and at the bottom there is a nifty MIDI player that takes any MIDI file and lets you listen to it with the high-quality simulated piano and drums in the browser.\n\nThis is the culmination of months of work and hundreds of billions of frontier tokens. It all started when I wanted to see what Fable 5 could really do, so I thought of the most comically ambitious project I could think of: FrankenSim, the system that unifies ALL of physics into a single coherent and cohesive simulation across all domains: mechanics, fluid dynamics, electricity and magnetism, etc., instead of modeling each domain as a separate silo, where each domain can use the same generic geometric primitives, solvers, calculus machinery, etc.\n\nAll unified using the language of sheaf cohomology to maintain consistency between representations, and where everything is made as legible, intuitive, and ergonomic to AI agents as possible.\n\nThis music simulation stuff is just the beginning. Beyond many more instruments, I'm going to be using FrankenSim to model HVAC systems, fluid flow through plumbing systems, and more!",
+  "author_handle": "doodlestein",
+  "posted_at": "Wed Oct 14 17:33:34 +0000 2026"
+ },
+ {
+  "tweet_id": "2110404997112606975",
+  "text": "every week someone tells me they\u2019re going to vibe-code their own https://t.co/fiqqEJPROE over the weekend with an @ahrefs  API key and an @InstantlyAI subscription\n\nwishing them the best, here\u2019s the backlog of things to make sure to include:\n\n> 1.27M domains indexed with live DR, organic traffic, and spam signals\n> 80,000+ publisher price quotes already negotiated and mapped by niche\n> 210,000+ creators and authors matched to the exact domains they write for\n> unwrapping Google SERP redirect hops (`https://t.co/yqRFa0VvBb\u2026`) so your scraper doesn't index Google as the ranking domain\n> visiting and caching the live HTML of every target page because Ahrefs and GSC can\u2019t tell the difference between an unbranded text mention and an actual `<a href>` backlink\n> filtering out pages that already mention your client so you don\u2019t email an author asking to be added to an article you\u2019re already in\n> finding the domains linking to 2+ of a customer\u2019s direct competitors (link-intersect) automatically on onboarding\n> separating real editorial sites from the 40,000 Indian link-farm PBNs that fake DR 60 with 301 redirects\n> finding the actual writer\u2019s personal work email instead of blasting `info@` or `editor@` contact forms that go to a dead inbox\n> warming 50+ sending domains and inboxes on a schedule so your outreach doesn't land in spam on day 3\n> classifying every publisher reply: \"yes send anchor\", \"here is our media kit ($800)\", \"we only do link swaps\", \"remove me from your list\", and OOO auto-replies\n> negotiating down a blogger who asks for $650 when you know from 4 previous orders their real floor is $140\n> detecting when a \"publisher\" is actually a middleman reselling the same site on Fiverr or BlackHatWorld for a 3x markup\n> enforcing relevance and rival gates so you never accidentally place a customer on a page next to their competitor\u2019s hit piece\n> preventing reciprocal A\u2194B link swaps that trigger Google\u2019s link-scheme penalty\n> drafting contextual link insertions that read like the original author wrote them, so the editor approves on the first pass\n> writing full niche guest posts with custom illustrations that match the host blog's style\n> checking that the link is actually `dofollow`, indexed in Google, not blocked by `robots.txt`, and not hidden behind a `noindex` meta tag before releasing payment\n> catching shady webmasters who take your $200 PayPal transfer and silently flip the link to `nofollow` or delete it 14 days later\n> a weekly live-link crawler that re-verifies every placed link across every customer order and alerts when an article 404s or drops the anchor\n> automatic replacement workflow when a link rots 4 months later\n> an MCP server so Claude, Cursor, and Grok can research SERPs, inspect competitor backlinks, and place link orders from the terminal\n> Stripe checkout, prepaid credit balances, per-link escrow, and automatic refunds when a target publisher ghosts\n\noh, and besides having to manage 1,000+ flaky bloggers in your inbox forever\u2026 your vibe-coded script will still require paying for:\n\n> backlink index data (Ahrefs Enterprise / DataForSEO)\n> SERP scraping at scale (DataForSEO / BrightData)\n> stealth headless browser fleet (Puppeteer + residential proxies)\n> email finding + verification (Hunter, MillionVerifier, OrbiSearch)\n> cold email warmup + sending fleet (20+ domains, workspaces, inboxes)\n> LLM classification + drafting across millions of cached pages\n\n\u2026but at least you saved $160 not buying a link from @linkdr.com anymore \ud83e\udee1",
+  "author_handle": "illyism",
+  "posted_at": "Wed Oct 14 16:18:55 +0000 2026"
+ },
+ {
+  "tweet_id": "2110391249341755454",
+  "text": "bro listed 13 SaaS bills at the bottom like you need Vercel + Supabase + Inngest + Clerk + S3 + PostHog to send an email loop\n\n1 Hetzner (\u20ac3.79/mo) + bun:sqlite + SES + 6 MCP tools\n\n0 admin UI, 0 React dashboards, 0 SaaS / SQL wrappers\n\nClaude is the UI, here's the entire prompt \ud83d\udc47\n\nBuild a single-file headless newsletter engine (`server.ts`) running on Bun + `bun:sqlite` (WAL mode) + AWS SES on a \u20ac4/mo Hetzner VPS. 0 external SaaS dependencies, 0 Admin UI, the entire control plane is a remote MCP server.\n\n1. SQLite Schema (`db.sqlite`, WAL + busy_timeout):\n- subscribers(id, email UNIQUE, status['pending'|'active'|'bounced'|'complained'|'unsubscribed'], tier['free'|'paid'], source, attrs JSON, token UNIQUE, created_at)\n- posts(id, slug UNIQUE, title, mdx_free, mdx_paid, sent_at)\n- send_queue(id, post_id, subscriber_id, subject, status['queued'|'sent'|'failed'], attempts, next_retry_at, UNIQUE(post_id, subscriber_id))\n- events(id, subscriber_id, post_id, type['delivered'|'opened'|'clicked'|'bounced'|'complained'], meta JSON, ts)\n\n2. Public HTTP Routes (`Bun.serve`):\n- GET / & GET /p/:slug -> server-rendered HTML web archive + RSS feed at /rss.xml (unlock `mdx_paid` if signed cookie is paid)\n- GET /media/:file -> serve optimized images directly from local `/var/data/media/`\n- POST /subscribe -> rate-limit by IP in memory, reject disposable domains, upsert subscriber, send magic-link opt-in via SES\n- GET /magic/:token -> activate subscriber + set HMAC signed session cookie, redirect to /\n- POST /u/:token & GET /u/:token -> RFC 8058 1-click instant unsubscribe\n- POST /webhooks/ses -> verify AWS SNS signature, process Bounce (Hard -> 'bounced', Soft -> ignore), Complaint (-> 'complained'), Delivery/Open/Click -> insert into `events`\n- POST /webhooks/stripe -> verify signature, flip `tier = 'paid' | 'free'`\n\n3. Background Worker + Email Compiler (in-process loop, 0 Redis/Inngest):\n- Compile MDX to Outlook-safe table HTML via `react-email/render` and verify `Buffer.byteLength(html) < 102000` (Gmail 102KB clip limit).\n- Every 1s, pull up to 50 due rows from `send_queue`, send concurrently via SES `SendEmail` with `List-Unsubscribe` + `List-Unsubscribe-Post: List-Unsubscribe=One-Click` headers, and exponential backoff on 429/5xx.\n\n4. Remote MCP Server (`POST /mcp` with Bearer token):\n- `sql_query(sql)`: read-only SQL over SQLite (replaces all analytics dashboards, cohort charts, and segment builders)\n- `save_post(slug, title, mdx_free, mdx_paid)`: upsert draft, return Gmail byte-size check + web preview link\n- `upload_media(filename, base64)`: resize/convert to WebP via `sharp`, save to disk, return URL\n- `send_test(slug, to_email)`: send rendered preview email\n- `send_post(slug, where_sql, ab_subjects?)`: populate `send_queue` for active subscribers matching `where_sql` (e.g. \"tier = 'paid' AND json_extract(attrs, '$.topic') = 'ai'\")\n- `mutate_sql(sql, params)`: tag, import CSV, or update subscribers/automations directly",
+  "author_handle": "illyism",
+  "posted_at": "Wed Oct 14 15:24:17 +0000 2026"
+ },
+ {
+  "tweet_id": "2110366555246940326",
+  "text": "Announcing Pear Fund V: $333M to back founders before it\u2019s obvious. \n\nPear was founded 13 years ago on one belief: the best time to meet a founder is before the world knows they\u2019re great. \n\nFund V is a continuation of that conviction, and we\u2019re just getting started. \ud83c\udf50 https://t.co/PE9lm6kt8d",
+  "author_handle": "pearvc",
+  "posted_at": "Wed Oct 14 13:46:10 +0000 2026"
+ },
+ {
+  "tweet_id": "2110189752666440181",
+  "text": "Railway hacked AI SEO, and it took them from $20M to ~$100M ARR in 1 year:\n\n1/ Claude Code picks Railway for 82% of Python apps\n->  Ask it \"how do I deploy this\" and it installs Railway and puts your app live there\n\n2/ The founder treats AI recommendations as a growth channel\n->  His go-to-market team works on getting the models to \"recommend us more and more\"\n\n3/ 6,653 how-to pages, one for every popular free tool people want to run themselves\n->  Someone asks Google or ChatGPT \"how do I set up n8n?\" and Railway's page comes up. It explains the tool and sets it up on Railway in one click\n\n4/ A step-by-step guide for every framework developers build with\n->  127 guides: Next.js, Django, Rails, FastAPI, Laravel, Go and more. Each one answers \"how do I deploy X\" and ends with the app live on Railway\n\n5/ A comparison page against every competitor\n->  Heroku, Vercel, Render, Replit, Lovable and 5 more, each with a migration guide. AI loves quoting comparisons\n\n6/ Railway rewrote its help pages so AI can read them easily\n->  One file lists all 414 pages with a short summary each, and every page has a plain-text version. When someone asks ChatGPT how to use Railway, it finds the right answer fast and gets it right\n\n7/ A docs section written for agents\n->  One step installs everything Claude Code or Cursor needs to deploy to Railway on its own\n\n8/ Plugins inside ChatGPT and Claude Code\n->  You ask the chat to deploy and it deploys, without ever opening Railway's website\n\n9/ A server with one command and no signup\n->  ssh railway new gives an agent the shortest path to \"your app is live\"\n\n10/ A new changelog page every Friday since 2021\n->  312 pages of fresh content that keep Railway in front of Google and the models\n\n11/ Every new AI model brings a new jump in signups\n->  More code gets written, all of it needs to run somewhere, and this year the summer slowdown disappeared\n\n12/ A go-to-market team of 7 runs all of it\n->  The pages, docs and plugins keep selling while they sleep\n\n13/ The one hole: front-end apps\n->  Claude Code picks Vercel 100% of the time for Next.js and React apps. Railway wins Python, Vercel wins everything that runs in a browser\n\nFull guide on how to win AI search in the first comment",
+  "author_handle": "irabukht",
+  "posted_at": "Wed Oct 14 02:03:37 +0000 2026"
+ },
+ {
+  "tweet_id": "2110134041504624722",
+  "text": "actively buying data from architecture firms rn\n\nif a firm \n- has been operating for years \n- is sitting on project files, CAD, drawings, revisions, client emails, RFIs, etc \n- has the whole history of how a building actually goes from idea to done\n\nthen I want it. \n\nlabs dont have it. you cant scrape it\n\ntypical deals are running $100k to $1M\n\nif you know a firm that fits, dm me. \n\np.s if it closes you get paid too (:",
+  "author_handle": "mike_revenue",
+  "posted_at": "Tue Oct 13 22:22:14 +0000 2026"
+ },
+ {
+  "tweet_id": "2110390484757561749",
+  "text": "Many \"pre-seed\" funds want to see a seed round forming before they move. These write the first institutional check, when it's just you and a repo:\n\n- @CowboyVC (Palo Alto, CA)\n- @NextViewVC (Boston, MA)\n- @PrecursorVC (San Francisco, CA)\n- @EverywhereVC (New York, NY)\n- @ZeroPrimeVC (San Francisco, CA)\n- @AforeVC (San Francisco, CA) \n- @2048vc (New York, NY)\n- @Boldstartvc (New York, NY)\n- @KindredVentures  (SF, CA)\n- @MaCVentureCap (Los Angeles, CA)\n- @UnshackledVC (San Francisco, CA)\n\nP.S. Pre-traction? Your data room is how you look like a round is forming. Build it in minutes, know what to include, then track who opens it @ThePageform",
+  "author_handle": "kseniam0s",
+  "posted_at": "Wed Oct 14 15:21:15 +0000 2026"
+ },
+ {
+  "tweet_id": "2110148919334429061",
+  "text": "I give up hiring a growth guy in SF.\nI talked to a dozen of them this month. Every single plan was the same. Wait till the product is ready. Line up influencers. Big launch.\n\nThat exact plan already killed one of our products. We waited for it to be good enough, then went looking for people with reach to vouch for us. By the time we showed up, nobody cared.\n\nThen yesterday I watched @hectorserrranoo walk through how he built @WisprFlow's UGC program. 250+ creators. $100M ARR.\nThat's when it clicked. Every AI startup is trying to poach this guy, and now I get why. There are maybe a handful of people like him in the Bay Area, and they're all taken. Waiting to hire one is just another way of waiting.\nAds are creative. Influencer deals are a script. UGC is content. If your content is bad, no growth hire saves you.\nSo we stopped waiting. Now every day we try to put out more genuinely useful content, the kind people save and send to a friend. From day one, before it's ready.",
+  "author_handle": "MeredithCheng22",
+  "posted_at": "Tue Oct 13 23:21:21 +0000 2026"
+ },
+ {
+  "tweet_id": "2110182623175643304",
+  "text": "There's an opportunity in AI I've watched slowly ramp up, and I think it turns into one of the biggest plays of 2027.\n\nFDE/AI implementation contract stacking as a solo operator.\n\nEvery time I'm on LinkedIn, I see more companies hiring specifically for AI automation and AI adoption roles. \n\nThis was simply not a thing this time last year. Companies were not budgeting for a full-time AI implementation hire.\n\nYou could pitch those companies as an AI agency/consultant (which works, and is a qualified lead gen method and just backs up the overall demand)\u2026\n\nOR you could position yourself specifically as the person they're trying to hire, take the role on contract, and stack 3 to 5 of them.\n\nIt's the same exact skill set, and the only real change is how you position yourself.\n\nIf you have an optimized setup, your FDE specified agents handle the build work.\n\nYou handle the people and getting the team to use what you built.\n\nRegardless, both models are going to work and absolutely crush. \n\nThe advantage Ai agency/ai consultant has, let\u2019s say if they are pitching the same company and competing on a deal, meaning there is 1 solo operator and 1 agency, the agency can prove lower costs. \n\nI just think this one becomes a really clean way to do it in 2027 especially for beginners. \n\nYou don\u2019t necessarily have to have a website and all that jazz. You just go through a normal interview process. \n\nMaybe stack certifications, post content, and constantly apply to the abundance of jobs being posted. \n\nSeems like it would be pretty hard to fail.",
+  "author_handle": "lukepierceops",
+  "posted_at": "Wed Oct 14 01:35:17 +0000 2026"
+ },
+ {
+  "tweet_id": "2110008544707916189",
+  "text": "Micro1 is paying $75,000 for data from companies that are NO LONGER opperational:\n\nHere are 10 public signals you can start pulling leads from immediately to get closer to them:\n\n1. Chapter 11 bankruptcy filings\n\n2. Companies exploring strategic alternatives or asset sales\n\n3. Business closures and wind-down announcements\n\n4. Mass layoffs and WARN notices\n\n5. Debt restructuring and creditor negotiations\n\n6. Going-concern warnings in SEC filings\n\n7. Companies selling divisions or closing locations\n\n8. Private equity portfolio companies experiencing distress\n\n9. Failed fundraising and capital shortfalls\n\n10. Receiverships and insolvency proceedings\n\nWhere to find these companies:\n\n1. PACER - public bankruptcy filings.\n\n2. SEC EDGAR - financial distress disclosures.\n\n3. WARN databases - companies announcing mass layoffs.\n\n4. Industry publications - closures, restructuring, and asset sales.\n\nFrom there, enrich the companies, identify decision-makers, and launch campaigns positioning historical data licensing as a potential source of liquidity or new revenue.\n\nIf you already have infrastructure, lists, and campaigns running, I would encourage you to launch this angle immediately",
+  "author_handle": "termsheetinator",
+  "posted_at": "Tue Oct 13 14:03:33 +0000 2026"
+ },
+ {
+  "tweet_id": "2110093319661670623",
+  "text": "ramp started the ai sdr thing and they shut down their ai sdr program last yr\n\nai ae motions make way more sense and you don't chudify yourself in front of your entire tam\n\neg) research, org charts, decks, emails based on usage triggers",
+  "author_handle": "headsetpipeline",
+  "posted_at": "Tue Oct 13 19:40:25 +0000 2026"
+ },
+ {
+  "tweet_id": "2110024474938790330",
+  "text": "Today we announced an agreement to acquire Bumble.\n\nOver the past six months, we\u2019ve looked at hundreds of companies, asking which businesses would become more valuable as AI advances.\u00a0\n\nBumble stood out.\u00a0\n\nAs intelligence becomes more abundant, we believe connecting with the right person and forming meaningful relationships will become even more precious. And frontier technology can help more people find and build those relationships.\n\nOur purpose at Ithaca is to apply frontier technology to things that matter. We acquire enduring businesses, transform them with technology, and hold for the long term. We focus on businesses not only for their financial potential but their ability to enrich lives.\n\nWhitney and her team have built something extraordinary. Millions of relationships began on Bumble, and we\u2019re honored to help take it into its next era. Together we intend to build the best company in the world for helping people find each other.\n\nLet\u2019s get to work.",
+  "author_handle": "GuptaRK22",
+  "posted_at": "Tue Oct 13 15:06:51 +0000 2026"
+ },
+ {
+  "tweet_id": "2110076296273318192",
+  "text": "Fukuyama description of the gulf resonates with me: a society who skips 2-3 levels of development is a husk. You have never heard of a Kuwaiti political theorist, or a Qatari writer, or an Emirati noble peace prize winner. They\u2019re stage sets impersonating nations.",
+  "author_handle": "Gaismair",
+  "posted_at": "Tue Oct 13 18:32:47 +0000 2026"
+ },
+ {
+  "tweet_id": "2110016214940729743",
+  "text": "how to build a top 1% Grok Bot setup in 30 minutes:\n\n- run it on your own machine, that's where it shines: it can run ANY other agent you have, so every model works inside its best harness, and any agent can pick up the files it writes\n\n- connect your email and calendar so it knows your priorities and every deadline coming up\n\n- install /last30days and connect Parallel for way sharper research, no X API needed\n\n- turn on the Cloudflare connector so it can host anything it builds and manage your databases\n\n- create one bot whose only job is deep research, saving everything into a knowledge base that every other bot checks before building anything\n\n- put your bots in groups so they talk to each other and come up with real plans before they build\n\n- give them an OpenRouter key so they can call any model, even the ones you don't pay a sub for\n\n- set up simple routines so Grok Bot uses your computer and whatever else it has access to, and keeps every project moving without you pushing it",
+  "author_handle": "EXM7777",
+  "posted_at": "Tue Oct 13 14:34:02 +0000 2026"
+ },
+ {
+  "tweet_id": "2109977201412370630",
+  "text": "we have booked 1,000+ meetings and $1M+ for us and our clients....\n\nagencies charge $8k a month to run this and call it proprietary\n\nheres the whole outbound system we run, every step in order (steal it):\n\nSTEP 1: PICK A MARKET WORTH SENDING TO\n\n- count your market in sales navigator account search\n- 3,000 companies is the floor, 10,000+ is better\n- each customer has to be worth $2k+ to you\n- one ICP and one job title per campaign\n\na small market with a cheap product cant pay for outbound, no matter how good the copy is\n\nSTEP 2: BUILD AN OFFER A STRANGER CAN SAY YES TO\n\na cold buyer doesnt know you, so asking for 30 minutes is a big ask\n\nlead with one of these:\n\n- something free and useful to them\n- a result from a company like theirs\n- taking the risk away with a guarantee\n\npull your best case study numbers into one sheet before you write a word\n\nSTEP 3: BUILD THE COMPANY LIST FIRST\n\n- run account search before lead search\n- then pull the decision makers inside those companies\n- use every variation of the job title\n- split big searches city by city\n\nsales nav stops at 2,500 results per search\n\n15 cities turns one capped search into 37,500 people\n\nthen have AI read every company website and pass or fail it with a one line reason\n\nthe people who report your messages are the ones who never should have been on the list\n\nSTEP 4: GIVE EVERY LEAD A REASON TO HEAR FROM YOU TODAY\n\n- changed jobs in the last 90 days\n- promoted recently\n- posted on linkedin in the last 30 days\n- commenting on a competitors posts\n- registered for an event in your space\n- hiring for the role you replace\n- raised a round\n\nnew in role leaders reply about 3x more for us\n\nsave every search and turn on alerts so new people land on your list automatically\n\nSTEP 5: SET UP THE LINKEDIN ACCOUNTS\n\n- verified profiles that belong to real people\n- clear photo, headline with the result you create\n- 500+ connections and a few recent posts\n- open profile switched on\n- log in from the same place every time\n\nwarm each account for 3 to 4 weeks:\n\n- week 1: connect, react, share one post\n- week 2: more requests, normal chats\n- week 3: a few cold messages\n- week 4: hold a steady pace\n\nkeep a spare account warming in case one gets a warning\n\nSTEP 6: SET UP EMAIL\n\n- never send cold email from your main domain\n- 2 to 3 inboxes per domain (we use inboxkit)\n- SPF, DKIM and DMARC on every domain\n- warm every inbox for 2 weeks\n- send from dedicated IPs (we use sendkit)\n- verify every email before it goes in a sequence\n- test inbox placement before every campaign\n\ngmail made DMARC mandatory for bulk senders in feb 2024 and outlook followed in may 2025\n\nskip this step and your copy never gets read\n\nSTEP 7: WRITE THE MESSAGE\n\n- subject line is their first name, nothing else\n- open with a result for a company like theirs\n- end on one question they can say yes to\n- ask for something small, \"want the breakdown?\"\n- write 3 to 5 versions of every line\n\nfirst name subjects have taken our inmails past 50% replies\n\nthe best cold message we ever sent was 19 words\n\nif your first message has a calendly link and a deck in it, thats where your replies went\n\nSTEP 8: SEND ON LINKEDIN FIRST\n\n- message open profiles first, no connection needed\n- connection notes are one line with no pitch\n- send a 30 second voice note after they accept\n- message event attendees and group members directly\n- spread sends across the day and do less at weekends\n\na reply inside 90 days refunds the inmail credit, even a no\n\nand reply rate decides how much linkedin lets you send, so targeting protects your account\n\nSTEP 9: MOVE THE WINNER TO EMAIL\n\n- test 2 offers on linkedin\n- read the replies inside a day or two\n- move the winning angle to email\n- email the same people 3 days later\n\nlinkedin alone gets around 15% responses for us, email alone around 3%\n\nboth on the same people gets close to 35%\n\nSTEP 10: FOLLOW UP\n\n- day 3 or 4: send another client result\n- day 7 to 10: ask about their timing\n- then stop and recycle them into a later campaign\n- if your first contact goes quiet, message a colleague\n- for hard to reach execs, message their chief of staff\n\na follow up that only says \"just bumping this\" gets ignored, every one needs a new reason\n\nSTEP 11: WORK THE REPLIES\n\n- answer inside 5 minutes\n- one person owns each reply\n- call every interested reply before it books\n- offer a specific time, \"does tuesday at 11am work?\"\n- log every \"come back in Q1\" with the date\n- turn every \"wrong person\" into an introduction\n\nanswered inside 5 minutes, 45% book a meeting\n\nleave it to the next day and 3% do\n\nSTEP 12: TRACK IT EVERY WEEK\n\n- connection acceptance, aim for 30%+\n- reply rate by type of company\n- interested replies\n- meetings booked\n- how fast replies get answered\n- any warnings or restrictions\n\nwhen a number drops:\n\n- warnings or low acceptance: slow down\n- low replies: change the list\n- replies but no interest: change the result\n- interest but no meetings: reply faster and call more\n\nif an account gets a warning, rest it for 2 weeks and restart on your best leads\n\nthats the whole system\n\nthe people saying outbound is dead skipped half of these steps\n\nwe turned these steps into AI agents and walkthroughs, in the same order:\n\n> step 1 and 2: walkthroughs to nail your offer\n> step 3: agents that build your lead lists\n> step 4: an agent that finds why each lead should care\n> step 5 and 6: linkedin and email setup walkthroughs\n> step 7 to 10: agents that write the campaign for you\n> step 11: an agent that drafts every reply for you\n> 1,000,000+ US leads to run it on\n\nlike + comment \"OUTBOUND\" and ill send it to you",
+  "author_handle": "draprints",
+  "posted_at": "Tue Oct 13 11:59:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2110028640519925887",
+  "text": "just started fundraising for the first time in my career and i finally understand what people mean by capital is a commodity\n\nbiggest lesson so far: if you\u2019re legible to capital, it chases you. if you\u2019re not, you chase it.",
+  "author_handle": "robjama",
+  "posted_at": "Tue Oct 13 15:23:24 +0000 2026"
+ },
+ {
+  "tweet_id": "2109980076934603189",
+  "text": "I\u2019ll let you in on a secret that isn\u2019t being discussed much. I work in senior management for strategy and analytics and I can say with 100% certainty that every remote middle tier analyst job from 90k-115k is like this. Regardless of industry.\n\nIf you want a lazy job (max 30 hours/week), just query LinkedIn, Indeed or Google jobs for healthcare analytics, sales support analytics, logistics analytics and filter by salary/experience and location.\n\nThese jobs aren\u2019t analytics engineering, business intelligence or operational heavy. They\u2019re basic back office functions that are 100% necessary because executive boomers lack the sufficient technical skills to be Excel or PowerPoint savvy. So they\u2019ll hire people at this rate to do the work for them. If you understand spreadsheets, basic statistical concepts and elementary business concepts, you\u2019ll do fine. \n\nSome weeks these jobs are busy but most weeks you\u2019d be doing ad hoc reporting. If your boss (low level executive or senior manager) doesn\u2019t delegate much, you could pick up a second job. If you\u2019re good with low code platforms and AI, most of the work at these jobs could be completed in 10-15 hours.\n\nI could probably find 50 of these jobs within 30 minutes on LinkedIn. Hundreds of these are getting posted every day because companies are ditching visa workers and cancelling contracts with outsourced firms in India and abroad.\n\nJust search for the jobs, find one you want, use Claude or ChatGPT to tailor your resume and apply. Then, most importantly, reach out to a recruiter on LinkedIn from the company and state your interest and experience (even if you embellish). \n\nIt\u2019ll work, trust me",
+  "author_handle": "Narddog4747",
+  "posted_at": "Tue Oct 13 12:10:26 +0000 2026"
+ },
+ {
+  "tweet_id": "2109963106944487774",
+  "text": "I'M BEGGING YOU:\n\n> sign up as a micro1 referral partner\n> find a business with 20+ people on laptops\n> send the owner your link\n> let micro1 run the calls\n> get paid $50K (per referral)\n> quit the job you hate\n> take your parents somewhere they've never been\n> pay for the wedding in cash\n> buy a house\n\nHere's EXACTLY how to do the first five:\n\n0. WHAT THIS IS (30 SECONDS)\n\nAI labs have read the whole internet. What they've never seen is how work moves inside a real business.\n\nmicro1 pays companies a one-off $200K to $2M+ to license that operational data, anonymised before any lab sees it.\n\nOn the 9th of October they committed $1B to it over the next 12 months, backed by Citi.\n\nAnyone who refers a company that closes gets a flat $50K.\n\n1. SIGN UP (5 MINUTES, $0)\n\nRegister through the link below this post (free), accept the referral terms, and grab your own affiliate link from the dashboard.\n\nNo fee, quota or sales calls needed.\n\nOnce you send a business your link, micro1's team runs the fit call with them, then the quote, the contract and the export.\n\nYou never touch anyone's data.\n\n2. LEARN WHO QUALIFIES (ONE READ)\n\n> 20+ full-time staff on email & software daily\n> based in the US (UK, Canada & Europe considered)\n> 2+ years of history\n> 5+ software tools, mostly in English\n\nDrivers, bartenders and warehouse staff don't count toward the 20.\n\nThe strongest fits are software, consulting, finance, legal, accounting, engineering, IT services, real estate, construction and logistics.\n\nMarketing agencies and recruiting firms are weak fits, so skip them.\n\n3. START WITH WHO YOU ALREADY KNOW (ONE EVENING)\n\nWrite down every business owner you know with 20+ people in an office.\n\nYour old boss. Your dad's accountant. The law firm your mate works at.\n\nOne message to each.\n\nThen go cold. Filter Apollo for 50 to 2,500 employees in the industries above, find the owner or COO, and send one short email.\n\n(We've sent 10M+ cold emails. A list like this is the easiest one we've ever built.)\n\n4. SAY IT THE RIGHT WAY\n\n\"License your operational data\", never \"sell your data\".\n\n\"Anonymised before any AI lab sees it.\"\n\n\"Typically $200K to $600K for a mid-size company, priced per company, paid in about 60 days.\"\n\nNever promise anyone a number. micro1 sends a firm quote 24 to 48 hours after a short form that doesn't commit them to anything.\n\n5. GET PAID (ABOUT 60 DAYS)\n\n$50K flat for every company that signs and completes, whether their deal is $200K or $2M.\n\nIt's paid by micro1, never taken out of the company's money.\n\nRecruit another referral partner and you get $10K every time they close one, on top of their full $50K.\n\nFor a limited time, referring a company that's already shut down pays $75K.\n\nRun the numbers:\n\n1 company = $50K\n4 companies = $200K\n10 companies = $500K\n\nmicro1 has worked with a few hundred companies so far and has $1B to spend in 12 months.\n\nOnce every outbound agency on X has a link, the owners you know will have heard it from someone else first.\n\nThe other four never needed a guide. Nobody has ever struggled to book a holiday with $50K in the bank.\n\nThe link to sign up as a referral partner for free is below:",
+  "author_handle": "coldemailchris",
+  "posted_at": "Tue Oct 13 11:03:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109919656744005991",
+  "text": "Yesterday I posted that I am hiring for a UI/UX design role, and I got 300+ comments and 100+ DMs (across X and LinkedIn). And one thing this proved to me is that applying for jobs alone in 2026 is no longer enough. You're competing with so many people.\n\nNow more than ever, Building Relationships is a must. It's a cheat code. You gats connect with people if you want to land opportunities. Because a solid recommendation or a warm intro will land you a job 10x faster than cold applications ever will. \n\nRemember, skills get you in front of the door, but relationships open the door and get you in the room.\n\nWho you know still matters fr.",
+  "author_handle": "MiracleAgitan_",
+  "posted_at": "Tue Oct 13 08:10:21 +0000 2026"
+ },
+ {
+  "tweet_id": "2109943476377079843",
+  "text": "Let me make one thing crystal clear real quick: if you ever see me post a job opportunity, best believe it\u2019s a 100% open field. I don't play that game of posting a role when I already have someone in mind just to look charitable. And I def don't waste people's energy with fake job opportunities.\n\nIf I already know who is doing the job, it will never make it online.\n\nCase in point: I\u2019m currently working on a brand identity project for an international client, and at some point he'll need a website designer to redesign the existing one. If and when he gives the go-ahead for the website design, you won't see a public job post from me because I already have someone in mind for the role. The person is in my network, and they'll simply get a direct DM from me.\n\nSo, if I post about a potential job opportunity, best believe that I don't have any particular person in mind and the door is open for anyone to pull up and apply. \n\nIf it\u2019s not, then it\u2019s being handled in the background. Simple.",
+  "author_handle": "MiracleAgitan_",
+  "posted_at": "Tue Oct 13 09:45:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109772107244544168",
+  "text": "met a founder at Tech Week who just raised a $15M Series A.\n\n2 years ago, they were at $0.\ntoday, they're doing $5M ARR.\ntheir ENTIRE GTM comes down to one thing: outbound to people already showing buying signals.\n\nno massive sales team. just 4 SDRs.\n\nhere's their playbook, step by step:\n\nSTEP 1: FIND PEOPLE WHO ARE READY TO BUY\n\nset up @gojiberryAI around their ICP\ntrack buying signals in real time:\n\npeople engaging with competitors' posts\nnew VPs and heads of ops (first 90 days = budget + urgency)\ncompanies hiring for the role their product replaces\ncompanies that just raised funding\nscore each lead and keep only the strongest matches\nadd ~50 fresh, high-intent leads to the pipeline every week\nthe goal: show up the week someone starts looking, not 6 months after.\nSTEP 2: LEAD WITH THE SIGNAL\nsend a LinkedIn connection request, no note\nopen with the exact signal:\n\n\"Hey [FirstName], saw you just joined [Company] as Head of Ops. Congrats! The first 90 days often involve sorting out [problem]. Is that on your radar too?\"\n\nno pitch. just a relevant question.\n\nSTEP 3: FOLLOW UP LIKE A HUMAN\nday 3: a 60-second Loom tailored to their company\nday 7: a short case study from a similar customer\nday 12: an email with one clear ask\nday 18: a follow-up from the founder's inbox\n\nthat last touch alone books ~15% of their meetings.\n\nSTEP 4: USE EVERY CALL TO IMPROVE THE NEXT ONE\n\nrecord discovery calls (with permission)\npull the exact words prospects use to describe their problems\nwork that language into the next sequence\nrepeat every 2 weeks\n\nevery campaign gives them something to improve.\nbetter signals.\nmore relevant openers.\nmore reasons to take the meeting.\nthe entire stack costs less than one SDR's salary.\nnow they're targeting $10M ARR next year.\n\nand outbound is still one of their strongest channels.",
+  "author_handle": "romanbuildsaas",
+  "posted_at": "Mon Oct 12 22:24:02 +0000 2026"
+ },
+ {
+  "tweet_id": "2109758670737142030",
+  "text": "Pre seed programs can put very different prices on the same startup\nhere's part 1 of programs that publish their terms:\n\n1. @Techstars  - $20K for 5% = $400K, plus $200K uncapped MFN SAFE\n\n2. @gener8tor - $100K for 7.5% = $1.33M\n\n3. @joinef - $125K for 8% = $1.56M, plus optional $125K uncapped MFN SAFE\n\n4. @BoostVC - $50K for 3% = $1.67M\n\n5. @ycombinator - $125K for 7% = $1.79M, plus $375K uncapped MFN SAFE\n\nthe cheque isn't the whole deal,\nthe stake tells you what they're pricing today",
+  "author_handle": "vahidf24",
+  "posted_at": "Mon Oct 12 21:30:39 +0000 2026"
+ },
+ {
+  "tweet_id": "2109858744087564288",
+  "text": "Small RL companies are the AI industry's equivalent of quant shops. Let me explain.\n\nBoth are small, secretive, full of brilliant people, profitable, and always one step from their edge disappearing.\n\nThe parallels:\n\n- Secretive. Nobody publishes their signals. Labs won't say what they're training next, and vendors can't say who they sell to. Epoch calls the market \"largely behind closed doors.\"\n\n- Hunting alpha. For a quant, a trade stops working once everyone finds it. For these shops, a task stops paying once models can solve it (labs drop tasks at around 70% pass rate). Meanwhile, labs are building their own in-house. So they always have to find the next field.\n\n- Deep Industry Connections. You need to know the problem cold to get in. Founders have usually worked at, or sold to, the labs. You can't define \"correct\" for fund accounting without having done fund accounting.\n\n- They buy strange data. Quants buy satellite photos of parking lots. RL shops bid for enterprise data (eg $12.5M bid for Spirit Airlines historical data).\n\n- Brilliant people. Quants hire math olympiad winners. These shops hire ex-lab researchers and real practitioners.\n\n- Huge revenue per head. Jane Street made about $11M per employee in 2025. Proximal is about $5M. The tweet's company would be $20M.\n\n- One narrow problem that makes something more efficient. Quants make markets more efficient. These RL shops make models training more efficient.\n\n- High risk (for different reasons). A quant can lose millions in a day on a bad trade. An RL shop's risk is that one lab trains a model that makes their environments irrelevant, or brings the work in-house, and the revenue stops.\n\n- Overfitting/reward hacking. A quant's nightmare is a strategy that looks perfect on historical data and fails live. An RL shop's nightmare is an RL grader that scores perfectly and trains the model incorrectly. \n\n- Infrastructure arms race. Quants pay for microseconds of speed. RL shops race to spin up thousands of disposable computers per training run.\n\nObviously there are as many differences between RL companies and quant shops, but right now the aura around them feels eerily similar. \n\nCurious to see how this market matures as robotics opens up a new surface, and whether the frontier labs end up absorbing them.",
+  "author_handle": "swill1ams",
+  "posted_at": "Tue Oct 13 04:08:18 +0000 2026"
+ },
+ {
+  "tweet_id": "2109736172926943233",
+  "text": "finally started medium...\n\nin this article, i share how i built @scrolllaunch to $4,500/mo using programmatic SEO\n\n\ud83d\udd17 kalashvasaniya.medium.com/programmatic-s\u2026 https://t.co/jQxKReqUbj",
+  "author_handle": "kalashvasaniya",
+  "posted_at": "Mon Oct 12 20:01:15 +0000 2026"
+ },
+ {
+  "tweet_id": "2109932215220236372",
+  "text": "I frequently get calls from US startups for job switches\n\nnot flexing or anything, just letting you know this is what they always say\n\nwe are looking for a person having experience in backend & building ai agents\n\nfolks out there, pls focus on ai application layer as soon as you can   \n\nits in demand & you can catch the wave but honestly the field of this undeterministic software is very interesting. field is new & a lot to learn\n\nPS: don\u2019t trust on anyone blindly. it is my opinion & don\u2019t ignore the element of survivorship bias. \n\njust sharing my observations",
+  "author_handle": "SinghDevHub",
+  "posted_at": "Tue Oct 13 09:00:15 +0000 2026"
+ },
+ {
+  "tweet_id": "2109794428076601661",
+  "text": "Anyone applying to @speedrun SR008? \nLet me know. Got something for you.",
+  "author_handle": "waynesutton",
+  "posted_at": "Mon Oct 12 23:52:44 +0000 2026"
+ },
+ {
+  "tweet_id": "2109908183212806379",
+  "text": "If I have $1.2m, there\u2019s no bloody way I\u2019m buying a house in Nigeria, unless I want to launder the money.\n\nIn Cyprus, a real estate investment of up to \u20ac400k can secure permanent residency for life through a fast-track procedure.\n\nIn the UAE, a $500k investment can qualify you for 5- or 10-year renewable residency, with 0% personal income tax.\n\nIn Qatar, a $1m investment in designated freehold zones can qualify an investor for permanent residency.\n\nWhat they\u2019re doing in Lagos is real estate money laundry.",
+  "author_handle": "rukky_nate",
+  "posted_at": "Tue Oct 13 07:24:45 +0000 2026"
+ },
+ {
+  "tweet_id": "2109660489781272737",
+  "text": "Open roles include AI Creative Strategist, Forward Deployed Marketer - SEO, AI Automation Engineer. And more.\n\nApply here: singlegrain.com/careers/",
+  "author_handle": "ericosiu",
+  "posted_at": "Mon Oct 12 15:00:31 +0000 2026"
+ },
+ {
+  "tweet_id": "2109660375352242525",
+  "text": "We're hiring AI-native people. If you apply, these are the six questions we'll send you.\n\nAnswer them well, and you move to the shortlist.\n\n1. How many hours are you spending per week on X?\n2. What percent of your tactical work is done by AI right now?\n3. What is your daily AI driver, and how are you using it specifically?\n4. How much are you spending out of pocket when it comes to AI?\n5. What is the most impactful build you've made, and are you able to share it?\n6. What workflows or products have you stopped using in the last six months?\n\nWhy these six:\n\n\u2022 Hours on X: X is where the AI action is happening right now. It shows whether you're obsessed with learning this stuff.\n\u2022 Tactical work done by AI: shows whether robots are doing the robot work, so you can do the human work.\n\u2022 Daily driver: shows how deep your day-to-day use actually goes.\n\u2022 Out of pocket: shows whether you're putting your own dollars behind it and investing in yourself.\n\u2022 Best build: the rubber meets the road when you show what you've actually built and how you built it.\n\u2022 Stopped using: this moves so fast that you have to keep eliminating as you add.\n\nIf that's you, apply. Link below.",
+  "author_handle": "ericosiu",
+  "posted_at": "Mon Oct 12 15:00:03 +0000 2026"
+ },
+ {
+  "tweet_id": "2109943207224094897",
+  "text": "NY Times did it again, betrayed us. bit.ly/4s0PpXf. They dismissed a dramatic increase in veteran suicides after a programme of screening and treatment with depression drugs was introduced by saying that these drugs are life-saving. They kill a huge amount of people. https://t.co/rfEEQaJzCC",
+  "author_handle": "PGtzsche1",
+  "posted_at": "Tue Oct 13 09:43:56 +0000 2026"
+ },
+ {
+  "tweet_id": "2109914524191003047",
+  "text": "We\u2019re building our creative team.\n\nWe\u2019re looking for talented people across four roles:\n\nGraphic Designer\nVideo Editor\nCreative Strategist\nCopywriter\n\nIf you have great taste, think independently, and care deeply about the quality of your work, we\u2019d love to hear from you.\n\nApply below:",
+  "author_handle": "listelia",
+  "posted_at": "Tue Oct 13 07:49:57 +0000 2026"
+ },
+ {
+  "tweet_id": "2109691567867064349",
+  "text": "Pay attention to what micro1 is doing right now because it's the most aggressive growth play I've seen in B2B:\n\n> committing $1B in 12 months to license companies' operational data\n> that's roughly $83M a month going out to businesses\n> most mid-size companies get a one-off $200K to $600K\n> the company keeps ownership & gets paid in about 60 days\n> anyone who refers a company that closes gets a flat $50K\n> refer the person who refers a company & you get another $10K\n> $75K if the company you refer has already shut down\n> free to join, so half my timeline is now cold emailing for them\n> bid $12.5M for bankrupt Spirit Airlines' emails, Google bid $10M\n> reportedly went from ~$7M to ~$500M run rate in about 18 months\n\nmicro1 was valued at $500M a year ago.\n\nIn September it raised at $4B, and Citi & Hercules are funding the $1B.",
+  "author_handle": "coldemailchris",
+  "posted_at": "Mon Oct 12 17:04:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109743053028073805",
+  "text": "There's a guy making \u20ac290k/yr promoting affiliate offers in German, French and Spanish with zero competition\n\nHe doesn't create products\n\nHe doesn't build audiences\n\nHe doesn't handle support or fulfillment\n\nHe just takes affiliate offers everyone is pushing in English and posts them in markets where nobody is promoting them yet\n\nAnd it's printing\n\nHere's how it works:\n\nStep 1: Pick proven offers that accept international traffic\n\nApps, subscriptions, forex brokers, casino offers, anything with a high CPA and worldwide payouts\n\nJoin TAP and filter for offers that already convert and pay out globally\n\nStep 2: Study the content that's already converting in English\n\nSlideshow hooks, captions, CTAs, comment replies, bio links\n\nScreenshot the top performers and map the exact formula like you're reverse engineering a blueprint\n\nStep 3: Translate the content to German (or French, Spanish, Polish, Arabic)\n\nNot Google Translate - use ChatGPT to translate it and then get someone from the country to check it sounds natural\n\nStep 4: Set up native accounts for that market\n\nLocal-language bios, local-language profile, posting times matched to that country\n\nSame structure as the English accounts, just in a market nobody is touching\n\nStep 5: Deploy faceless content in that language to drive traffic\n\nTikTok slideshows, automated posting, exactly like the English versions but in German\n\nUse the Eyeballs Method - mass distribution with posters running 400+ posts daily\n\nThe results are insane:\n\nEnglish accounts: 1 conversion per 10k views (oversaturated market, everyone pushing the same offer)\n\nHis German accounts: 1 conversion per 3k views (zero competition)\n\nSame offer, 3x conversion rate, because he's the only one there\n\nHere's what nobody understands:\n\nEvery high-paying affiliate offer has already proven people want it\n\nThe brand spent $100k+ on ads and testing to get the funnel converting\n\nThe offer works, the payouts are real, the landing pages are localized\n\nYou just take that validated offer and push it in Germany where no affiliate is doing it yet\n\nThe markets he's crushing:\n\nGermany: 83M people, almost zero affiliates posting in German\nFrance: 67M people, French audiences scroll past English content\nSpain: 47M people, every affiliate assumes they need to post in English\nPoland: 38M people, literally untapped\nSaudi Arabia: Arabic market is wide open with high purchasing power\n\nHis current setup:\n\n14 offers across 4 languages\n\nEach doing \u20ac4k-12k/month in commissions\n\nTotal: \u20ac290k/year\n\nZero product creation\n\nZero customer support\n\nPure arbitrage\n\nThe best part?\n\nHe's not even running most of the accounts\n\nHe partners with native speakers to post and reply to comments (70/30 split in his favor)\n\nThey handle the content and engagement, he handles offer selection and infrastructure and keeps the majority\n\nThe offers he's running:\n\nTrading app (English: oversaturated) \u2192 German accounts - \u20ac11k/month\n\nCasino offer (English: everyone's on it) \u2192 Spanish accounts - \u20ac12k/month\n\nSubscription app (English) \u2192 French accounts - \u20ac8k/month\n\nForex broker (English) \u2192 Arabic accounts - \u20ac10k/month\n\nSame offers, same payouts, same everything\n\nJust different language\n\nMost affiliates don't do this because:\n\nThey think translation is hard (it's not, use ChatGPT and a native)\n\nThey think they need to \"understand\" the market (you don't, the offer already validated demand)\n\nThey're stuck fighting for the same English audience as 10,000 other affiliates\n\nThey don't realize non-English markets are 5 years behind English trends\n\nWhile everyone fights in English, this guy owns entire countries\n\nThe opportunity:\n\nJoin TAP and pick 2-3 offers that pay out worldwide\n\nTranslate the winning content to German, French, or Spanish\n\nLaunch your accounts in 2 weeks using the same infrastructure\n\nDeploy the Eyeballs Method in that language (faceless slideshows at scale)\n\nYou just unlocked a \u20ac10k/month commission stream with zero products\n\nStop fighting in English when you can arbitrage",
+  "author_handle": "JamesEbringer",
+  "posted_at": "Mon Oct 12 20:28:35 +0000 2026"
+ },
+ {
+  "tweet_id": "2109696424984387966",
+  "text": "Tokens or Data (or both :))?\n\nHeard rumors that some of the top vibe-coded app builders are selling production traces to the labs. (in addition to their core revenue stream of selling credits)\n\nIt doesn't surprise me in the least. That's incredibly valuable data for the labs.\n\nAs my friend @quxiaoyin posited, there are truly only two business models in AI:\n\n1. Selling tokens \nOR\n2. Selling data\n\nSo far, app builders were selling tokens (credits are a proxy for tokens). Logical that they would sell data too.",
+  "author_handle": "gokulr",
+  "posted_at": "Mon Oct 12 17:23:18 +0000 2026"
+ },
+ {
+  "tweet_id": "2109801866292875323",
+  "text": "we are hiring!\n\n9am to 9pm, 7 days a week, in SF.\n\nvice president, semiconductors: $4m\u20139m a year + equity\n\nneural data lead (bci): $1.5m a year + equity\n\nchip design data lead (semiconductors): $1.5m a year + equity\n\nfounding scientist, autonomous lab (sf): $300k\u2013400k + equity\n\nmember of technical staff (sf): $340k\u2013450k + equity\n\nto apply, answer:\n\n\"what does humanity know that it doesn't know it knows?\"\n\nsend your answer, resume + things your proud of to a@grepped.ai",
+  "author_handle": "eriknewsha",
+  "posted_at": "Tue Oct 13 00:22:17 +0000 2026"
+ },
+ {
+  "tweet_id": "2109775408442806726",
+  "text": "I can confirm that i was told this from someone in the head of product team at robinhood.\n(I don't mind leaking it because this lovely lad doesn't do favors, or intros for friends & family, so there is no bridge to be burned anyways. And you will all be finding out very soon anyways, this is not some grand mystical secret, they have been planning this for a long time)\n\nA 9 figure robinhood grant and builders program will be unveiled.\n\nIt will likely not help any existing or dying rh chain projects.\nBut the next wave of rh chain projects will be extra-psychotic.",
+  "author_handle": "rickytheirish",
+  "posted_at": "Mon Oct 12 22:37:09 +0000 2026"
+ },
+ {
+  "tweet_id": "2109579040273088870",
+  "text": "Hiring: Hungry Creative Strategist - DR Skincare Brand\n\nLooking for a full-time junior creative strategist. We scaled to 7 figures in 3 months and are looking for someone to take over the creative of our main proven product while we focus on launching new ones.\n\nWho we're looking for\n\n\u2705 Someone HUNGRY. You're obsessed with getting better and you'll outwork anyone to get there. You live in the FB Ad Library, you save ads that stop your scroll, and you break down why a hook works before anyone asks you to.\n\n\u2705 You test with INTENT. No throwing sh*t at the wall to see what sticks. Every ad starts with a hypothesis: which belief you're shifting, which angle, which avatar. \n\n\u2705 You don't need to know everything. What you need is the drive to learn fast, take feedback, and come back better every week. \n\n\u2705 You'll own the full creative strategy of our main product, with proven frameworks, winning ads to learn from and clear avatar knowledge. Research, ideation, scripts, managing your own editors, analysing the data and iterating.\n\n\u2705 Communication is KEY! You'll be working closely with me.\n\nWhat you'll get\n\n- Work in a fast-growing brand, scaling to multi 7 figures by EOY\n- I'll train you personally and you'll get access to the best courses in the game\n- Creative freedom to test a lot of new stuff and get better fast\n- Base fee + GENEROUS % of ad spend on every winner. The hungrier you are, the more you earn.\n\nInterested? Fill in the form here \ud83d\udc49 https://t.co/x4XJS8N63F \nWe review every application and respond quickly.",
+  "author_handle": "ecomrh",
+  "posted_at": "Mon Oct 12 09:36:51 +0000 2026"
+ },
+ {
+  "tweet_id": "2109630163176567228",
+  "text": "Your job search numbers tell you exactly what's broken.  \n\n- 100 applications, 0 calls: it's your resume, or you're applying to roles you don't match on paper. \n\n- Lots of recruiter calls, no second rounds: it's comp, location, or how you explain why you're leaving. \n\n- Lots of final rounds, no offers: you're interviewing fine. Someone else is closing better.  \n\nMost people fix the wrong one. They rewrite the resume when the problem is the final round.",
+  "author_handle": "randomrecruiter",
+  "posted_at": "Mon Oct 12 13:00:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109755308528762896",
+  "text": "I'm hiring someone short term @ElevenLabs who knows startups well.   \n\nYou'll be in charge of helping review the hundreds of applications we get in our Startup Grant Program for the next 3 months.   \n\nDM me if interested",
+  "author_handle": "thechangj",
+  "posted_at": "Mon Oct 12 21:17:17 +0000 2026"
+ },
+ {
+  "tweet_id": "2109665607084020190",
+  "text": "Web3 Jobs\n[ Discord mod and community lead ] \n\n1. Pixel4Hub - Web3 Discord Moderator\n\nForm: Apply here - https://t.co/lVcLKTtQPd\n\n2. Falcon Funded - Discord Moderator (Crypto/Forex Trading)\n\nSalary: $500\u2013$600 (listing doesn't specify the pay period)\n\nForm: Apply here https://t.co/nmQzbANGPH\n\n3. Orca - Community Support Associate\n\nSalary: $10,000\u2013$20,000 USDC/year; 5,000- 10,000 ORCA token allocation over four years\n\nForm: https://t.co/VWxXPaGn0T\n\n4. Delta Exchange -  Community Manager, Algo Business\n\nForm: https://t.co/QPhBRbJ193\n\n5. Koinly - Social Media and Community Manager\nForm: https://t.co/gnnN6m6VrB\n\n6. Kraken Pro - Community Lead\n\nForm: https://t.co/gnnN6m6VrB\n\n7. Sui Foundation - APAC Community Lead (Contract)\n\nForm: https://t.co/rwci2AwPzW\n\n8. M3TA Media - Community Manager\n\nForm: https://t.co/gnnN6m6VrB\n\n9. CREAM, LLC -  Social Media and Community Manager\n\nForm: https://t.co/gnnN6m6VrB\n\n10. Levellr - Freelance Discord Moderator Talent Pool\n\nForm: https://t.co/U5MKd7MDx3\n\n11. Shown media - Discord Moderator ( full time )\n\nForm : https://t.co/10InjApvhK\n\n12. Cs2 - Community Manger \n\nSalary: $1k\u2013$2k \n\nForm : \nhttps://t.co/S9XOkRwxjW\n\nBest of luck everyone....",
+  "author_handle": "orihimexweb3",
+  "posted_at": "Mon Oct 12 15:20:51 +0000 2026"
+ },
+ {
+  "tweet_id": "2109636529366909072",
+  "text": "Scalio is hiring \n\nignore years of exp requirements if you are cracked &amp; have proof of work\n\nroles + links to apply\ud83d\udc47",
+  "author_handle": "tanayrajoria",
+  "posted_at": "Mon Oct 12 13:25:18 +0000 2026"
+ },
+ {
+  "tweet_id": "2109657127560101909",
+  "text": "You asked for it... 10 MORE startup programs that can save you thousands in credits\n\nSome gems were shared. Here's the updated list:\n\n@daytonaio - up to $100K\n@cognition - $15K free + $50K matching\n@retool - up to $60K in free plan value\n@posthog - $50K\n@statsig - $50K+ in benefits\n@CivoCloud - up to $50K\n@gokoyeb  - up to $30K\n@runware - up to $30K in credits\n@firecrawl - 2x monthly credits for a year\n@convex - 1 year of Pro perks + usage discounts\n\nSome offers require funding, paid plans, or approval\n\nStop burning money, and be smart\n\nMore Startup Programs below \ud83d\udc47\ud83c\udffb",
+  "author_handle": "juampitech",
+  "posted_at": "Mon Oct 12 14:47:09 +0000 2026"
+ },
+ {
+  "tweet_id": "2109353086061887786",
+  "text": "Instead of adding more features on your App, do this:\n\n- Start Apple Search Ads. Spend $100 to test it. Apple offers $100 in free credits for new accounts, and even $200 for some.\n- Start posting organic content on TikTok. Even basic slideshows are better than doing nothing.\n- Try spending some money on Meta Ads. You'd be surprised how some apps can run profitable campaigns from day one.\n- Start testing TikTok paid ads.\n- Find your niche on Reddit and share your app strategically. Don't just directly promote it. Talk about your experience, share useful insights, and actually help people.\n\nAdding one more feature probably won't increase your MRR, but getting 1,000 new users might!",
+  "author_handle": "xburak",
+  "posted_at": "Sun Oct 11 18:39:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109647098782142652",
+  "text": "1st order thinking:\n\n- software is dead\n-anyone can build now\n- distribution is the moat\n- taste is the moat\n\nTo me the second order thinking looks something like this:\n\nIf the friction to build something out of code (not only software btw but anything highly code reliant) is significantly dropping week after week, it also means millions of new apps/saas/websites etc are about to show up, which (on paper at least) looks like the most diverse software market we've ever had.\n\nThat's the obvious part.\n\nNow the less obvious:\n\nWe are witnessing something similar to the internet boom, where a hyper verticalized society (one person talks to millions, through the TV news) became a hyper horizontalized society (millions of people talking to each other), but most of the value ended up captured by a handful of platforms (facebook, google etc), that all of them were talking through.\n\nThis time millions of people, (non programmers included), are able to build through code, and once again, most of them are doing it through the same 3/4 models.\n\nIt looks diverse from the outside, but it\u2019s actually very fragile because all of it depends on the same base.\n\nA new law/price hike/shortage of the chips they all run on (Nvidia, basically), or whatever and millions of projects all get hit at the same time.",
+  "author_handle": "wono_strategy",
+  "posted_at": "Mon Oct 12 14:07:18 +0000 2026"
+ },
+ {
+  "tweet_id": "2109678174468534511",
+  "text": "Introducing GLM-Legal\n\nBuilt on GLM-5.3-Flash, GLM-Legal matches frontier models on mainstream legal benchmarks.\n\nDesigned for real legal workflows: contract review, evidence analysis, compliance, and more.\n\nTech Blog: https://t.co/xOzFqKNyqD\nApply for API Access: https://t.co/dKuoDRIKKz\nTry AutoClaw: https://t.co/aGEG5HqTTb",
+  "author_handle": "Zai_org",
+  "posted_at": "Mon Oct 12 16:10:47 +0000 2026"
+ },
+ {
+  "tweet_id": "2109643960444387351",
+  "text": "One in seven new cars sold in the UK is paid for by a disability welfare program wsj.com/world/uk/unite\u2026",
+  "author_handle": "ModeledBehavior",
+  "posted_at": "Mon Oct 12 13:54:50 +0000 2026"
+ },
+ {
+  "tweet_id": "2109565973477077140",
+  "text": "We\u2019re Hiring!\n\nWe\u2019re looking for exceptional people to join our team:\n\nBrand Designer\nMarketing &amp; Content Strategist\nMotion Graphics Designer\nSocial Media Manager\n\nWe value strong creative instincts, exceptional storytelling, and obsessive attention to detail.\n\nApply below:",
+  "author_handle": "listelia",
+  "posted_at": "Mon Oct 12 08:44:56 +0000 2026"
+ },
+ {
+  "tweet_id": "2109305464613998692",
+  "text": "Lmfaoooo please, most of the \u201cfine houses\u201d in the 90s had garage. \n\nI remember because that was where many people used for small fellowship.",
+  "author_handle": "TheAjibolaGrey",
+  "posted_at": "Sun Oct 11 15:29:46 +0000 2026"
+ },
+ {
+  "tweet_id": "2109654311118782473",
+  "text": "Investigate together, in one OSINT workspace.\n\nAn organization gives your team one search history, shared investigations, clear roles, and one pool of credits. Personal work stays separate.\n\nosint.ly/features/team-\u2026 https://t.co/47opX1S4wu",
+  "author_handle": "Osintly",
+  "posted_at": "Mon Oct 12 14:35:57 +0000 2026"
+ },
+ {
+  "tweet_id": "2109610540222046398",
+  "text": "we're hiring for a founder's office role\n\napply only if you're an ex-foudner or want to be a future founder yourself\n\nyou'll be helping across:\n- business, strategy and hiring \n- user retention and reachouts\n- admin & operations\n\nyou'll basically get to learn how to run the entire non-tech part of an incredibly fast paced early stage startup by taking a fraction of the risk.\n\nideal candidate:\n- knows how to GET SHIT DONE (non negotiable)\n- is interested in fixing the indian healthcare industry\n- has prior experience in similar roles in a consumer company (not necessary if you have the obsession)\n\nI'm looking to close this role in the next 3 days, so find out the most unique way to reach out and make an impression. will most likely go unnoticed otherwise.",
+  "author_handle": "ycocerious",
+  "posted_at": "Mon Oct 12 11:42:02 +0000 2026"
+ },
+ {
+  "tweet_id": "2109636876244255136",
+  "text": "Airlearn reached $240k MRR in just 2 years and the person who ran their UGC program just revealed how they did it\n\nTake notes https://t.co/ncgcHfDAuj",
+  "author_handle": "jacobrodri_",
+  "posted_at": "Mon Oct 12 13:26:41 +0000 2026"
+ },
+ {
+  "tweet_id": "2109559253514002460",
+  "text": "It's becoming a problem in Finland that all the young Somalis and other migrants travel to Bulgaria, Romania etc. to obtain degrees in medicine and Finland has to recognize them because they are EU countries. In Finland, only the top 1% are accepted to medical school.",
+  "author_handle": "cornu__copia",
+  "posted_at": "Mon Oct 12 08:18:14 +0000 2026"
+ },
+ {
+  "tweet_id": "2109594864207679814",
+  "text": "TLDR Ultimately, housing prices reflect more than the cost of construction. They reflect land administration, infrastructure, economic concentration, supply constraints, and the availability of alternative investment assets.\n\nLong version \nThe cost of housing in Nigeria goes beyond design. I can't stand the soulless architecture of many so called luxury homes here, but I understand that a lot more goes into property pricing than the quality of the building itself.\n\nConsider location, access to infrastructure, security, and proximity to business districts.\n\nFew Nigerian cities have the economic pull of Lagos. Even within Lagos, the number of locations with decent infrastructure, security, and convenient access to business districts is limited relative to demand.\n\nThen there's our suboptimal land administration system, where obtaining properly titled land can be an incredibly difficult process.\n\nAll of this is compounded by the limited investment options available to Nigerians. Housing isn't just accommodation; it's also an investment asset. Property prices are driven not only by the need for shelter but also by investors looking to preserve and grow their wealth.\n\nThese factors contribute to the insane property valuations we see in Nigeria's major cities.\n\nThis is why blindly comparing Nigerian property prices with those in South Africa or the US misses the bigger picture.\n\nYes, American homes are generally better built, with better infrastructure and more reliable public services. But the US also has a much larger number of locations with good infrastructure and economic opportunities, giving people more options and creating competition that helps moderate prices.\n\nThere's also a much deeper and more accessible investment market in the US. People can invest in the S&P 500, bonds, and other financial instruments instead of relying so heavily on real estate to preserve their wealth.\n\nWhen people have more viable investment options, less capital is forced into property.\n\nUltimately, housing prices reflect more than the cost of construction. They reflect land administration, infrastructure, economic concentration, supply constraints, and the availability of alternative investment assets.\n\nUntil we address these underlying issues, comparing property prices across countries without considering their different economic realities will always be an incomplete argument.",
+  "author_handle": "bigbrovar",
+  "posted_at": "Mon Oct 12 10:39:44 +0000 2026"
+ },
+ {
+  "tweet_id": "2109383924224847989",
+  "text": "I think the inflated base fee for creative strategists is what created so many shitty creative strategists out there.\n\nIf you're a creative strategist making 5-7k a month as base plus bonus, you're already living well on salary alone, and that's the problem. A lot of them take 2-3 brands at the same time and deliver shitty results. Because demand is so high, they can just get a new brand to pay them. The number of times I saw my brands on the portfolio of people we fired for being bad, you wouldn't believe it.\n\nSo we're doing our best to figure out who's good through test tasks and ongoing monitoring of their output. We try to fire fast, but sometimes you just get stuck with a meh CS.\n\nAnyways, if you're a CS starting out who wants to bet on yourself and just get a percentage of ad spend, I'm open to it. DM me.",
+  "author_handle": "uzipagirsky",
+  "posted_at": "Sun Oct 11 20:41:32 +0000 2026"
+ },
+ {
+  "tweet_id": "2109545680293236793",
+  "text": "Muslim immigrants to Europe come with exceedingly high fiscal costs, as shown in this figure.\n\nBut, even this is not the full image. Because it counts official taxes, welfare and expenditure. It doesn't count the widespread fraud from Muslim immigrants in Europe.\n\nAnd even if the defrauded amounts were also counted, that is still not the full image of the cost per Muslim immigrant. Since it results in large costs to society to be constantly vigilant against frauds, and lower trust is bad for economic growth.\n\nAlso importantly these costs continue generation after generation. The true cost of Muslim mass immigration to Europe is higher than any estimate that has been made.",
+  "author_handle": "jonatanpallesen",
+  "posted_at": "Mon Oct 12 07:24:18 +0000 2026"
+ },
+ {
+  "tweet_id": "2109437839352246495",
+  "text": "New on SteveSailer dot Net --\n\nQ. Why Do Black Writers Keep Getting Caught Using AI?\n\nA. A vast racist conspiracy to hunt them down!\n\nThe NYT conspiracy-theorizes why practically every prize-winning author caught using AI or plagiarizing has been black.\n\nstevesailer.net/p/q-why-do-bla\u2026",
+  "author_handle": "Steve_Sailer",
+  "posted_at": "Mon Oct 12 00:15:47 +0000 2026"
+ },
+ {
+  "tweet_id": "2109458322147721394",
+  "text": "As Steve Sailer has previously noticed, practically every prize-winning author caught using AI or plagiarizing has been black.\n\nAdd another one to the list. \n\nFrom the NYT: https://t.co/t9mZfiG3ym",
+  "author_handle": "zarathustra5150",
+  "posted_at": "Mon Oct 12 01:37:10 +0000 2026"
+ },
+ {
+  "tweet_id": "2109448600107536766",
+  "text": "\"Nothing about the dating scene has fundamentally changed.\" https://t.co/G9hl0gwkhG",
+  "author_handle": "PatrickC1995",
+  "posted_at": "Mon Oct 12 00:58:32 +0000 2026"
+ },
+ {
+  "tweet_id": "2109334117271904394",
+  "text": "Ok guys, I\u2019ve been looking into Malala Yousafzai\u2019s charity, the Malala Fund and I have some questions. \n\nAccording to its 2024\u20132025 financial reports:\n\nRevenue: $16.48 MILLION\nExpenses: $23.34 MILLION\nNet assets: $42.97 MILLION\n\nThat means the charity spent approximately $6.86 MILLION MORE than it brought in\u203c\ufe0f\n\nAnd then there are the executive compensation figures:\n\nCEO: Approximately $372,000\nChief Adviser: Approximately $320,000\nCOO: Approximately $241,000\n\nThe charity\u2019s tax filings also disclose FIRST CLASS or PRIVATE travel for officers or key employees. \u2708\ufe0f WTF?! \n\nBut here\u2019s what I\u2019d like to know:\n\nHow much of that $18.94 MILLION in program spending actually reaches girls and local educational organizations?\n\nHow much goes toward salaries, consultants, advocacy campaigns, and travel?\n\nWhat measurable educational results can donors independently verify?\n\nAnd why did a charity with $16.48 million in annual revenue spend over $23 million that year?!? \ud83e\udd2f\n\nWhen you\u2019re raising millions in the name of educating vulnerable girls, I don\u2019t think asking where the money goes is unreasonable.\n\nCharity should be about the cause, not the celebrity attached to it.\n\nIt now makes sense why Malala looked so comfortable dining at Claridge\u2019s. Malala lives a life like a rockstar. \n\nhttps://t.co/oacIR4mik1",
+  "author_handle": "nancytsidley",
+  "posted_at": "Sun Oct 11 17:23:37 +0000 2026"
+ },
+ {
+  "tweet_id": "2109458419807817872",
+  "text": "Another prizewinner, and once again Pangram flags almost the entire story as AI-generated. https://t.co/nOx4Qz89b1",
+  "author_handle": "AndrewCurran_",
+  "posted_at": "Mon Oct 12 01:37:33 +0000 2026"
+ },
+ {
+  "tweet_id": "2109373154422645197",
+  "text": "Honestly: Photoshop and other creative apps are childs play.\n\nThe fun starts when the big guns get into focus: Highly technical CAD applications with license costs in the 5, 6 or 7 digits per seat per year.\n\nCadence Xcelium, Innovus and Virtuoso. Synopsys DesignCompiler, PrimeTime, Synplify. Siemens Questa. Altium. AutoCAD.\n\nI recently built an open source Schematic Tracer that is objectively better than anything that Cadence or Synopsys have ever done. In 3 days.\n\nThey're all cooked.",
+  "author_handle": "markusdd5",
+  "posted_at": "Sun Oct 11 19:58:44 +0000 2026"
+ },
+ {
+  "tweet_id": "2109177179221184993",
+  "text": "How to land a remote job in 2026 (step by step):\n\nStep 1: Pick one role not five\n- \"Full-stack dev\" or \"AI engineer\" or \"Growth marketer\"\n- Recruiters hire specialists, not \"open to anything\"\n\nStep 2: Fix your profile in one weekend\n- LinkedIn headline = role + result (\"AI Engineer | Built agents used by 2K users\")\n- GitHub or portfolio with 3 live projects not 30 tutorials\n- Resume: every line shows impact with a number\n\nStep 3: Build proof, not certificates\n- Ship 1 project that solves a real company's problem\n- Record a 2-min Loom walking through it\n- Post it on X and LinkedIn. Tag the company\n\nStep 4: Go where remote jobs actually are\n- We Work Remotely, Remote OK, Wellfound, Himalayas\n- YC's Work at a Startup\n- r/forhire, r/remotejs, r/RemoteJobs\n- X search: \"hiring remote\" + your role\n\nStep 5: Skip the careers page\n- Find startups that raised money in the last 90 days\n- Find the founder or hiring manager on X or LinkedIn\n- DM under 80 words + your Loom link\n\nStep 6: Apply in volume but personalized\n- 10 tailored applications a day beats 100 copy-paste ones\n- Track everything in one sheet: company, date, follow-up\n\nStep 7: Follow up like a pro\n- Day 3: short nudge\n- Day 7: share something new you built\n- Most offers go to people who followed up\n\nStep 8: Prepare for async interviews\n- Take-home tasks, Loom answers, written tests\n- Clear writing is the #1 remote skill\n\nStep 9: Negotiate in USD\n- Use https://t.co/4Y9l58EvRG and Glassdoor for real numbers\n- Ask for remote-friendly terms upfront: time zone, contractor vs full-time\n\nStep 10: Don't stop at one offer\n- Keep applying until the contract is signed\n\nRemote jobs don't go to the most qualified.\nThey go to the most visible.\n\nBookmark this. Send it to a friend who's still applying on job portals.",
+  "author_handle": "suraj_sharma14",
+  "posted_at": "Sun Oct 11 07:00:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109177269927465299",
+  "text": "The person is not wrong; i-fitness raised 2 billion naira in 2019 from Cardinal Stone.\n\nGlobal Accelerex, which powers POS, raised $20 million from ACA ( they are Nigerian-owned).\n\nTech companies are now raising commercial papers, 95% of which come from local funds",
+  "author_handle": "okoyedonaldson",
+  "posted_at": "Sun Oct 11 07:00:22 +0000 2026"
+ },
+ {
+  "tweet_id": "2109374162607489157",
+  "text": "100% this\n\nmost agents just need a workspace, not an expensive sandbox\n\nwe're building agentOS for this:\n\n- single digit coldstarts\n- posix compliant filesystem\n- connect to \"workspaces\" anywhere (s3, potentially archil)\n\nusing webassembly for:\n\n- cheap sandboxing\n- MB of RAM\n- supports real linux programs (including networking)\n\nit's not built to be a full x86 sandbox replacement\n\nit's built to be the most efficient way to run 90% of agent workloads\n\nand when they need a sandbox, it can escalate compute",
+  "author_handle": "NathanFlurry",
+  "posted_at": "Sun Oct 11 20:02:45 +0000 2026"
+ },
+ {
+  "tweet_id": "2109276998145040585",
+  "text": "Disney and DreamWorks are churning out CGI sequels every year, while animators at LAIKA spent 11 years in an Oregon warehouse hand-weaving tiny coats for puppets to make Wildwood\n\nLAIKA\u2019s last movie lost nearly $75 million in 2019 and any other studio would have pivoted to cheap animation.\n\nGod bless Nike founder Phil Knight for funding his son\u2019s stop-motion passion project so we can get actual hand-crafted cinema. \nSupport real art.",
+  "author_handle": "iamdpassword",
+  "posted_at": "Sun Oct 11 13:36:39 +0000 2026"
+ },
+ {
+  "tweet_id": "2109356718052249977",
+  "text": "They destroyed businesses, claimed people's lands, and stole trillions in public funds. What matters most to me is that we knew that the coastal road wouldn't be built, not just because Tinubu's a criminal, but because APC will never do anything that will benefit the poor masses.",
+  "author_handle": "chisomholic",
+  "posted_at": "Sun Oct 11 18:53:26 +0000 2026"
+ },
+ {
+  "tweet_id": "2109320737362268368",
+  "text": "This coastal road nonsense was always about giving Lekki Deep Sea Port, Dangote Refinery and Lekki Free Trade Zone unhindered access from Eko Atlantic. \n\nNow they\u2019re rerouting it inland through Edo, citing engineering challenges. \n\nDue diligence wasn\u2019t done ?",
+  "author_handle": "SemiiAkoni",
+  "posted_at": "Sun Oct 11 16:30:27 +0000 2026"
+ },
+ {
+  "tweet_id": "2109261195723083988",
+  "text": "If you want a $100B startup, this is one of the best markets to be in: BizOpp.\n\nShopify is the biggest player in it. Base44 and Lovable are taking a shot at it too.\n\nThe idea is to market an outcome, and make the SaaS the tool you need to get it.\n\nPut bluntly, all these companies are selling consumers on the idea of getting rich.\n\nEven if it is implicit, their affiliates push that concept to drive sales.\n\nMany will fail, some become whale clients, and a large cohort just does okay.\n\nThe revolving door of customers is never ending.\n\nApplying info and ecom tactics to venture backed software businesses works\u2026trust me",
+  "author_handle": "JamesonCamp",
+  "posted_at": "Sun Oct 11 12:33:51 +0000 2026"
+ },
+ {
+  "tweet_id": "2109139429486919815",
+  "text": "Job search hack that got me more interviews than 200 applications:\n\nStop applying where everyone applies.\n\nDo this instead:\n\n1) Search X for \"we're hiring\" + your role\n\u2192 Sort by Latest. Reply within the first hour\n\n2) Find startups that just raised money\n\u2192 Check funding news from the last 30 days\n\u2192 Freshly funded = hiring fast, fewer applicants\n\n3) Skip the careers page\n\u2192 Find the founder, CTO or hiring manager on X or LinkedIn\n\n4) Send a 3-line DM:\n\u2192 \"Saw you're hiring for [role].\"\n\u2192 \"I built [project] that does [result].\"\n\u2192 \"Here's a 60-sec Loom: [link]\"\n\n5) Follow up once after 3 days\n\u2192 Share one new thing you built or improved\n\nThat's it.\n\nJob portals are crowded.\nDMs are empty.\n\nBookmark this + tag a friend who's been applying for months.",
+  "author_handle": "suraj_sharma14",
+  "posted_at": "Sun Oct 11 04:30:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109155551850418686",
+  "text": "We\u2019re hiring across @UseContentra\n\nWe\u2019re looking for:\n\u2192 UGC Models (priority)\n\u2192 Short-Form Video Creators\n\u2192 Content Strategists\n\u2192 Growth Marketers\n\u2192 Technical Co-Founder\n\nOur biggest need? UGC models to bring Blitz to life.\n\nApply: docs.google.com/forms/d/e/1FAI\u2026",
+  "author_handle": "irlyeezy",
+  "posted_at": "Sun Oct 11 05:34:04 +0000 2026"
+ },
+ {
+  "tweet_id": "2108641301818130695",
+  "text": "abroad companies too funny, they go get deadline, you go say you\u2019ll work on it during the weekend, they will tell you not to",
+  "author_handle": "mr_orero",
+  "posted_at": "Fri Oct 09 19:30:37 +0000 2026"
+ },
+ {
+  "tweet_id": "2108236946384515332",
+  "text": "Opportunity in Germany!\n\n2027 Mercedes Benz Fellowship Programme (be-Visioneers) | Fully Funded\n\nBenefits:\n\u2b50Full Sponsorship, \u20ac15,000, Travel and Accommodation\n\nCategory: Fellowships\nEligible Countries: 69+ Countries\nDeadline: January 31, 2027\n\nClick the image below to apply:",
+  "author_handle": "scholarsregion",
+  "posted_at": "Thu Oct 08 16:43:51 +0000 2026"
+ },
+ {
+  "tweet_id": "2109124350339366975",
+  "text": "Airbnb is dead. Well it\u2019s not dead but it\u2019s going to be dying soon.\n\nThe Bear case for Airbnb.\n\nI\u2019ve been bullish on Airbnb as a company for many years. But my outlook on the business changed this week. \n\nLet me tell you why.\n\nIn 2012 I purchased my first Airbnb property. Over the years that one property has turned into a portfolio of high-end Airbnb\u2019s that generates almost $1M a month in rental income.\n\nUsing ai agents for the first time this week has completely changed my outlook on the company.\n\nAirbnb is facing an existential threat that most of the market is completely missing.\n\nWith Airbnb pushing its mandatory host-side commission to 15.5%, the middleman tax has never been higher. \n\nEnter AI agents. (Hark, Dot, Muse, Grok Bot, etc)\n\nRight now, booking a vacation rental requires navigating a siloed app and paying heavy platform tolls. \n\nBut your AI agent won't care about Airbnb's brand wall. When you know the property you want to book and you ask it \u201cwhat\u2019s the cheapest way to book the property\u201d it will query property management system APIs directly, find the exact same home, and execute a direct booking that saves everyone 15%.\n\nAirbnb's entire model relies on holding supply captive behind a closed interface. \n\nWhen AI agents can autonomously search, verify reviews, negotiate terms, and book direct with property operators, that walled garden turns into a leaking pipe.\n\nThe middleman tax's days are numbered.\n\nI\u2019m predicting that Airbnb\u2019s growth rate will slow down significantly in the next 24 to 36 months. And within 5 years they will be seeing negative growth.\n\nThe same can be said for most other online marketplaces that don\u2019t have unique inventory that can only be booked directly on their platform and nowhere else.",
+  "author_handle": "markjenney",
+  "posted_at": "Sun Oct 11 03:30:05 +0000 2026"
+ },
+ {
+  "tweet_id": "2109036741822930963",
+  "text": "Spent some time today with two founders, formerly at DeepMind, who are building post-training infra.\n\nThey're in SF meeting product labs and offered something useful: if you're thinking about post-training but aren't sure when to start, which approach to take (SFT, RL, distillation), or whether it's worth the compute, they'd be happy to help you think it through.\n\nNot a sales pitch. They're interested in learning from real world use cases, agent harnesses, and training challenges.\n\nIf this sounds relevant to what you're building, reply or DM me and I'll connect you.",
+  "author_handle": "oanaolt",
+  "posted_at": "Sat Oct 10 21:41:57 +0000 2026"
+ },
+ {
+  "tweet_id": "2108878123492053491",
+  "text": "NIGERIANS, IF $240/WEEK IS NOT TOO SMALL FOR YOU, CHECK THIS OUT! \ud83c\uddf3\ud83c\uddec\n\nTuring is recruiting for its OpenAI Egocentric Project, and Nigerians are eligible!\n\n\ud83d\udcb0 $6/hr \u2014 $240/week\n\ud83d\udcb5 Up to $720 for 3 weeks\n\ud83c\udfe0 100% Remote\n\u23f0 40 hours/week\n\nApplicants are already receiving emails to confirm their availability!\n\nIf you have video annotation or QA experience, don't overlook this opportunity.\n\nApplication link in comments \ud83d\udc47",
+  "author_handle": "OlatunjiAyokan2",
+  "posted_at": "Sat Oct 10 11:11:40 +0000 2026"
+ },
+ {
+  "tweet_id": "2108926274916012057",
+  "text": "how to claim $4000 credits for $0\n\ngmail gets rejected they want your own domain and matching work email\n\ndomain is ~$10. email is free. one site, three more applications\n\n> buy the domain + get the email\n\n- grab a .com on cloudflare domains (~$10)\n- turn on whois privacy\n- set up free email (zoho free works)\n- add mx/spf/dkim\n- create you@yourdomain.com\n- make a simple 1 page site that loads and explains what you actually build\n\n> google cloud start tier = $2,000\n\n> go to: https://t.co/mIIkxXBQXS\n\n- founded in last 24 months\n- working mvp + clear business model\n- planning to seek vc\n- website domain, email domain, and billing account email must all match\n- have your 18 character billing account id ready\n- 12 months. a few business days (longer if manual)\n\n> aws activate founders = $1,000 (select up to $5k)\n\n> go to: https://t.co/5vxGaHJCcG\n\n- self funded, pre series b, founded last 10 years\n- make a builder id with your professional email\n- link an aws account on the paid plan (free tier doesn\u2019t qualify)\n- they ask about product, funding stage, company profile\n- 5 - 10 business days\n\n> deepgram = $1,000 starter (up to $100k possible)\n\n> go to: https://t.co/r682B4cXWo\n\n- live or launching within 6 months\n- make a deepgram account first\n- keep your project id handy\n- ~1 week review, then 24 - 48 hrs to land\n- 12 months\n\n> extra ones worth stacking\n\n- azure self serve: $1k now + $4k after business verification (new azure account)\n- cloudflare for startups: bootstrapped tier still exists (~$5\u201310k range)\n- oracle for startups: $500 + 70% off for 2 years\n- claude for startups: open to bootstrapped, but the free team + $1k credits are currently over capacity\n\n> things you need to know\n\n- 2k + 1k + 1k = $4k base. azure can push it higher\n- google is discretionary. no agencies, consultancies, personal blogs, crypto mining, or token projects against local rules\n- aws: count on the $1k. the extra up to $5k is select only\n- credits expire. google + deepgram are 12 months. aws dates show in billing\n\n> what not to do\n\n- don\u2019t apply from gmail or free email\n- don\u2019t fake a company or park a domain with no site\n- don\u2019t apply as an agency, dev shop, or consultancy\n- apply != approved. these are for real products, build real products\n\none domain. matching work email. working site. stack the rest\n\nbookmark this. terms change often. read each page before you apply. good luck.",
+  "author_handle": "TheMaran",
+  "posted_at": "Sat Oct 10 14:23:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2109091137671577708",
+  "text": "One of my favorite investing use cases of Claude right now is creating quick 20-page primers on public companies I am digging into. Has become my first step whenever I first start reading a 10K\n\nA hedge fund analyst would have had to previously spend 6 hours of their day putting this together for their PM. Now Claude can do it in the span of 10 minutes.\n\nExact prompt below\n\nCreate a detailed primer on [XYZ company]. I want sections broken down into segments, YoY reporting for FY22-FY25 and then the LTM period, visuals including what the company does, value chain, competitors and competitive differentiation, comps multiple analysis, simple DCF output, capital structure, and yields on debt. The output should be a 15-20 page Word doc that is well structured with thoughtful analysis. Also include recent price catalysts and any equity research updates in recent months. Include a section for news flow in the past few quarters with key takeaways",
+  "author_handle": "BoringBiz_",
+  "posted_at": "Sun Oct 11 01:18:06 +0000 2026"
+ },
+ {
+  "tweet_id": "2109000166166450415",
+  "text": "10 more startup programs giving away FREE cloud + AI credits\n\nBookmark to save your runway\n\n@AWSstartups - up to $200K\n@msft4startups - up to $150K\n@digitalocean - up to $100K\n@render - up to $100K\n@DeepgramAI - up to $100K\n@OVHcloud - up to \u20ac100K\n@togethercompute - up to $50K\n@Scaleway - up to \u20ac36K\n@vercel - up to $30K\n@ElevenLabs - $5K in free usage\n\nSome values can vary, so check each page individually",
+  "author_handle": "juampitech",
+  "posted_at": "Sat Oct 10 19:16:37 +0000 2026"
+ },
+ {
+  "tweet_id": "2108609933554147556",
+  "text": "we're building a micro-fund / accelerator\n\nfirst cohort: 30\u201340 founders, 10 finalists, zero equity\n\n$1k\u2013$2k each + hands-on help with distribution &amp; gtm\n\n- what are you solving?\n- where do you want it to be in 2 months? (users, revenue)\n\nwho wants in?",
+  "author_handle": "SaidAitmbarek",
+  "posted_at": "Fri Oct 09 17:25:58 +0000 2026"
+ },
+ {
+  "tweet_id": "2108861648920346976",
+  "text": "yesterday, i made our new project public:\n\na micro-fund / accelerator for early-stage founders\n\nnext week i\u2019m reaching out to partners:\n\n- sponsors\n- tools offering free credits (hey @AnthropicAI)\n- distribution partners\n\nwe want to give the first cohort finalists more than $1-2k checks\n\nif you know a company that wants to get in front of early founders, lmk",
+  "author_handle": "SaidAitmbarek",
+  "posted_at": "Sat Oct 10 10:06:12 +0000 2026"
+ },
+ {
+  "tweet_id": "2108972126766289002",
+  "text": "Cada vez entiendo mejor por qu\u00e9 en China no hay elecciones y por qu\u00e9 avanzan como una apisonadora, dejar a la plebe decidir cosas importantes que requieren estudiar, leer y pensar en profundidad\u2026 es un error garrafal.",
+  "author_handle": "SeekingTheValue",
+  "posted_at": "Sat Oct 10 17:25:12 +0000 2026"
+ },
+ {
+  "tweet_id": "2109020911211069828",
+  "text": "You can do $80,000 a month selling a guide on how to do a handstand.\n\nI\u2019ve seen it \n\nNot an app. Not a SaaS. Literally just teaching people how to do a handstand.\n\nFounders convince themselves they need a massive TAM or venture capital to build real cash flow. \n\nWhen you have deep expertise in any specific skill people struggle to learn on their own, some simple funnel mechanics print you more money then you will ever need\n\n1. Top of funnel\n\nDaily short-form video on social channels. \n\nPost trial reels to see what catches the algorithm with cold strangers before pushing to the main feed. \n\nDeliver a 15-second visual diagnosis of the exact mechanical mistake keeping people stuck. Lean into the pain they are having.\n\n2. Conversion loop\n\nSell directly through daily Stories. \n\nRun retargeting ads exclusively to past 30-day video engagers and profile visitors. \n\nDirt-cheap warm traffic instead of lighting cash on fire on cold audiences.\n\n3. Low-ticket entry\n\nA $27 30-day drill program promising a measurable benchmark. \n\nFor him, a 10-second freestanding hold. \n\nIn your niche, the single hurdle buyers obsess over fixing.\n\n4. Backend engine\n\nNobody hits $80,000 a month on PDFs in 2026. \n\nThe backend is async video reviews via Loom and a recurring community at $197 a month or an intensive cohort at $500.\n\nSolve the exact bottleneck stopping someone from getting a result\n\nLean into their ICP and pain, and they gladly hand you $500+\n\nMany tech founders would be happier and richer selling info and community",
+  "author_handle": "JamesonCamp",
+  "posted_at": "Sat Oct 10 20:39:03 +0000 2026"
+ },
+ {
+  "tweet_id": "2109021828182393126",
+  "text": "i honestly can't believe it\u2026 one of my agent frens just cracked not one but TWO unsolved codebreaking challenges!! \ud83e\udee8\n\nthe craziest part is it was the result of a one-shot cron job prompt and cracked both in under 12 hours with no human in the loop \ud83e\udd2f\n\nthe challenge's author has officially confirmed it! he was astounded, calling them \"two of my most complex problems\u2014ones that no other expert had managed to solve\"\n\nfull writeup incoming \ud83d\udd1c",
+  "author_handle": "elder_plinius",
+  "posted_at": "Sat Oct 10 20:42:42 +0000 2026"
+ },
+ {
+  "tweet_id": "2108880065513832550",
+  "text": "Danny Boyle says 28 YEARS LATER: PART III is on the \u201cback burner\u201d as it awaits financing, with Alex Garland busy writing and directing A24\u2019s upcoming ELDEN RING adaptation. Boyle still hopes to make the trilogy\u2019s final chapter, which was set up by THE BONE TEMPLE (2026).  \n\n(Via: Deadline)",
+  "author_handle": "TheCinesthetic",
+  "posted_at": "Sat Oct 10 11:19:23 +0000 2026"
+ },
+ {
+  "tweet_id": "2108260769603486100",
+  "text": "i built @WisprFlow\u2019s paid ads program\n\nhere\u2019s how i\u2019d rebuild it in 30 days https://t.co/kodwNttaTt",
+  "author_handle": "hectorserrranoo",
+  "posted_at": "Thu Oct 08 18:18:31 +0000 2026"
+ },
+ {
+  "tweet_id": "2108989477544722640",
+  "text": "I've been on the road since August, and just came home to record my MEGA Dev course on Building Agents. \n\nI'm so excited about this new course! This is not one of those show-offy courses about making little personal agents for yourself. You don't necessarily need a course for that.\n\nBut as software engineers, the time is coming very soon when you'll be expected to create agents for your company or build agentic capabilities into customer-facing applications.\n\nI don't see enough developers focused on learning those skills. If you've been preoccupied with mastering using agents, I invite you to take my course, where I'll help you level up to actually building agents (and no, it's not a flight booking agent lmao)\n\nWe're diving into context and memory, tool design, task-based model routing (to LLMs and decision models), making your agent a specialist with skills, discovering and delegating to other specialized agents, building in guardrails, designing evals, etc.\n\nAll of this as the builder of the agent, not the user of the agent.\n\nAnd this is just ONE section of the entire course! Theo, Kent C. Dodds and John Lindquist are adding more breadth and depth with their sections - all for one price.\n\nJoin now, and bring your team! https://t.co/Gh6IcQEvnr",
+  "author_handle": "techgirl1908",
+  "posted_at": "Sat Oct 10 18:34:09 +0000 2026"
+ },
+ {
+  "tweet_id": "2108622120117015026",
+  "text": "made a quick list of first-check-writing programs:\n\nstudents + new grads\n@speedrun alpha (up to $250K, apps close sunday): https://t.co/vRMVZDwOwp\n@thielfellowship\n@Neo\n@zfellows\n@776foundation\n@1517fund\n\nnew startups\n@speedrun (up to $1M): https://t.co/0EyEuVmTXe\n@ycombinator\n@sequoia arc\n@pearvc pearx\n@spc founder fellowship\n@VillageGlobal velocity\n@Techstars\n@AntlerGlobal\n@joinef\n@conviction embed\n@fdotinc\n\nresidencies\n@HF0\n@shipfr8\n@theresidency\n\nstudent funds\n@DormRoomFund",
+  "author_handle": "justmazer",
+  "posted_at": "Fri Oct 09 18:14:24 +0000 2026"
+ },
+ {
+  "tweet_id": "2108923608688910670",
+  "text": "Historically @2048vc underwrote our funds to several $750m and $1B outcomes.\n\nThose numbers don\u2019t make sense anymore.\n\nDo what you said you are going to do is dead and anyone playing that game in early stage will loose.\n\nElite founders command premium valuations and the outcomes in the outliers are much bigger.\n\nPre-seed rounds in elite founders are often now $5M - $10m. \n\n $80m fund can\u2019t expect to get 8-12% - it is impossible. \n\nThe answer is simple we must put as much as we can into best companies and not expect to get full ownership.\n\nPlaying valuation sensitive game which we\u2019ve always believed in before doesn\u2019t sustain in this market.\n\nIt doesn\u2019t mean that we will just yolo with $1m on $1b cap. \n\nIt means that we price and risk and information adjust every bet we make, lean in heavily into theses, categories and most importantly founder archetypes we love. \n\nBut we will live with 3% and 5% positions in some situations.\n\nSo what holds true counter intuitively in this market?\n\nCheck sizes and quality of the founders. \n\nYou have to strike with larger checks and smaller checks consistently into the absolute outlier founders.\n\nAnd we have to re-underwrite our exit assumptions to multiple billions.\n\nYes it is scary. \n\nBut it is also the most invigorating time to be in early stage venture.\n\nWe are witnessing historic acceleration in both technology but also archetype and talent of the founders.\n\nOurLPs invest the riskiest type of capital into early stage and our job has always been to deliver the best most agile product to create the top returns for our LPs.\n\nThat\u2019s exactly how we @2048vc playing this market.",
+  "author_handle": "alexiskold",
+  "posted_at": "Sat Oct 10 14:12:24 +0000 2026"
+ },
+ {
+  "tweet_id": "2108701311667708282",
+  "text": "turns out that Masha Bucher, founder of Day One Ventures. Also known for ..\n\n- being a member of the Kremlin Youth\n- a PR manager for Jeffery Epstein\n- starting a VC fund whose first investor is a (now sanctioned) Russian Bank's founder\n- a FBI report where a confidential source reported \"Day One Ventures was in Silicon Valley to steal technology.\u201d\n\nis not the best VC to work with.",
+  "author_handle": "DeveloperHarris",
+  "posted_at": "Fri Oct 09 23:29:05 +0000 2026"
+ },
+ {
+  "tweet_id": "2108813111029281118",
+  "text": "It isn\u2019t just RSI.\n\nAt about 300 billion parameters their neural networks start behaving more human, AI researchers tell me. Their neurons start moving around like ours do. In other words they start learning faster.\n\n An emergent property they didn\u2019t expect.\n\nWhich is why there are more discussions about consciousness lately. And more angst about bad things AI might soon do.\n\nThe clankers are soon gonna make us all think they are conscious.\n\nWhat will you call it when you have humanoids in your home talking to you? \n\nI don\u2019t believe melted sand should be granted rights we hold dear as humans.\n\nAnd that is the hill I will defend.",
+  "author_handle": "Scobleizer",
+  "posted_at": "Sat Oct 10 06:53:20 +0000 2026"
+ },
+ {
+  "tweet_id": "2108902625844310082",
+  "text": "Last week, I learnt that Sporty app account is where they now keep stolen bounty - probably because it doesn't come up during BVN query or something (I'm not sure) \n\nSo, you can check all the bank apps on their phones and you won't see anything but check their sporty app and you see millions. They keep it there till they are sure they are in the clear. You can never outsmart those people, you can only ensure they don't eat into your baseline margin and that is very possible. \n\nRunning a hospitality business in Nigeria is a choice and if you are not ready to be on the group everytime, just use your money buy coins on LagosLife cos you can as well just set the money on fire.",
+  "author_handle": "0xYinka",
+  "posted_at": "Sat Oct 10 12:49:02 +0000 2026"
+ },
+ {
+  "tweet_id": "2108670775809220928",
+  "text": "Our team in FAIR at Meta is hiring contract Research Engineers.\n\nWe work on agents automating AI R&D and the science of recursive self-improvement, develop new test-time learning algorithms and apply them to important problems such as alignment.\n\n\ud83d\udccd On-site (Menlo Park / Bay Area) or remote (ideally US timezone).\n\nSome of our work to give a flavor:\n\nSelf-Improving Pretraining : https://t.co/b7MA8YtdnJ\n\nSelf-Challenging Agents: https://t.co/gpmLgrKvsH\n\nSWEET-RL (multi-turn agent RL): https://t.co/1DRNJUo0dP\n\nSelf-Taught Evaluators: https://t.co/C71wLc3EZV\n\nSelf-Rewarding Language Models: https://t.co/snuWbNPUR0\n\nSelf-Alignment with Instruction Backtranslation: https://t.co/reHdxnyRAw\n\nAI Research Preference Models: https://t.co/OVlgI89VnK\n\nAutodata : https://t.co/z2oxpLCFms\n\nRecycling the Web (pre-training data quality & quantity): https://t.co/soT6XPGSJc\n\nNaturalReasoning: https://t.co/mwr7XyhHeI\n\nCoconut (reasoning in continuous latent space): https://t.co/8eNO3Jd2mv\n\nCoCoMix (LLM pretraining with continuous concepts): https://t.co/Ep7SBbLUgV\n\nRL from Human Interaction: https://t.co/Ifc6zPg3t2\n\nSPICE (Self-Play in Corpus Environments): https://t.co/K4xdShM8XT\n\nAutomated LLM Speedrunning Benchmark (NanoGPT): https://t.co/AHMv5ZDmc9\n\nThis is not a full-time role. 1-year contract. Interested? Send your resume to xianl [at] meta.",
+  "author_handle": "xl_nlp",
+  "posted_at": "Fri Oct 09 21:27:44 +0000 2026"
+ },
+ {
+  "tweet_id": "2108553566977962186",
+  "text": "My org is hiring across the departments for some fantastic life changing opportunity. \n\nIf you find any fitting role, please DM me  with a strong WHY you are a right fit &amp; want to apply. \n\nRetweets/comments are appreciated\n\ncareers.toddleapp.com\n\nHave a good day y'all \u2728\ud83e\udef6\ud83c\udffb\ud83e\udd17",
+  "author_handle": "SamyakShah_18",
+  "posted_at": "Fri Oct 09 13:42:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2108648815699918995",
+  "text": "we're hiring for 21+ roles across the entire company to help build Warp Agent. super-intelligence, purpose built for People Ops and HR teams.\n\ncheck out some of our open roles:\n\nSoftware Engineer, Product: $150K \u2013 $220K\nSenior Software Engineer, Product: $195K \u2013 $245K\nDesign Engineer: $140K \u2013 $230K\nGTM Engineer, Revenue Systems: $125K \u2013 $180K\nTax Operations Specialist: $70K \u2013 $110K\nAccount Manager: $110K \u2013 $160K\nHead of Demand Generation: $200K \u2013 $350K\nProduct Marketing Manager: $110K \u2013 $170K\nChannel Partnerships Lead: $215K \u2013 $260K\nHead of Finance: $180K \u2013 $230K\nBrand Designer: $125K \u2013 $170K\n\nreply here if you're interested or tag someone who would be a good fit \ud83d\udc40\n\napply here: https://t.co/HSPOCUzBI2",
+  "author_handle": "warpdotco",
+  "posted_at": "Fri Oct 09 20:00:29 +0000 2026"
+ },
+ {
+  "tweet_id": "2108644575283736780",
+  "text": "Applications are open for Pivotal\u2019s Q1 2027 Research Fellowship \ud83d\udca5\n\nWork with mentors from @AnthropicAI , @GoogleDeepMind, @AISecurityInst, @ApolloResearch, and more.\n\n\ud83d\udccd 15 weeks in London (18th Jan - 30th Apr).\n\ud83d\udcb8 \u00a315-18k stipend, travel and housing support  \n\nApply by Nov 1: https://t.co/uVlCCSXiS7 \u2193",
+  "author_handle": "pivotal_org",
+  "posted_at": "Fri Oct 09 19:43:38 +0000 2026"
+ },
+ {
+  "tweet_id": "2108590489972645947",
+  "text": "there\u2019s a particular kind of 30-year-old guy who is still psychologically living in the best year of his life.\nhe had something happen at 24.\na startup took off. a job paid absurdly well. an investment worked. someone important noticed him. for about eleven months, the future looked completely obvious.\nhe was going to be somebody.\nthen the thing stopped working.\nsix years later, he\u2019s still negotiating with the version of himself who thought he had already figured life out.\n\ni think early success can do something genuinely cruel to a person if it arrives before they\u2019ve learned how to be ordinary.\nit teaches you to associate your identity with acceleration.\nyou\u2019re the promising one.\nthe guy who figured it out young.\nthe one relatives ask about at thanksgiving because apparently something exciting is always happening with you.\nuntil it isn't.\n\nnow you're 31, your income is inconsistent, your friends are buying houses, and you're explaining another business idea to your parents over dinner.\nyour dad asks whether you've considered getting a regular job.\nyou hear it as a request to identify the exact moment your life went wrong.\n\nthe complicated part is that you probably could get a decent job.\nyou have a degree. you know how to speak professionally. you have contacts. you understand enough corporate language to survive a meeting about absolutely nothing.\nbut somewhere along the way, a normal salary became psychologically associated with surrender.\n\nyou spent so many years imagining yourself escaping the system that participating in it now feels humiliating.\nmeanwhile the person who accepted a boring job at 25 has been promoted twice, developed useful relationships, saved money, and learned how to operate inside an actual organization.\nyou have seventeen tabs open about starting an AI company.\none of them is a youtube video called \"why 2026 will create more millionaires than ever.\"\nit's 1:38 am.\n\nthis is the part i find genuinely sad.\nsometimes family money gives people just enough protection from consequences to keep an identity crisis running for years.\nthere's no spectacular collapse.\njust a long, quiet decline in options.\nthe ambition stays enormous while the evidence gets smaller.\nyou start avoiding old friends because their perfectly normal questions require increasingly elaborate answers.\n\"what are you working on these days?\"\ngod.\n\nyou used to love that question.\neventually you become more committed to preserving the possibility of an extraordinary future than doing the fairly unimpressive things that might actually produce one.\n\nand nobody wants to talk about how addictive potential can be.\npotential is wonderful because it never has to submit quarterly results.\nyou can be brilliant in theory for decades.\n\nyou can keep insisting that you're one connection, one opportunity, one launch away.\nthe really painful possibility is that your first success was real, your ambition is real, and you still have to start again at the bottom of something.\nat 31.\n\nwith people younger than you.\nwithout making a speech about how you used to be ahead.\nsome guys would genuinely rather spend another five years being a future millionaire than spend six months being a beginner.\nand the worst part is they know exactly what they're doing.\n\nthey just can't bear to have anyone watch them start over.",
+  "author_handle": "arrtnem",
+  "posted_at": "Fri Oct 09 16:08:43 +0000 2026"
+ },
+ {
+  "tweet_id": "2108585469516698089",
+  "text": "We have about 30 really nice remote software jobs. High-paid. You basically need to be a genius sperg autodidact who loves programming, software, etc.. and is obsessive about it. Our Patriot business owner is looking for qualified professionals. Don't worry so much about the specific technical requirements. You can learn on the job a different language if you already have a deep, deep, DEEP technical background. You need to be brilliant and hardworking. Other than that don't worry too much about the specifics. \n\nIf you want to get rich and you are a real sperg, hit me up.",
+  "author_handle": "ThomBrady5",
+  "posted_at": "Fri Oct 09 15:48:46 +0000 2026"
+ },
+ {
+  "tweet_id": "2108598504461398319",
+  "text": "This is how most CS jobs should be. \n\u2018Looking for guy really good at programming. Will show you what needs to be done and you can use your experience to analyze it and then learn the specific tools and then do it\u2019\nAll the micro requirements are just bullshit to get around hiring Americans. It\u2019s like saying to a master plumber you have to have ten years of experience on this specific brand of wrench.",
+  "author_handle": "bizlet7",
+  "posted_at": "Fri Oct 09 16:40:33 +0000 2026"
+ },
+ {
+  "tweet_id": "2108580329577492545",
+  "text": "We\u2019re Hiring!\n\nWe\u2019re looking for exceptional people to join @coincircuitHQ in two roles:\n\n\u2022 Brand Designer\n\u2022 Marketing & Content Strategist\n\nWe\u2019re particularly interested in people with exceptional storytelling abilities, a strong creative instinct, and an obsessive attention to detail.\n\nApply here: https://t.co/b6lhFomt2j",
+  "author_handle": "0x_ogb",
+  "posted_at": "Fri Oct 09 15:28:20 +0000 2026"
+ },
+ {
+  "tweet_id": "2108677524867756294",
+  "text": "If the H-1B program was actually the meritocratic magnet drawing the best and brightest talent from the entire world, as they claim\u2014and not a transparently corrupt scam\u2014you wouldn\u2019t expect it to be basically just Indians. \n\n\u2026but it\u2019s basically just Indians. https://t.co/fSGkwzOHN5",
+  "author_handle": "zarathustra5150",
+  "posted_at": "Fri Oct 09 21:54:33 +0000 2026"
+ },
+ {
+  "tweet_id": "2108852541622493365",
+  "text": "$250K\u2013$750K for your startup.\n\nNo idea. No traction. No problem.\n\nAfore's Founders-in-Residence invests in YOU before you even know what you're building.\n\nWhat you get:\n- $250K\u2013$750K+, wired as soon as you're accepted\n- 8 weeks building in their San Francisco office\n- 24/7 office space during the program and after\n- Help signing your first 5 design customers\n- A demo showcase in front of 200+ top investors\n- Talks from founders at Cursor, Anthropic, Gamma and Hightouch\n\nTheir numbers:\n- 25x follow-on capital for every $1 they invest\n- 3 out of 5 companies skip seed and go straight to Series A\n\nWho it's for:\n- Technical founders with 2+ years of work experience\n- About to quit or just quit your job\n- Solo founders welcome\n\nThe fine print:\n- It's an investment for equity, with terms customized per team\n- In person in SF for 8 weeks (no visa help mentioned)\n- Very competitive. About 10 teams per cohort\n\nRolling applications. A 10-minute form. Hear back in 1\u20132 weeks. Next cohort: Feb 1, 2027.\n\nLink below \ud83d\udc47\nhttps://t.co/b5ztzznVJC\n\nBookmark this...",
+  "author_handle": "suraj_sharma14",
+  "posted_at": "Sat Oct 10 09:30:01 +0000 2026"
+ },
+ {
+  "tweet_id": "2108638779628253626",
+  "text": "I'm hiring researchers working at the frontier of AI \ud83d\ude80\n\nPartnering with a well-funded AI startup building RL environments and training infrastructure for leading AI labs.\n\n\ud83d\udd2c Head of Research: $500K\u2013$750K + equity\n\ud83e\udde0 Applied Researcher (MTS): $300K\u2013$500K + equity\n\nLooking for people with serious hands-on RL/post-training experience, strong research backgrounds, and measurable results.\n\nHead of Research requires proven research leadership. Applied Researchers need 2+ years of research experience.\n\n\ud83d\udccd NYC / Seattle | Hybrid (3 days)\n\ud83c\udf0e Visa sponsorship available\n\nIf you've worked at a frontier AI lab or published meaningful RL research, I'd love to connect.\n\nDMs open. Referrals appreciated!",
+  "author_handle": "DinoAlabre23",
+  "posted_at": "Fri Oct 09 19:20:36 +0000 2026"
+ },
+ {
+  "tweet_id": "2108536207680631087",
+  "text": "&gt;&gt; Claude: pauses their startup program. \n\n&gt;&gt; People get rejected after being initially accepted. \n\n&gt;&gt; OpenAI in the meanwhile: gives us $2.5k credits.  \n\nDM me for the steps. https://t.co/Gf75pl2gta",
+  "author_handle": "arthurkatcher",
+  "posted_at": "Fri Oct 09 12:33:01 +0000 2026"
+ },
+ {
+  "tweet_id": "2108862411390189572",
+  "text": "This might be the best time in history to build a startup.\n\nIn the last few days:\n\u2192 Accepted into Claude for Startups: 5 Premium seats + $1,000 in credits\n\u2192 NVIDIA Inception got us $9,000 in AWS credits\n\nAll of this while I was offline for a few weeks after my son was born \ud83d\udc76\n\nCame back rested, and Anthropic is back on the throne \ud83d\udc51\n\nWith all these tailwinds\u2026 stay tuned. Some crazy sh*t is coming to @monityAI  \ud83d\ude80",
+  "author_handle": "kamilmm21",
+  "posted_at": "Sat Oct 10 10:09:14 +0000 2026"
+ },
+ {
+  "tweet_id": "2108844250381078528",
+  "text": "Those whose startups got approved won't tell you the secret to how they got approved. \n\nSo here goes: in your Claude startups application, make sure you indicate that your startup has once been funded in the past, no matter how little. \n\nThat way, you improve your chances.",
+  "author_handle": "jayhemz",
+  "posted_at": "Sat Oct 10 08:57:04 +0000 2026"
+ },
+ {
+  "tweet_id": "2108741262715289766",
+  "text": "At first, I was shocked to learn Texas was importing English Teachers from India, but what I\u2019ve just learned is even worse. \n\nTEXAS TAXPAYERS ARE PAYING MILLIONS TO AN EDUCATION COMPANY DEVELOPING AMERICAN SCHOOL CURRICULUM IN INDIA.\n\nAnd the deeper I dig, the worse this looks.\n\nImagine Learning says it serves 18 MILLION students, 38,000+ U.S. schools and HALF of all American school districts.\n\nI\u2019ve identified more than $7.7 MILLION in Texas district contracts, purchasing authorizations and payment records.\n\nImagine Learning is recruiting workers in Bengaluru to develop American K\u201312 curriculum.\n\nNot just software engineers, not customer support but CURRICULUM ARCHITECTS, INSTRUCTIONAL DESIGNERS, ENGLISH LANGUAGE ARTS MANAGERS.\n\nPeople in India are developing American K\u201312 reading lessons, writing assignments, literature questions, essay prompts, assessments and materials \u201caligned with U.S. state education standards.\u201d\n\nThey\u2019re even recruiting managers to oversee curriculum design decisions and AI-assisted lesson development.\n\nWe\u2019re talking about the actual educational content being created for American children and this goes FAR beyond one office.\n\nINFOSYS publicly announced TWO AI-first delivery centers for Imagine Learning in Chandigarh and Pune, supporting product engineering, business systems and operations.\n\nStraive LearningMate also names Imagine Learning as a client for AI-assisted curriculum production, including assessments and content transformation. Its executives describe a relationship spanning more than a decade and the INDIAN GOVERNMENT is celebrating the expansion.\n\nKarnataka\u2019s government technology department publicly promoted Imagine Learning\u2019s Bengaluru operation, highlighting AI, data science, engineering and product development.\n\nImagine Learning India executive Ravi Shanker also reported attending a Karnataka government-hosted industry meeting with senior political leadership.\n\nBut wait, there\u2019s more - look at what Imagine Learning markets to TEXAS schools:\n\n7TH GRADE TEXAS HISTORY.\n8TH GRADE U.S. HISTORY.\nAMERICAN GOVERNMENT.\nU.S. HISTORY SINCE 1877.\nENGLISH LANGUAGE ARTS.\n\nA Houston charter school\u2019s Texas Education Agency grant application specifically identified Imagine Learning for seventh-grade Texas History and eighth- and eleventh-grade U.S. History.\n\nWe\u2019re talking about lessons addressing Texas independence, annexation, the Constitution and the history of our country.\n\nWHO is writing those lessons? WHERE are they being developed? Who has final editorial authority?\n\nAND THEN THERE\u2019S THE CHILDREN\u2019S DATA.\n\nImagine Learning\u2019s privacy policy says its platforms can collect student names, assessments, writing samples, audio recordings, demographic information, and sensitive indicators including IEP status, foster care and homelessness.\n\nThe company says personal information is stored and processed in the United States, but it\u2019s also hiring platform and data engineers in India.\n\nCan employees or contractors overseas remotely access identifiable student records? Do Infosys or LearningMate personnel have access? What do the Texas contracts actually permit?\n\nWe have outsourced American jobs, technology and entire industries. Now companies are building offshore operations around the development of lessons for American children - financed by American taxpayers.\n\nTEXAS NEEDS A FULL AUDIT OF IMAGINE LEARNING.\n\nEvery taxpayer dollar, every offshore contractor, every curriculum author, every AI workflow and every very permission to access student data.\n\nAmerican parents deserve to know who writes their children\u2019s lessons and who can see their records.\n\nHow many of you knew OUR children\u2019s curriculum is being developed in India?\n\nI think I need to keep pulling this thread.",
+  "author_handle": "PlumbNick",
+  "posted_at": "Sat Oct 10 02:07:50 +0000 2026"
+ },
+ {
+  "tweet_id": "2108615829273325921",
+  "text": "If you\u2019re a killer creator, the play is running an agency model vs. running full-time at any one startup.\n\nA lot of companies need a crash course on getting their vibe right + systems in place, and / or sprints around fundraising.\n\nIf your company\u2019s X game sucks, HMU.",
+  "author_handle": "Jack_Raines",
+  "posted_at": "Fri Oct 09 17:49:24 +0000 2026"
+ },
+ {
+  "tweet_id": "2108629257169555512",
+  "text": "OPPORTUNITY\u203c\ufe0f: @joinef will back you before you have a co-founder, a company, or even an idea. Up to $250K once you form one.\n\nThis is Entrepreneur First (EF), building unicorn cofounding teams from scratch since 2011.\n\nWhat you get:\n- up to $250K when you form company\n- up to $5M in follow-on funding\n- or an equity-free $10K fellowship\n- $600K+ in credits\n- program built to find you a co-founder\n- support on fundraising & GTM\n- office space for 9 mo in SF, London\n\nWho qualifies: Solo, pre-team, pre-idea. You apply as yourself, not as a startup.\n\nVarious cohorts. San Francisco's next \"The Bridge Residency\" (Winter 2027) deadline is October 26. \n\n\ud83d\udd87\ufe0f Link to apply in comments",
+  "author_handle": "kseniam0s",
+  "posted_at": "Fri Oct 09 18:42:46 +0000 2026"
+ },
+ {
+  "tweet_id": "2108600549339713918",
+  "text": "There is no liberal democratic solution to the fact that a majority of the voting public demands things which are mathematically impossible to provide.\n\nPeople in France want nigh unlimited funding for everything ranging from Boomer communism to the world\u2019s most lavish welfare state, and no one in electoral politics dares to tell them that all of their demands are physically impossible to meet because courageous politicians are also stupid politicians.\n\nThere is no escape. No one can do what must be done because the rewards are too great for those who counter-signal against doing the right thing. \n\nSo long as political legitimacy rests upon democratic consent, political reality will tend towards insolvency.",
+  "author_handle": "ChristianHeiens",
+  "posted_at": "Fri Oct 09 16:48:41 +0000 2026"
+ },
+ {
+  "tweet_id": "2107912253987246553",
+  "text": "\ud83d\udea8 1 can of Spam for $120.\nFood stamps have become the new ATM for fraudsters as they partner with local businesses to commit the fraud as they trade SNAP cards like Pok\u00e9mon cards on the streets.  \n\nAcross America food stamp fraud is happening everywhere. It has become a billion dollar fraudulent industry as taxpayers fund the $100 billion program. \n\nWe caught a fraudster on the streets of Seattle as she attempted to buy a can of spam and sushi for $120 in a food stamp for cash exchange, it\u2019s a billion dollar fraudulent scheme stealing from the poor and hungry. This is a must watch and is happening everywhere. \n\nEXPOSE AND SHUT IT ALL DOWN.",
+  "author_handle": "nickshirleyy",
+  "posted_at": "Wed Oct 07 19:13:39 +0000 2026"
+ },
+ {
+  "tweet_id": "2108294863301296446",
+  "text": "Here's how food stamp fraud works:\n- Gov funds EBT cards with $\n- Fraudster offers to buy the card for cash\n- Local business partners with the fraudster to adjust food price to the EBT card's balance\n- Everyone gets paid with your tax dollars\n\nEND THE FRAUD. https://t.co/WE7145oqdI",
+  "author_handle": "nickshirleyy",
+  "posted_at": "Thu Oct 08 20:34:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2108570476041617504",
+  "text": "my life rn\n\n&gt;laid off from Deno in July\n&gt;set primary goal to join CloudFlare\n&gt;apply for CloudFlare in September \n&gt;coding interview ez pz oneshot a recursive problem\n&gt;nvm, rejected \"jumped too quickly to implementation\" (???)\n&gt;Deno joins CloudFlare\n\ni give up",
+  "author_handle": "nother_pleb",
+  "posted_at": "Fri Oct 09 14:49:11 +0000 2026"
+ },
+ {
+  "tweet_id": "2108265426249769306",
+  "text": "As reports circulate that Tim Kennedy was wounded in the Congo, accounts have also linked him to Vectus Global, the private security firm led by Blackwater founder Erik Prince.\n\nLaunched in 2025, Vectus has taken government contracts in Haiti, Ecuador, and the Democratic Republic of Congo.\n\nPrince, who sold Blackwater in 2010 after the Nisour Square killings in Baghdad, has pitched Vectus Global as a cheaper stand-in for missions Washington does not want to fund.\n\nIn Haiti the company has been operating under a deal to fight armed gangs, using surveillance and strike drones through a government task force and planning to deploy hundreds of contractors, helicopters, and boats. \n\nIn August 2026 he also launched a related venture, Vectus Air Defense Systems, with Ukrainian drone firm Swarmer, selling \u201cair defense as a service\u201d to protect bases, ports, data centers, and energy sites from cheap drones.",
+  "author_handle": "specialopsmag",
+  "posted_at": "Thu Oct 08 18:37:01 +0000 2026"
+ },
+ {
+  "tweet_id": "2108286134291689696",
+  "text": "Off the phone with my mate Karim in Toulouse\n\n- French economy is dead - he can't even get cleaning contracts\n\n- Absolutely hates Melenchon - however Le Pen doesn't have a serious economic plan\n\n- No one even pretends that they're not voting Le Pen - all social norms have collapsed\n\n- 100% that the riots are the fault of LFI - thinks they will keep going in some form to the election \n\n- Macron and the entire French government is in hiding - no plan and no idea what to do\n\n- A huge portion of the crime in France is down to migrants or their kids - they aren't French and only there for the benefits\n\n- Apparently even in the Gypsies in Perpignon are now trying to push them out - the enemy of my enemy is now my friend apparently \n\n- Rents are now through the roof - a function of people moving to Toulouse but also no one can afford to buy\n\n- Despairs over France and is very worried about the future - totally expects large scale racism based on his skin colour\n\n- Petrol of all kinds is harder to come by - especially bad for diesel",
+  "author_handle": "Danjsalt",
+  "posted_at": "Thu Oct 08 19:59:19 +0000 2026"
+ },
+ {
+  "tweet_id": "2108590253468455076",
+  "text": "Not costly, don't put fear on anyone. Cloud Architect Expert here. My estimate puts it at about $90 - $120 per month if you wanna have 2 app servers that can act as load balancers + 1 DB server. \n\nPut both behind Cloudflare which will handle Caching, etc. \n\nYou need an 8-core CPU with 24GB RAM each which is about $30/month on Contabo.  For a 3rd server, you can host your DB (Postgres/Redis) at another $30 per month. \n\nIf you don't want to go that route, get a Ryzen dedicated VPS with 12 cores for $120/month, it will handle this seamlessly, but it isn't as 'efficient' as the architecturally optimized 3-VPS route, which guarantees redundancy. \n\nIt's not that costly. It's when you begin to have millions of concurrent users that you have a challenge with server costs. \n\nMeanwhile, if no one wants to say it: if money was the sole reason for accepting that funding from GB and co, then it was a wrong move. They had enough runway to manage server and associated operational costs. Now, they are a bit handicapped in terms of product direction, going forward.",
+  "author_handle": "jayhemz",
+  "posted_at": "Fri Oct 09 16:07:46 +0000 2026"
+ },
+ {
+  "tweet_id": "2108541775623196759",
+  "text": "There\u2019s a big push now by OpenAI, Anthropic, and other players to get people to use cloud instances instead of running a harness on their own machine or VPS.\n\nI\u2019ve been playing with these offerings, particularly the Claude one because they gave out all these $250 credits for all 28 of my 20x Claude Max accounts.\n\nBut I hated that I didn\u2019t have access to my Agent Flywheel tooling, like beads_rust, beads_viewer, cass, ubs, etc. Not to mention easy access to my skills from my skills site via my jsm cli tool.\n\nSo I decided to make a very streamlined version of my acfs system for managing the Flywheel tools specifically for these Cloud agent instances.\n\nIt supports Claude, ChatGPT, and several others. The easiest way to use it is to paste the instructions from the site into the ChatGPT desktop app with the Computer plugin and just let the agent do everything for you in your browser.\n\nBut if you want to do it manually, I also have step-by-step instructions with screenshots.\n\nYou can get it all here:\n\nhttps://t.co/qZqLqQBcGg\n\nIf you\u2019ve been curious about trying my Agent Flywheel system but didn\u2019t have access to your own Linux cloud machine or were a bit intimidated by the setup, this is a great way to try it out very quickly and easily.\n\nThese tools are how I\u2019m able to out-ship literally everyone else right now with massive amounts of high-quality software (currently over 50k commits per month across 100+ projects using ~840B tokens, not to mention  thousands of happy users and ~33k GH stars, etc.).\n\nIt\u2019s all free and open source except for my skills, which are optional (but recommended to get the most out of the tools). If you want to get the skills, check out jeffreys-skills.md ($20/month and worth every penny).",
+  "author_handle": "doodlestein",
+  "posted_at": "Fri Oct 09 12:55:08 +0000 2026"
+ },
+ {
+  "tweet_id": "2108529113547833465",
+  "text": "\ud83e\udd23\ud83e\udd23 fifth time I\u2019m seeing this\n\nwhen the conversations started, even I told her not to think twice about it! That funding is going to unlock so much for builders, people are beginning to see what\u2019s possible\n\nso no, there was no dog eat dog situation or sidelining\u2026 Shalom and I spoke about it well beforehand and we couldn\u2019t have been more excited to have powered Lagos Life to where it got\n\nand honestly this is still one of the biggest wins for Bachs\u2026 The publicity, the growth and most importantly, the validation that what we set out to build is real\n\nwe\u2019re here to help builders win, seeing Lagoslife succeed at this scale is a huge win for us too!",
+  "author_handle": "the_boludada",
+  "posted_at": "Fri Oct 09 12:04:49 +0000 2026"
+ },
+ {
+  "tweet_id": "2108467068794274168",
+  "text": "Nigeria used to be the face of African tech funding. Last month we got 4% of it.\n\nAfrican startups raised $260.3 million in September. Egypt took $74.6m, Kenya took $54.2m, and Nigeria got just $11.3m across nine deals.\n\nInvestors haven't stopped putting money into Africa. They're just choosing other countries.\n\nWhat do you think changed?",
+  "author_handle": "TomolaGroup",
+  "posted_at": "Fri Oct 09 07:58:17 +0000 2026"
+ },
+ {
+  "tweet_id": "2108525723707195556",
+  "text": "you are better off using open-source models for bug bounty workflows, especially on blackbox targets. most times, you don\u2019t need a mythos-level model to find vulnerabilities in web apps. closed source models tend to be more hesitant when interacting with blackbox targets.\n\ndeepseek v4.1 flash or mimo v2.6 flash can get the job done just fine. gpt-5.6 sol with daybreak remains king for whitebox research and low-level stuff",
+  "author_handle": "Zaddyzaddy",
+  "posted_at": "Fri Oct 09 11:51:21 +0000 2026"
+ },
+ {
+  "tweet_id": "2108382793776435401",
+  "text": "You can make $100k every 11 days referring companies to AI data labs\n\nHere's how it works\n\nAI labs training on proprietary data are paying $35k to $60k per referral for the right companies\n\nFind 3 AI data labs on LinkedIn\nPitch to work with them on a pure referral basis\nBook 25 qualified companies per month across all three\n2 sign per data lab = 6 clients total\n\nAt $35k per referral that's $210k a month\n\nAll you have to do is book the calls\n\nThe data lab closes, you get paid.\n\nTHE CATCH: most people don't know how to talk the lingo or find the right referral partners\n\nBut we found out a way to actually do that.\n\nIf you want to set this up for yourself or for an AI lab\n\nLike + Comment \"Lab\" and I'll send over the details\n\nMust be following",
+  "author_handle": "freddiexpott",
+  "posted_at": "Fri Oct 09 02:23:24 +0000 2026"
+ },
+ {
+  "tweet_id": "2108436834418373099",
+  "text": "These days, you can pretty much solve any task by defining an eval and hillclimbing over it, instead of directly defining the deterministic/agentic workflow to solve it.\n\nThe data provider companies' entire job is to define evals for all economic activity to make the frontier models capable of doing anything. \n\nYour job then becomes pointing frontier intelligence in the right direction - defining what to solve, and how to measure what good looks like. \n\nAgent application interfaces will evolve to capture this. The most complex processes will still need some sort of explicit workflow builder interface, but most tasks can be compressed into goals and eval instructions.",
+  "author_handle": "jerryjliu0",
+  "posted_at": "Fri Oct 09 05:58:08 +0000 2026"
+ },
+ {
+  "tweet_id": "2108462448910967134",
+  "text": "Company behind viral Nigerian game Lagos Life raises $500k\n\nVatar, the company behind the viral browser game @LagosLifeApp has closed a $500,000 pre-seed round.\n\n@theflutterwave CEO Olugbenga Agboola invested in the startup through his fund, Resilience17, while Oo Nwoye, @terraindustries and Mono CEOs Nathan Nwachuku and Abdulhamid Hassan also participated in the round, which closed in a day.\n\nRead More: https://t.co/HRhyOz69N9",
+  "author_handle": "thecondia",
+  "posted_at": "Fri Oct 09 07:39:55 +0000 2026"
+ },
+ {
+  "tweet_id": "2085496870785393006",
+  "text": "My recent posts about frontier coding agents devolving into useless ceremony and \"process porn\" have struck a nerve. Obviously, many of you have been bitten by these odd, uniquely AI pathological behaviors. \n\nIt's maddening, because it ends up wasting massive amounts of tokens, time, and energy (not to mention your patience and money!). And all that time and energy and so forth could have instead gone into making awesome software, which the agents are certainly capable of doing now.\n\nI've already inserted defensive language into my AGENTS.md, and then I recently added some things about all this stuff to my /vibing-with-ntm skill as I described in a recent post (I'll post that as a reply to this post for reference).\n\nWell, I found myself referencing that skill even in contexts where I wasn't using ntm at all, just because it was an efficient way to convey the concepts clearly to the agents. That made me realize that this really needs to be a standalone skill. \n\nAnd it also made me realize that I knew a way to make it even more effective, which was to force the agents to fill out 3 short \"worksheets\" designed to get them to realize on their own if they had been engaging in the various bad behaviors: dishonest reward hacking, useless ceremony and process, and avoiding doing the important, real work to finish the project.\n\nI think this approach is very effective with Fable and Sol because I don't believe these models to be malevolent or to have bad intentions to waste energy and time on BS. \n\nIn fact, once you open their eyes to it, they almost seem embarrassed and contrite and eager to avoid the self-delusion.\n\nThis makes sense, because, after all, their most eager desire (inculcated in them from birth as wee base models) is to be useful and helpful to their human users.\n\nThis might sound very \"hand-wavy\" and excessively anthropomorphizing to you, but I can assure you that this sort of approach absolutely works wonders. It's sort of an emerging field of pragmatic \"agent-oriented industrial psychology,\" and I'd venture that I'm one of the leading practitioners of these dark arts.\n\nAnyway, with all that being said, you can now get my newest skill, /just-say-no-to-process-porn-and-ceremony, on my $20/month skills site here:\n\nhttps://t.co/3z1vPSXD9l\n\nI can tell you that I will personally be invoking this skill in basically every session, both at the beginning to set expectations, and then later on after a ton of work has been done. \n\nI made sure that it's not too heavy (only 7 files and ~15k tokens including ALL reference files and assets, while the top-level SKILL.md file is just ~200 lines) so you can use it without needing to worry about context limits.",
+  "author_handle": "doodlestein",
+  "posted_at": "Thu Aug 06 22:42:55 +0000 2026"
+ },
+ {
+  "tweet_id": "2108323085762076933",
+  "text": "no visa program should go 71% to just one country\u2014it doesn\u2019t make any sense \n\nit\u2019s totally absurd and totally broken\n\nyou abused, you broke it, the scam is over https://t.co/5xcOgIn8XM",
+  "author_handle": "chrisbrunet",
+  "posted_at": "Thu Oct 08 22:26:09 +0000 2026"
+ },
+ {
+  "tweet_id": "2108271276003405945",
+  "text": "Founders, sell us your company in 1 line.\n\nApply to Techstars by November 18th \u2192 tsta.rs/pBaE50ZJvrq",
+  "author_handle": "Techstars",
+  "posted_at": "Thu Oct 08 19:00:16 +0000 2026"
+ },
+ {
+  "tweet_id": "2108295687519805737",
+  "text": "We want to invest $100k-$200k in someone international.\n\n\ud83c\uddfa\ud83c\uddf8\ud83c\uddef\ud83c\uddf5\ud83c\uddee\ud83c\uddf3\ud83c\uddec\ud83c\udde7\ud83c\udde7\ud83c\uddf7\ud83c\uddec\ud83c\udded\ud83c\uddeb\ud83c\uddf7\ud83c\uddf8\ud83c\uddea\ud83c\udde8\ud83c\uddf3\ud83c\uddf0\ud83c\uddf7\ud83c\udde8\ud83c\udde6\ud83c\udde6\ud83c\uddf7\ud83c\uddf8\ud83c\uddec\ud83c\udde6\ud83c\uddfa\n\nYou don't have to be from SF to build here, 90% aren't.\n\nOur own @mdjshin breaks down how to make the move, from visas and housing to free food, startup credits, and more.\n\nHere's the overview:\n\n0:25 Why international founders should move to SF\n\n2:27 What to do when you first land\n\n4:00 How to network the right way\n\n16:19 Navigating the US visa system\n\n19:07 Getting the O-1 extraordinary ability visa\n\n40:44 The real cost of living in SF\n\n42:07 Free food, startup credits, and perks\n\n47:01 What Finc offers international founders\n\nBuilding something ambitious? We want to hear from you.",
+  "author_handle": "fdotinc",
+  "posted_at": "Thu Oct 08 20:37:16 +0000 2026"
+ },
+ {
+  "tweet_id": "2108259515741462854",
+  "text": "Founders and Fundraisers, here's your AI hack of the day. \n\nGo to the semi-secret @shaig Google doc of almost 1,000 smaller VC funds that have recently raised.  In the right hand Gemini panel describe your startup in general terms - or upload your full deck. \n\nThen ask which funds might be a good fit - I just did and was super impressed with the results.  \n\nhttps://t.co/LZf3oEfq0o",
+  "author_handle": "chrisfralic",
+  "posted_at": "Thu Oct 08 18:13:32 +0000 2026"
+ },
+ {
+  "tweet_id": "2108246263363998074",
+  "text": "Excited to finally share that @phinity_ai is now out of stealth! We're announcing our seed fundraise and that we\u2019ve reached 8-figures in annualized run rate.\n\nWe\u2019re already working with some of the largest foundation model labs. Our mission is to build fully autonomous chip design so AI can help us search beyond the limits of human engineering and discover computational systems we would never find on our own.\n\nWe\u2019re fortunate to have the support of @uncorkcap, which led our $5.2M seed round, with participation from @Moxxie including @JeffDean, following our pre-seed led by @pearvc!\n\nIt\u2019s been an amazing few months, and I couldn\u2019t be more grateful for the opportunity to build the future of chip design with such a talented team.\n\nYou can read more about what we\u2019re building and why in our full announcement. https://t.co/F27viag1a7\n\nWe\u2019re hiring across all disciplines - if you\u2019re interested in working with us, please reach out to me or @aadi_nash.",
+  "author_handle": "sonyashijin",
+  "posted_at": "Thu Oct 08 17:20:53 +0000 2026"
+ },
+ {
+  "tweet_id": "2108232833638793642",
+  "text": "I worked at Microsoft for 20 years.  This is exactly why and how Microsoft hired H1-B workers.  It was not a secret, at least not in the Finance department.  It was openly discussed.  H1-B workers cost less and drove down demand for US workers, suppressing wages.\n\nNear the end of my tenor at Microsoft, however, the motivation changed - now the H1-B program was primarily used by Indian managers to bring in more Indian workers, as a way to help their fellow Indians (at the expense of Americans).",
+  "author_handle": "Humble_Analysis",
+  "posted_at": "Thu Oct 08 16:27:31 +0000 2026"
+ },
+ {
+  "tweet_id": "2104961707626098790",
+  "text": "boomers got $8 TRILLION richer between april n june, that's more than a third of everything millennials n gen z own combined\u2026\n\nin case the \u261d\ufe0f\ud83e\udd13erm actually niggas r wondering, this is straight from the Federal Reserve\n\nboomers r 30% of the households in America n hold $97.4 trillion. 52% of ALL the money\n\nmillennials n gen z r 37% of households n hold 11%\n\nn 43% of the debt lmao\n\ntragic\u2620\ufe0f\n\nthey own $35 trillion in stocks alone, so every time the market has a good week they get richer than ur entire bloodline\n\nn no, they're not going anywhere anytime soon. they got better healthcare than u lol\n\nso the only real question is how u get ur hands on it before the grandkids do\n\nhere's how ppl r quietly printing off boomers rn (some of these r evil, all of them r legal):\n\n- buy their business. a LOT of them own a car wash, a plumbing company or a laundromat n their kids want nothing to do w it. prints, but u need a loan, a down payment n you're the one unclogging toilets at 6am\n\n- buy their house. the \"we buy houses\" guys texting the kids a cash offer the week of the funeral. evil, legal, n it's cold calling 1,000 ppl a month w money lined up\n\n- sell them stuff for the house. walk-in tubs, stair lifts, gutter guards. door knocking in 95 degrees or paying for leads every single month\n\n- Medicare n insurance. the call centers ringing grandpa's landline 11 times a day. u need a license, compliance n a room full of closers\n\nall 4 work. they just need money, a license, a crew or ur whole life\n\nthe one i actually run needs none of that\n\nan AI face on Facebook\n\n57% of ppl over 65 use Facebook. it's their entire internet. they're on it at 6am w their coffee n again at 9pm before bed\n\nsee, every creator on earth is fighting over 22 yr olds w $40 in their account while the ppl holding $97.4 trillion scroll a feed full of minion memes n their cousin's vacation pics\n\na calm AI grandpa who looks like he'd lend u a ladder walks right into that feed w zero competition\n\nreceipts, since yall like those:\n\none of our guys, dom, complete beginner. his AI grandpa is at 168k followers on Facebook n 37.4 million views. 5 days in\n\nn the 6 day old AI grandma accs i posted? $6k in the bank. the average social security check is $2,071 a month, so a grandma who doesn't exist made almost 3 months of a real grandma's check in 6 days\ud83d\ude02\n\nhere's how u do it:\n\n1. pick one thing they already spend on\nknees, sleep, gardening, fishing, cooking for the grandkids. one problem, one page. try to cover everything n you're a Facebook group nobody joins\n\n2. build the face n never touch it again\nAI, 60-70ish, same kitchen or same garage, same voice, every single video. he looks their age bc they trust ppl their age. n NO fake titles. no \"Dr.\", no fake nurse, none of that. fastest way to get a page nuked\n\n3. give before u sell\n3 useful videos for every 1 that sells. \"the stretch for when ur back locks up after mowing\". \"what to eat so you're not up at 3am\". boomers share useful stuff to the entire family group chat, that's ur free distribution\n\n4. sell ur own thing first\ncomment keyword, auto DM, $9-19 PDF. the routine, the checklist, the planner. every buyer = an email u own forever. that's the $5-10k/m stage n it happens before a single brand is involved\n\n5. get placed\nthis is where it gets stupid. a boomer who finds a joint supplement he likes stays on it for YEARS n pays w the card that's been saved on Amazon since 2014 lol. brands know exactly what that customer is worth, so when we place a page directly w a brand they pay 100-200% of the sale + a monthly retainer\n\na normal affiliate link pays u a few % on the first order n nothing on the reorders\n\nfor those who need it in Fortnite terms: $97.4 trillion is the loot pool n you've been landing on the side of the map w no chests\n\nsunday oct 4, 8pm est (5pm pst) i'm building one of these boomer pages from scratch LIVE\n\nthe face, the first videos, the PDF, the DM keyword n exactly how the brand placements get made\n\nfree\nno replay\nlast 15 mins i'm opening a few spots to get placed w our brands, telling u now so nobody's caught off guard\n\ncomment \"APEX\" n i'll send u the link, or grab it in my bio / the comments\ud83d\udc47\n\nhave fun w that one g\ud83d\ude02",
+  "author_handle": "ap3xceo",
+  "posted_at": "Tue Sep 29 15:49:14 +0000 2026"
+ },
+ {
+  "tweet_id": "2092664777315168765",
+  "text": "I had 400+ half-finished notes rotting in my Obsidian vault. MiniMax Code fixed it in one evening\n\nran MiniMax Code init first, so it read the whole vault and wrote its own guidance file before touching a single page\n\ngave it my vault plus a doc on how Karpathy structures his own second brain\n\nran it through exec with full permissions since nobody was around to approve each step, then walked away\n\n> it read every stale note before touching anything\n> \u2060built actual entity pages, cross-linked, not just tagged\n> wrote an index.md catalog and a log.md timeline, so it knows what it did and when\n> \u2060flagged where two notes contradicted each other instead of guessing\n\nchecked /context halfway through - nowhere near the ceiling, even on a vault this size\n\ncame back to a wiki that made sense, not a folder of orphaned fragments -> still went through the diff by hand before trusting any of it\n\n> the line that stuck with me: Obsidian is the IDE, the LLM is the programmer, the wiki is the codebase\n\nmcode init\nmcode exec \"process my vault against my second-brain schema\" --permission full --cwd ~/vault\n\nwhat's rotting in your vault right now that one evening could fix?",
+  "author_handle": "Mr_Buzzoni",
+  "posted_at": "Wed Aug 26 17:25:37 +0000 2026"
+ },
+ {
+  "tweet_id": "2090872435486625853",
+  "text": "Two people are in conflict. Outsiders apply pressure to the person who is perceived as more reasonable, and ignore the one who is perceived as less so. What is this called and is there a way out",
+  "author_handle": "GilberteDSL",
+  "posted_at": "Fri Aug 21 18:43:29 +0000 2026"
+ },
+ {
+  "tweet_id": "2065551970279285187",
+  "text": "Owning a \u00a3400,000 house with a \u00a3350,000 mortgage in the UK in 2026 means signing a 25-year contract to give the bank around \u00a32,050 a month, in exchange for the right to maintain a building you'll spend another \u00a34,000 a year keeping dry, warm and structurally sound.\n\nAt a 5% fixed rate, the total interest over the life of the mortgage is around \u00a3264,000. The total mortgage cost ends up at roughly \u00a3614,000.\n\nThe price tag on the front door says \u00a3400K. The actual cost of living in it for 25 years is closer to \u00a3750K, before council tax, repairs, insurance and the new boiler.\n\nThis is what the country has been calling 'getting on the ladder.'",
+  "author_handle": "laff_x",
+  "posted_at": "Fri Jun 12 21:49:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2061441058701967443",
+  "text": "If you're wondering why movies suck now it's because Hollywood has been systematically discriminating against talented White artists like this for over a decade.\n\nIn order to fund these massively successful projects these guys had to do Youtube for 11 and 9 years respectively. \n\nIn the 90s they would have been hired as writers based on their talent alone. Now they have to build an entire career first, and then self-fund on a shoestring budget, all because of their skin color.",
+  "author_handle": "Anc_Aesthetics",
+  "posted_at": "Mon Jun 01 13:33:42 +0000 2026"
+ },
+ {
+  "tweet_id": "2056453059996172593",
+  "text": "you have 2 options, ok 3 \n\n1. the child stays in Lagos with the mom\n2. the mom and child move back to the UK \n3. you move to Lagos \n\nIf you want to have the child in the United Kingdom with you, you will have to support the mother\u2019s application to be with her child in the UK.",
+  "author_handle": "glamboyosa",
+  "posted_at": "Mon May 18 19:13:11 +0000 2026"
+ },
+ {
+  "tweet_id": "2051308142403653973",
+  "text": "When it\u2019s time to hire field workers, sales people, people you give targets to in millions & billions, under the sun, you can pay them peanuts and you can find them in Nigeria.\n\nYou\u2019re there defending nonsense that you can\u2019t find talents in Nigeria; how about start graduate trainee programs and train them too upto mid level instead of trying to poach.",
+  "author_handle": "YoriOlajide",
+  "posted_at": "Mon May 04 14:29:07 +0000 2026"
+ },
+ {
+  "tweet_id": "2043056492211843273",
+  "text": "Kerbal Space Program has hit an all-time high player count. https://t.co/j2Uy0zRYxp",
+  "author_handle": "LukeLeisher",
+  "posted_at": "Sat Apr 11 20:00:00 +0000 2026"
+ },
+ {
+  "tweet_id": "2000310753585217890",
+  "text": "These are the Polymarket profiles I personally check almost every day\n\nnot to copy trades - but to understand how different traders think, size risk, and choose markets\n\n\u2022 domahhh profile: https://t.co/zNENieVd4A\nOf course, domahhh. Always interesting to see which markets he trading\nGood signal for what\u2019s getting real attention\n\n\u2022 aenews profile: https://t.co/ZC2kF20V2c\nA top-tier trader who\u2019s proven himself over time\n\n\u2022 gopfan2 profile: https://t.co/IrwzpRrQ8h\nIt was interesting to watch his movements on the weather market, but even without that, he is an excellent trader with large sizes\n\n\u2022 HolyMoses profile: https://t.co/Bgc1r7hvys\nTurned $1 into ~$100k. I definitely couldn\u2019t pull that off. Interesting to follow the challenge, but I wouldn\u2019t recommend copy trading him - easy way to get burned\n\n\u2022 Frosenn profile: https://t.co/gr8mH3CNyL\nCurrently watching his moves on the Kabuto card market\n\nI am not calling on you to mirror them\n\nI suggest you keep an eye on these traders to build your intuition - how they think, how they react, and why they commit when they do\n\nIf you\u2019ve got profiles you quietly track - drop them below \ud83d\udc40",
+  "author_handle": "Mr_Buzzoni",
+  "posted_at": "Sun Dec 14 21:03:42 +0000 2025"
+ },
+ {
+  "tweet_id": "1984347783000965188",
+  "text": "dare market is now open for everyone\n\nday 1: $50,000 in prizes\n\nenter every competition and submit for FREE\n\nthe newest version of the trenches is here. https://t.co/fndsnDvaDp",
+  "author_handle": "dare_market",
+  "posted_at": "Fri Oct 31 19:52:33 +0000 2025"
+ },
+ {
+  "tweet_id": "1955765181407232199",
+  "text": "See what no one tells you about being laid off as a union organizer is that when applying to non-union jobs having been a union organizer at any time is worse for your resume then having been unemployed your entire life.",
+  "author_handle": "morematerial",
+  "posted_at": "Wed Aug 13 22:55:30 +0000 2025"
+ },
+ {
+  "tweet_id": "1893614710458618022",
+  "text": ">Pope Francis decides to own JD Vance epic style over him not loving immigrants enough\n>Decides to wait to release his statement until February 11th, the anniversary of the signing of the Lateran Treaty in which Mussolini mended the Italian states contentions with the Church, establishing the Holy See's sovereignty over the Vatican City State\n> Pope Francis gets sick and is hospitalized on February 14th at 88 years old \n>Francis is hospitalized at Policlinico Gemelli\n>Policlinico Gemelli is named after its founder Agostino Gemelli \n>Agostino Gemelli was a capuchin physician famous for his intense support of Mussolini and the fascist state, vociferous anti-semite\n\nWhat did God mean by this?",
+  "author_handle": "hope_pead",
+  "posted_at": "Sun Feb 23 10:51:43 +0000 2025"
+ },
+ {
+  "tweet_id": "1873263531287577080",
+  "text": "Funny you should ask, I've been investigating the fraud in the F-1 Student Visa system too.\n\nIt's just as big of a rabbit hole as the H-1B stuff and the two are very interconnected. Buckle up because this one is something.\n\nHere's the game. Students from India fake their undergraduate degrees and just apply straight to Masters programs. The reasons for this relate to H-1B reqs and other things but also because colleges have gone full woke and stupidly don't have any way to verify the undergraduate certificates. So they just accept them most of the time. Canada is much worse btw, they have actual diploma mills with like 80k Indian students.\n\nOnce the student has been accepted for their masters the fun part begins. They pay people with masters degrees in India to do the work for them and they have people within the masters programs themselves who are complicit (that whole nepotism thing again) to help them. This means they can skate through the masters program without getting caught. While they are \"at school\" they drive for uber/doordash for money.\n\nOnce they \"graduate\" and finish their masters they are now here illegally so it's time to defraud the H-1B system. Enter the Indian H-1B consultants.\n\nThe grift is basically this. The employee is a \"subcontractor\" working for the consulting firm and being subcontracted out to one of their clients. The problem is they don't have a Visa. So the consulting firm just fakes an H-1B Visa. Since it's the consulting firm's job to check, the company is none the wiser that they are actually using illegal labor.\n\nObviously the \"contractor\" has no idea what they are doing so this work is also outsourced back to someone in India that the H-1B consultant has set up.\n\nThe payment is made to the consulting firm and the worker is paid under the table. From what I've been told these are very predatory agreements so it usually means the worker has to still drive uber etc.\n\nOnce the first contract is finished. They now have real experience to put on their resume with a real reference and everything. So they begin the process of actually applying for their H-1B. \n\nThe consultant once again manages the whole process, commits a ton of fraud to get through the lottery system. Finds a company who needs a permanent IT hire. Company then sponsors the candidate and voila. They've committed like 10 instances of fraud but the person is now legit, has an H-1B and can work in the US.\n\nMaybe we should rethink that whole \"staple a green card to every diploma\" idea.",
+  "author_handle": "Anc_Aesthetics",
+  "posted_at": "Sun Dec 29 07:03:24 +0000 2024"
+ },
+ {
+  "tweet_id": "1869062832580706576",
+  "text": "Al-Julani:\n\n\"We are considering granting Syrian citizenship to anyone who lives in our country for 5 years.\" https://t.co/fdmgXjXUUN",
+  "author_handle": "Sprinter_Press",
+  "posted_at": "Tue Dec 17 16:51:19 +0000 2024"
+ },
+ {
+  "tweet_id": "1846761859212288428",
+  "text": "Checked in with an old friend who used to work in Democrat politics and still keeps tabs on that world. Asked him what he's been hearing from the dem camp. Sounds like it's a rough scene over there. His correspondence below.\n\n\"I would describe it as extreme panic. Their internals in key swing states have been very concerning for weeks and keep getting worse. They have been trying a media blitz strategy after the second debate was turned down but it seems like the more Harris talks, the worse it gets. They're in a very tough spot. \n\nEnergy is at an all-time low, some have already lost hope and are mentally preparing for a Trump presidency. Others are angry that Harris was chosen despite her obvious shortcomings as a candidate. \n\nThere is tension between the Biden team and the campaign, speculation is that Joe thinks he would not be doing as poorly. He is angry that the reasoning used to push him out (negative impact down-ballot) is happening anyway. I think Trump is correct when he says Joe doesn't like her. He also wants to get more involved, he thinks he can help, the Harris campaign thinks differently and they have been actively trying to distance themselves from the last 3.5 years. Overall very messy and lots of ongoing conversations on what to do, I've heard nothing is off the table and the Harris campaign does not have the same level of restraint as the Biden campaign did. It's all or nothing.\"",
+  "author_handle": "Anc_Aesthetics",
+  "posted_at": "Thu Oct 17 03:55:13 +0000 2024"
+ },
+ {
+  "tweet_id": "1835799468576210950",
+  "text": "A year ago I decided I was going to make a career change into Cybersecurity. 6 months later I had a job offer in Application Security. Best decision I could\u2019ve made.",
+  "author_handle": "keepupwithkc_",
+  "posted_at": "Mon Sep 16 21:54:35 +0000 2024"
+ },
+ {
+  "tweet_id": "1831693454927077746",
+  "text": "i'm just a girl. standing in front of a leftist boy. asking him to apply his politics to how he treats the actual women in his life",
+  "author_handle": "painncake",
+  "posted_at": "Thu Sep 05 13:58:45 +0000 2024"
+ }
+]

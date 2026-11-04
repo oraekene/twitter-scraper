@@ -11,7 +11,7 @@ already have open does not get in the way.
 import json, subprocess, sys, threading, time, urllib.request, urllib.error, io, os
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 HERE = os.path.dirname(os.path.abspath(__file__))
-PORT = 8793   # not 8765, so a running panel does not block the test
+PORT = 8793   # not 8770, so a running panel does not block the test
 sys.path.insert(0, HERE)
 
 proc = subprocess.Popen([sys.executable, 'ctl.py', 'serve', '--port', str(PORT)], cwd=HERE,

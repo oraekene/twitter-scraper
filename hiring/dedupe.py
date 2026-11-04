@@ -20,8 +20,8 @@ This module does three jobs.
 3. `flag_markdown(path)` scans a triage table for the same program appearing in
    two sections and marks the later one as a duplicate.
 
-    python hiring/scratch/dedupe.py --check out/opportunities-2026-10-29.json
-    python hiring/scratch/dedupe.py --registry
+    python hiring/dedupe.py --check out/opportunities-<date>.json
+    python hiring/dedupe.py --registry
 """
 import argparse
 import json
@@ -38,7 +38,7 @@ STOP = {
     "on", "by", "x", "2026", "2027", "batch", "cohort",
 }
 
-REGISTRY = "out/dedupe_registry.json"
+REGISTRY = pathlib.Path(__file__).resolve().parent.parent / "out" / "dedupe_registry.json"
 
 
 # Event words that must survive when they are the only thing distinguishing a

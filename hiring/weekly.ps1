@@ -51,6 +51,22 @@ if ($LASTEXITCODE -ne 0) {
 Say "wrote $Md"
 Say "wrote $Json"
 
+# Grants, hackathons and funds answer a different question from a role, so they
+# get their own report from the same bookmarks.
+& python (Join-Path $Root 'opportunities.py') --days $Days *>> $Log
+if ($LASTEXITCODE -ne 0) {
+    Say "opportunities failed, code $LASTEXITCODE. See $Log"
+} else {
+    Say 'wrote out\opportunities-<today>.md'
+}
+# Single-program tweets that the parser refuses to name, for a two-minute review.
+& python (Join-Path $Root 'opportunities.py') --candidates *>> $Log
+if ($LASTEXITCODE -ne 0) {
+    Say "candidates failed, code $LASTEXITCODE. See $Log"
+} else {
+    Say 'wrote out\single-candidates.md'
+}
+
 # Keep the last N runs so the folder does not grow forever.
 Get-ChildItem -Path $RunDir -Filter '*.md' | Sort-Object LastWriteTime -Descending |
     Select-Object -Skip $KeepRuns | Remove-Item -Force

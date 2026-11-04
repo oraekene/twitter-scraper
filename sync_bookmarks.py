@@ -7,6 +7,7 @@ Requires: uv tool install twitter-cli  /  npm install -g fieldtheory
   python sync_bookmarks.py --max-minutes 60         # stop sooner, run again to resume
   python sync_bookmarks.py --target-adds 500        # fetch 500 new ones and stop
   python sync_bookmarks.py --gaps                   # backfill quotes and article text
+  python sync_bookmarks.py --gaps-only              # backfill only, no new bookmarks
   python sync_bookmarks.py --folders                # also sync your X folder tags
   python sync_bookmarks.py --rebuild                # full re-crawl, throws the cursor away
 """
@@ -85,6 +86,8 @@ def main() -> int:
                     help="milliseconds between requests, fieldtheory default is 600")
     ap.add_argument("--gaps", action="store_true",
                     help="backfill quoted tweets, truncated articles, and linked article text")
+    ap.add_argument("--gaps-only", action="store_true",
+                    help="backfill the same gaps without pulling new bookmarks first")
     ap.add_argument("--rebuild", action="store_true",
                     help="full re-crawl of every bookmark. Slower, and throws the cursor away")
     ap.add_argument("--folders", action="store_true", help="also sync your X folder tags")
@@ -117,9 +120,14 @@ def main() -> int:
 
     OUT.mkdir(exist_ok=True)
 
-    run(["twitter", "bookmarks", "--full-text", "-n", str(args.count), "-o", str(OUT / "bookmarks.json")])
-    count = len(json.loads((OUT / "bookmarks.json").read_text(encoding="utf-8")))
-    print(f"twitter-cli: {count} bookmarks")
+    if args.gaps_only:
+        # --gaps reads the local cache; only the twitter-cli pull below would
+        # touch X, so skipping it saves minutes and changes nothing else.
+        args.gaps = True
+    else:
+        run(["twitter", "bookmarks", "--full-text", "-n", str(args.count), "-o", str(OUT / "bookmarks.json")])
+        count = len(json.loads((OUT / "bookmarks.json").read_text(encoding="utf-8")))
+        print(f"twitter-cli: {count} bookmarks")
 
     # ponytail: ft stops at --max-minutes. If it prints "max runtime reached",
     # run this script again; the next run starts from the top and continues.

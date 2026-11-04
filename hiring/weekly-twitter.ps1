@@ -60,6 +60,15 @@ if (-not $WatchlistOnly) {
 Run-Pass 'watchlist' @('--watchlist', (Join-Path $Root 'watchlist.txt'),
                        '--limit', $Limit, '--days', $Days)
 
+# The roundup parser again, this time over a live search, so a programme you
+# never bookmarked still reaches the list. Same query shape as the hiring pass.
+& python (Join-Path $Root 'opportunities.py') --live --days $Days --min-likes $MinLikes *>> $Log
+if ($LASTEXITCODE -ne 0) {
+    Say "live opportunities pass FAILED, code $LASTEXITCODE. See $Log"
+} else {
+    Say 'wrote the live opportunities report'
+}
+
 Get-ChildItem -Path $RunDir -Filter '*.md' | Sort-Object LastWriteTime -Descending |
     Select-Object -Skip ($KeepRuns * 2) | Remove-Item -Force
 Get-ChildItem -Path $RunDir -Filter '*.json' | Sort-Object LastWriteTime -Descending |

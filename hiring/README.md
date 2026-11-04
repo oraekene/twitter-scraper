@@ -10,19 +10,19 @@ cd "C:\Users\rotim\Documents\twitter scraper\hiring"
 python ctl.py serve
 ```
 
-Opens `http://127.0.0.1:8765`. Nine sections in a left sidebar: Dashboard,
+Opens `http://127.0.0.1:8770`. Nine sections in a left sidebar: Dashboard,
 Searches, Lists, Query Builder, Fetch, Results, Commands, Status, Settings.
 Light mode. Bound to loopback on purpose, because running anything here uses your
 `.env` credentials, so nothing leaves this machine.
 
-If something already holds port 8765, use `--port 8791`.
+If something already holds port 8770, use `--port 8791`.
 
 There is no server and no database. The page reads and writes `searches.json`
 and `lists.json` directly and the standard library serves it. QMD has no web page
 either; what you remember is its MCP Inspector.
 
 The Commands tab lists every command in `COMMANDS.md`, read from the file so the
-page cannot drift from it. Only the seven on the allowlist can be started from
+page cannot drift from it. Only a fixed allowlist can be started from
 the page. Everything else is there to copy. The Fetch tab starts the six
 commands in section 1.
 
@@ -369,6 +369,29 @@ Each writes dated markdown reports, dated JSON exports, and a log, keeping the
 last 12 runs. The X job writes two reports per run, suffixed `-search` and
 `-watchlist`, because a search and a watchlist answer different questions.
 
+### The opportunities list
+
+`weekly.ps1` also writes `out\opportunities-<date>.md`: grants, hackathons,
+funds and fellowships, ranked by the deadline the tweet states. It reads the
+same database as the hiring search, so it needs no extra sync.
+
+```powershell
+python opportunities.py                  # today's report from your bookmarks
+python opportunities.py --days 30        # wider discovery window
+python opportunities.py --live           # also search X itself
+python opportunities.py --candidates     # new tweets that still need a name
+```
+
+A tweet that lists three or more dated programmes, a roundup, is parsed
+automatically. A tweet that announces one programme is not, because naming it
+is a judgement and the parser refuses to guess. `--candidates` lists those, and
+a named row goes into `opportunities_manual.json`. Only rows that are new since
+the last run appear, so the weekly review stays small.
+
+`--live` runs the same parser over an X search, so a programme you never
+bookmarked can still reach the list. X only returns what the query asks for, so
+that query is the recall net, not the parser.
+
 A scheduled task called `TwitterBookmarkWeeklyScan` already exists in the parent
 folder. It syncs bookmarks and expands threads every Sunday from ten in the
 morning to four in the afternoon. That is why `weekly.ps1` does not sync by
@@ -392,10 +415,14 @@ it. The commands are in the last lines of each script.
 | `pat.py` | Regex and query guard. Every pattern must match its own probe, and every saved query must parse as FTS5, or the run stops. |
 | `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. |
 | `weekly-twitter.ps1` | Standalone X hunt, same. |
+| `opportunities.py` | The grants, hackathons, funds and fellowships report. |
+| `roundup.py` | Finds roundup tweets and parses their dated items. |
+| `dedupe.py` | Collapses one programme that arrived twice, and remembers it across runs. |
+| `opportunities_manual.json` | The named single-program rows, kept as data so no code changes. |
 | `watchlist.txt` | Only for the standalone `search.py --watchlist` command. The panel uses lists.json. |
 | `fix-fieldtheory.js` | Re-applies the search fix in `fieldtheory`. |
 | `fix-twitter-cli.js` | Re-applies the transaction header fix in `twitter-cli`. |
-| `scratch/` | Throwaway scripts from the first run on 2026-10-09. Kept for history. Do not run them. |
+| `scratch/` | Throwaway scripts from the first run on 2026-10-09. Kept for history. Do not run them. `roundup.py` and `dedupe.py` started here and moved up. |
 
 ## Three traps this already handles
 
