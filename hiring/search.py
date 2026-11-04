@@ -53,6 +53,9 @@ LISTY = G['LISTY']              # roundups, boards, hiring partners
 ADVICE = G['ADVICE']            # how to search, interview, negotiate
 CRAFT = G['CRAFT']              # hiring market and process talk
 MISC = G['MISC']                # recruiting that is not hiring, checked first
+GIG = G['GIG']                  # paid AI gig work: expert tasks, annotation
+GIG_PLATFORM = G['GIG_PLATFORM']  # a platform that pays for AI data work
+GIG_RATE = G['GIG_RATE']        # a rate per hour, week, study or task
 MONEY = G['MONEY']              # a salary figure
 PERIOD = G['PERIOD']            # a pay rate per unit of time
 HIRING_VERB = G['HIRING_VERB']  # the word that opens the door
@@ -75,6 +78,10 @@ def classify(text):
     """Bucket one tweet. Order matters: specific before general."""
     if MISC.search(text):
         return 'misc'
+    # A platform name on its own is usually news; the same name with a rate in
+    # the same tweet is a gig ad, which is the pair the platform roundups use.
+    if GIG.search(text) or (GIG_PLATFORM.search(text) and GIG_RATE.search(text)):
+        return 'gig'
     if LAYOFF.search(text) and not OFFER.search(text):
         return 'layoff'
     if LISTY.search(text) and not OFFER.search(text):
@@ -480,6 +487,8 @@ def main():
 
     openings = sorted([r for r in rows if r['bucket'] == 'opening'],
                       key=lambda r: r['dt'] or EPOCH, reverse=True)
+    gigs = sorted([r for r in rows if r['bucket'] == 'gig'],
+                  key=lambda r: r['dt'] or EPOCH, reverse=True)
     recent, older, cut = [], [], datetime.now(timezone.utc) - timedelta(days=150)
     for r in openings:
         (recent if r['dt'] and r['dt'] > cut else older).append(r)
@@ -521,6 +530,7 @@ def main():
         A('| Group | Tweets |')
         A('|---|---|')
         A(f'| Someone posting an opening | {len(openings)} |')
+        A(f'| Paid AI gigs, expert tasks, annotation | {len(gigs)} |')
         A(f'| How to apply, interview, negotiate | {buckets["advice"]} |')
         A(f'| Layoffs, reorgs, headcount cuts | {buckets["layoff"]} |')
         A(f'| Roundups and job boards | {buckets["list"]} |')
@@ -559,6 +569,8 @@ def main():
 
         block(recent, 'Openings posted in the last 5 months', f'{len(recent)} tweets, newest first.')
         block(older, 'Older openings', f'{len(older)} tweets, newest first.')
+        block(gigs, 'Paid AI gigs, expert tasks and annotation work',
+              f'{len(gigs)} tweets, newest first.')
         for key, title in (('list', 'Roundups, job boards, hiring signals'),
                            ('advice', 'How to apply, interview, and negotiate'),
                            ('craft', 'Hiring market and process craft'),

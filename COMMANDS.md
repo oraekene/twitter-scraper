@@ -231,6 +231,19 @@ into `hiring\opportunities_manual.json`. `weekly.ps1` runs the bookmarks pass, `
 runs the live pass, and each takes `-Only hiring` or `-Only opportunities` so the two questions can
 be scheduled on different days. `hiring\install_tasks.ps1` registers all four weekly tasks.
 
+Paid AI gig work, meaning annotation, expert tasks and hourly rates on platforms such as Mercor,
+Outlier and DataAnnotation, is a third question and has its own saved searches:
+
+```
+python hiring\search.py --search gig-bookmarks --md -      # from your bookmarks
+python hiring\search.py --live --search gig-live --md -    # same search on X
+python hiring\gig_snowball.py                              # grow the word list, writes out\gig-terms.md
+```
+
+`gig-bookmarks` reads the database and is free; `gig-live` is disabled until you turn it on. The
+classifier puts a hit in the `gig` bucket when a gig phrase appears, or when a platform name and a
+rate per hour, week, study or task appear in the same tweet.
+
 Every regex it classifies with is in `hiring\patterns.json`, one group per decision, each pattern paired with a probe it must match. A pattern that does not match its probe stops the whole file loading, so `python hiring\search.py --selfcheck` is the check.
 
 Three traps it already handles, all found on 2026-10-09. Join the search table on `rowid`, never on

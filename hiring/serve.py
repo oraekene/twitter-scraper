@@ -42,7 +42,9 @@ RUNNABLE = {
     'fieldtheory-folders': ['fieldtheory', 'folders'],
     'tests':               ['python', '-c', 'import subprocess,sys;'
                             'jobs=[("test_sync.py",),("test_crawl.py",),("test_weekly.py",),'
-                            '("hiring/pat.py",),("hiring/sem.py","selftest")];'
+                            '("hiring/pat.py",),("hiring/sem.py","selftest"),'
+                            '("hiring/opportunities.py","--selftest"),'
+                            '("hiring/gig_snowball.py","--selftest")];'
                             'r=[subprocess.run([sys.executable,*j],capture_output=True).returncode'
                             ' for j in jobs];'
                             'print("exit codes:",r);sys.exit(max(r))'],
@@ -50,6 +52,7 @@ RUNNABLE = {
     'opportunities':       [sys.executable, os.path.join(HERE, 'opportunities.py')],
     'opportunities-live':  [sys.executable, os.path.join(HERE, 'opportunities.py'), '--live'],
     'opportunities-review': [sys.executable, os.path.join(HERE, 'opportunities.py'), '--candidates'],
+    'gig-snowball':        [sys.executable, os.path.join(HERE, 'gig_snowball.py')],
     'fix-fieldtheory':     ['node', os.path.join(HERE, 'fix-fieldtheory.js')],
     'fix-twitter-cli':     ['node', os.path.join(HERE, 'fix-twitter-cli.js')],
 }

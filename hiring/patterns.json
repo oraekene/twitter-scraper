@@ -351,6 +351,181 @@
         ]
       ]
     },
+    "GIG": {
+      "note": "Paid AI gig work: expert tasks, annotation, or a rate per hour. search.py pairs the platform group with the rate group.",
+      "patterns": [
+        [
+          "expert knowledge",
+          "\\bexpert\\s+knowledge\\b"
+        ],
+        [
+          "there is an assessment to be a human expert",
+          "\\b(?:human|domain|subject[- ]matter)\\s+experts?\\b"
+        ],
+        [
+          "remote AI contributors",
+          "\\bai\\s+(?:contributors?|raters?|trainers?|annotators?|evaluators?|experts?)\\b"
+        ],
+        [
+          "Turing is recruiting AI raters",
+          "\\brecruiting\\s+(?:remote\\s+)?(?:ai|data|annotation|annotators|raters|experts)\\b"
+        ],
+        [
+          "become a data annotator",
+          "\\b(?:become|work\\s+as|apply\\s+as|join\\s+as)\\s+(?:a|an)?\\s*(?:ai\\s+|data\\s+|remote\\s+)?(?:annotators?|trainers?|raters?|experts?|evaluators?|labell?ers?)\\b"
+        ],
+        [
+          "Gemini Educational Rater",
+          "\\b(?:educational|search|content|relevance|safety)\\s+raters?\\b"
+        ],
+        [
+          "data annotation work",
+          "\\b(?:data\\s+)?annotat(?:ion|ions)\\s+(?:work|tasks?|jobs?|projects?|gigs?|platforms?|tools?)\\b"
+        ],
+        [
+          "data labeling tasks",
+          "\\b(?:data\\s+)?labell?ing\\s+(?:work|tasks?|jobs?|projects?|gigs?|platforms?)\\b"
+        ],
+        [
+          "paid per task",
+          "\\b(?:paid|pay|pays)\\s+per\\s+(?:task|study|hour|annotation|submission)\\b"
+        ],
+        [
+          "task-based pay",
+          "\\btask[- ]based\\s+(?:pay|work|payments?|compensation)\\b"
+        ],
+        [
+          "hourly rate",
+          "\\bhourly\\s+(?:rate|rates|pay|work|gig|gigs|job|jobs)\\b"
+        ],
+        [
+          "expert-level pay",
+          "\\bexpert[- ]level\\s+(?:pay|work|tasks?|projects?|rates?)\\b"
+        ],
+        [
+          "RLHF work",
+          "\\brlhf\\s+(?:work|tasks?|jobs?|projects?|annotators?|labeling)\\b"
+        ],
+        [
+          "earn $20 per hour",
+          "\\b(?:earn|earning|earns|making|pays?|paying)\\b[^.?!]{0,30}\\bper\\s+hour\\b"
+        ]
+      ]
+    },
+    "GIG_PLATFORM": {
+      "note": "A platform that pays people for AI data work. One pair per name on purpose: a typo inside a long alternation still matches the probe and then silently stops matching the name.",
+      "patterns": [
+        [
+          "mercor",
+          "\\bmercor\\b"
+        ],
+        [
+          "outlier",
+          "\\boutlier\\b"
+        ],
+        [
+          "dataannotation",
+          "\\bdataannotation\\b"
+        ],
+        [
+          "alignerr",
+          "\\balignerr\\b"
+        ],
+        [
+          "prolific",
+          "\\bprolific\\b"
+        ],
+        [
+          "appen",
+          "\\bappen\\b"
+        ],
+        [
+          "rws",
+          "\\brws\\b"
+        ],
+        [
+          "oneforma",
+          "\\boneforma\\b"
+        ],
+        [
+          "labelbox",
+          "\\blabelbox\\b"
+        ],
+        [
+          "innodata",
+          "\\binnodata\\b"
+        ],
+        [
+          "clickworker",
+          "\\bclickworker\\b"
+        ],
+        [
+          "welocalize",
+          "\\bwelocalize\\b"
+        ],
+        [
+          "objectways",
+          "\\bobjectways\\b"
+        ],
+        [
+          "telus",
+          "\\btelus\\b"
+        ],
+        [
+          "mindrift",
+          "\\bmindrift\\b"
+        ],
+        [
+          "micro1",
+          "\\bmicro1\\b"
+        ],
+        [
+          "crowdgen",
+          "\\bcrowdgen\\b"
+        ],
+        [
+          "toloka",
+          "\\btoloka\\b"
+        ],
+        [
+          "remotasks",
+          "\\bremotasks\\b"
+        ],
+        [
+          "turing",
+          "\\bturing\\b"
+        ],
+        [
+          "handshake",
+          "\\bhandshake\\b"
+        ],
+        [
+          "scale ai",
+          "\\bscale\\s?ai\\b"
+        ]
+      ]
+    },
+    "GIG_RATE": {
+      "note": "A pay rate per hour, week, study or task. A plain salary per month does not qualify, which is what keeps a business thread out.",
+      "patterns": [
+        [
+          "$10-20/hr",
+          "[$\u20ac\u00a3\u20a6]\\s?\\d[\\d,\\.]*\\s*[-\u2013\u2014]\\s*[$\u20ac\u00a3\u20a6]?\\s?\\d[\\d,\\.]*\\s*(?:usd)?\\s*(?:/|\\bper\\b|\\ba\\b)\\s*(?:hr|hour|hours|wk|week|study|task)\\b"
+        ],
+        [
+          "$30/hr",
+          "[$\u20ac\u00a3\u20a6]\\s?\\d[\\d,\\.]*\\s*(?:usd)?\\s*(?:/|\\bper\\b|\\ba\\b)\\s*(?:hr|hour|hours|wk|week|study|task)\\b"
+        ],
+        [
+          "Per study",
+          "\\bper\\s+(?:study|task|hour|annotation)\\b"
+        ],
+        [
+          "hourly",
+          "\\bhourly\\b"
+        ]
+      ]
+    },
     "MONEY": {
       "note": "A salary figure. Needs ROLE or HIRING_VERB as well to mean an opening.",
       "patterns": [

@@ -95,6 +95,30 @@
       "concept": "tweets hinting at a Series A raise",
       "seed_group": "OFFER",
       "concept_source": "bookmarks"
+    },
+    {
+      "name": "gig-bookmarks",
+      "source": "bookmarks",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:10",
+      "days_back": 30,
+      "limit": 200,
+      "min_likes": 0,
+      "notes": "Paid AI gigs from your bookmarks: annotation, expert tasks, hourly rates, platform roundups.",
+      "query": "\"annotation\" OR \"annotator\" OR \"annotators\" OR \"data annotation\" OR \"data labeling\" OR \"expert knowledge\" OR \"human expert\" OR \"per hour\" OR \"per study\" OR \"hourly rate\" OR \"ai training\" OR \"ai rater\" OR \"ai contributors\" OR \"rlhf\" OR \"mercor\" OR \"outlier\" OR \"dataannotation\" OR \"alignerr\" OR \"prolific\" OR \"appen\" OR \"oneforma\" OR \"labelbox\" OR \"innodata\" OR \"clickworker\" OR \"welocalize\" OR \"objectways\" OR \"telus\" OR \"mindrift\" OR \"micro1\" OR \"crowdgen\" OR \"toloka\" OR \"remotasks\" OR \"turing\""
+    },
+    {
+      "name": "gig-live",
+      "source": "live",
+      "enabled": false,
+      "every_days": 1,
+      "time": "09:15",
+      "days_back": 7,
+      "limit": 50,
+      "min_likes": 10,
+      "notes": "The gig search on X itself. Disabled until you turn it on.",
+      "query": "\"annotation\" OR \"annotator\" OR \"data annotation\" OR \"expert knowledge\" OR \"per hour\" OR \"per study\" OR \"hourly rate\" OR \"ai training\" OR \"ai rater\" OR \"mercor\" OR \"outlier\" OR \"dataannotation\" OR \"alignerr\" OR \"prolific\" OR \"appen\" OR \"oneforma\" OR \"labelbox\" OR \"innodata\" OR \"clickworker\" OR \"welocalize\" OR \"mindrift\" OR \"micro1\" OR \"crowdgen\" OR \"toloka\" OR \"turing\""
     }
   ]
 }

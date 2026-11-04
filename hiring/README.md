@@ -154,6 +154,34 @@ decides: `OFFER` someone is offering a role, `LAYOFF` cuts and reorgs, `ADVICE`,
 `CRAFT`, `LISTY`, `MISC`, plus `MONEY`, `PERIOD`, `LOCATION`, `LINK` and the
 `TITLE_WORDS` list that feeds the `ROLE` template.
 
+### The paid AI gig group
+
+`GIG`, `GIG_PLATFORM` and `GIG_RATE` cover the platforms that pay people for AI
+data work: expert tasks, annotation, labelling, and a rate per hour, week, study
+or task. The three are used together in one rule in `search.py`, because neither
+half is enough on its own. A platform name alone is usually news, so `GIG_PLATFORM`
+counts only when `GIG_RATE` also appears in the same tweet. A phrase like "expert
+knowledge" is enough by itself, so `GIG` carries it.
+
+`GIG_RATE` accepts a rate per hour, week, study or task and deliberately not per
+month, which is what keeps a business thread quoting "$80,000/month" out. The
+platform list carries one pair per name instead of one long alternation: a typo
+inside an alternation still matches the probe and then silently stops matching
+that name.
+
+The names came from `gig_snowball.py`, not from a guess. It starts with the
+platforms and phrases in two known gig tweets, finds every bookmark holding them,
+harvests the words in what it found, and repeats, ranking each candidate by lift,
+which is how much more common a term is inside the tweets found so far than in
+the whole archive. The report is `out\gig-terms.md`.
+
+```powershell
+python gig_snowball.py --rounds 3 --min-df 5 --min-lift 4
+```
+
+That run measured 126 terms over 98,652 bookmarks and found `mindrift`, `micro1`,
+`crowdgen` and `hourly rate`, none of which were in the seed list.
+
 Each entry is a pair: a probe, which is real text, then the regex. The regex has
 to match its own probe, and every pair is proved on its own when the file loads,
 so a pattern that matches nothing is refused instead of quietly returning zero
@@ -435,6 +463,7 @@ comes back up, so a sleeping laptop costs nothing.
 | `weekly-twitter.ps1` | Standalone X hunt, same. |
 | `install_tasks.ps1` | Registers the four weekly tasks, hiring and opportunities on separate days. |
 | `opportunities.py` | The grants, hackathons, funds and fellowships report. |
+| `gig_snowball.py` | Grows the paid-AI-gig vocabulary out of the bookmarks, ranked by lift. Feeds the GIG group. |
 | `roundup.py` | Finds roundup tweets and parses their dated items. |
 | `dedupe.py` | Collapses one programme that arrived twice, and remembers it across runs. |
 | `opportunities_manual.json` | The named single-program rows, kept as data so no code changes. |
@@ -466,6 +495,12 @@ the report, and nineteen watched accounts produced 74 fake openings instead of
 Roughly one opening in three is a false positive, mostly a story about hiring
 rather than an actual job post. The report is a shortlist to skim, not a clean
 list.
+
+The gig section leans the same way. A freelancer explaining how they raised
+their own hourly rate, or a thread that merely mentions Mercor and a price,
+classifies as a gig. What it will not do is miss the shape the group was built
+from, so the section is a shortlist of 43 from one run, of which most were the
+intended kind.
 
 The database has no `follower_count` or `is_verified` column, so the report does
 not show follower counts. Those live in the JSONL inside nested author objects
