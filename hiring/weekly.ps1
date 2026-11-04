@@ -1,8 +1,13 @@
-# Weekly hiring hunt: read the bookmark database and report new openings.
+# Weekly booking hunt: read the bookmark database and write two reports.
 #
-#   pwsh -File weekly.ps1                 hunt the last 8 days
-#   pwsh -File weekly.ps1 -Days 14        hunt a wider window
-#   pwsh -File weekly.ps1 -Sync           also pull new bookmarks first (rarely needed)
+#   pwsh -File weekly.ps1                        both halves, last 8 days
+#   pwsh -File weekly.ps1 -Only hiring           the openings report only
+#   pwsh -File weekly.ps1 -Only opportunities    the grants and hackathons report only
+#   pwsh -File weekly.ps1 -Days 14               hunt a wider window
+#   pwsh -File weekly.ps1 -Sync                  also pull new bookmarks first (rarely needed)
+#
+# The two halves are scheduled separately, so one task runs -Only hiring and
+# another runs -Only opportunities on a different day.
 #
 # Sync is opt-in because the machine already has a task called
 # TwitterBookmarkWeeklyScan that syncs bookmarks every Sunday. Do not run both
@@ -12,7 +17,9 @@
 param(
     [int]$Days = 8,
     [switch]$Sync,
-    [int]$KeepRuns = 12
+    [int]$KeepRuns = 12,
+    [ValidateSet('all', 'hiring', 'opportunities')]
+    [string]$Only = 'all'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,7 +38,7 @@ function Say($m) {
     Add-Content -LiteralPath $Log -Value $line
 }
 
-Say "hiring hunt started, looking back $Days days, mode $(if ($Sync) { 'sync + search' } else { 'search only' })"
+Say "bookmark report started, half=$Only, looking back $Days days, mode $(if ($Sync) { 'sync + search' } else { 'search only' })"
 
 if ($Sync) {
     Say 'warning: TwitterBookmarkWeeklyScan may already be syncing, check for EPERM'
@@ -39,32 +46,36 @@ if ($Sync) {
     if ($LASTEXITCODE -ne 0) { Say "sync returned $LASTEXITCODE, searching anyway" }
 }
 
-$Md = Join-Path $RunDir "$Stamp.md"
-$Json = Join-Path $RunDir "$Stamp.json"
+if ($Only -in 'all', 'hiring') {
+    $Md = Join-Path $RunDir "$Stamp.md"
+    $Json = Join-Path $RunDir "$Stamp.json"
 
-& python (Join-Path $Root 'search.py') --search hiring-bookmarks --days $Days --md $Md --json $Json *>> $Log
-if ($LASTEXITCODE -ne 0) {
-    Say "search failed, code $LASTEXITCODE. See $Log"
-    exit $LASTEXITCODE
+    & python (Join-Path $Root 'search.py') --search hiring-bookmarks --days $Days --md $Md --json $Json *>> $Log
+    if ($LASTEXITCODE -ne 0) {
+        Say "search failed, code $LASTEXITCODE. See $Log"
+        exit $LASTEXITCODE
+    }
+
+    Say "wrote $Md"
+    Say "wrote $Json"
 }
 
-Say "wrote $Md"
-Say "wrote $Json"
-
-# Grants, hackathons and funds answer a different question from a role, so they
-# get their own report from the same bookmarks.
-& python (Join-Path $Root 'opportunities.py') --days $Days *>> $Log
-if ($LASTEXITCODE -ne 0) {
-    Say "opportunities failed, code $LASTEXITCODE. See $Log"
-} else {
-    Say 'wrote out\opportunities-<today>.md'
-}
-# Single-program tweets that the parser refuses to name, for a two-minute review.
-& python (Join-Path $Root 'opportunities.py') --candidates *>> $Log
-if ($LASTEXITCODE -ne 0) {
-    Say "candidates failed, code $LASTEXITCODE. See $Log"
-} else {
-    Say 'wrote out\single-candidates.md'
+if ($Only -in 'all', 'opportunities') {
+    # Grants, hackathons and funds answer a different question from a role, so
+    # they get their own report from the same bookmarks.
+    & python (Join-Path $Root 'opportunities.py') --days $Days *>> $Log
+    if ($LASTEXITCODE -ne 0) {
+        Say "opportunities failed, code $LASTEXITCODE. See $Log"
+    } else {
+        Say 'wrote out\opportunities-<today>.md'
+    }
+    # Single-program tweets the parser refuses to name, for a two-minute review.
+    & python (Join-Path $Root 'opportunities.py') --candidates *>> $Log
+    if ($LASTEXITCODE -ne 0) {
+        Say "candidates failed, code $LASTEXITCODE. See $Log"
+    } else {
+        Say 'wrote out\single-candidates.md'
+    }
 }
 
 # Keep the last N runs so the folder does not grow forever.
@@ -74,9 +85,9 @@ Get-ChildItem -Path $RunDir -Filter '*.json' | Sort-Object LastWriteTime -Descen
     Select-Object -Skip $KeepRuns | Remove-Item -Force
 
 # -------- registering with Task Scheduler, run once --------
-# Pick a time the other task is not using. It fires Sunday 10:00 to 16:00 hourly,
-# so anything before 09:00 or after 17:00 avoids contention on bookmarks.db.
-#
-# pwsh -Command "Register-ScheduledTask -TaskName 'hiring-weekly' -Description 'Weekly hunt for hiring posts' -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 8am) -Action (New-ScheduledTaskAction -Execute 'pwsh' -Argument '-NoProfile -WindowStyle Hidden -File \"C:\Users\rotim\Documents\twitter scraper\hiring\weekly.ps1\"') -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -DontStopIfGoingOnBatteries -AllowStartIfOnBatteries)"
+# pwsh -File install_tasks.ps1 registers both halves, on separate days, with the
+# right -Only argument. The laptop must be on and you logged in at 8am, and
+# StartWhenAvailable runs a missed one as soon as the session comes up.
 #
 # Unregister-ScheduledTask -TaskName 'hiring-weekly' -Confirm:$false
+# Unregister-ScheduledTask -TaskName 'opportunities-weekly' -Confirm:$false

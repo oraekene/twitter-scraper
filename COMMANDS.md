@@ -228,7 +228,8 @@ python hiring\opportunities.py --selftest       # check the parser, no network
 A tweet that lists three or more dated programmes is parsed automatically. A tweet that announces one
 programme is not, because naming it is a judgement; `--candidates` lists those and a named row goes
 into `hiring\opportunities_manual.json`. `weekly.ps1` runs the bookmarks pass, `weekly-twitter.ps1`
-runs the live pass.
+runs the live pass, and each takes `-Only hiring` or `-Only opportunities` so the two questions can
+be scheduled on different days. `hiring\install_tasks.ps1` registers all four weekly tasks.
 
 Every regex it classifies with is in `hiring\patterns.json`, one group per decision, each pattern paired with a probe it must match. A pattern that does not match its probe stops the whole file loading, so `python hiring\search.py --selfcheck` is the check.
 

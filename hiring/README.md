@@ -395,8 +395,26 @@ that query is the recall net, not the parser.
 A scheduled task called `TwitterBookmarkWeeklyScan` already exists in the parent
 folder. It syncs bookmarks and expands threads every Sunday from ten in the
 morning to four in the afternoon. That is why `weekly.ps1` does not sync by
-default. Register the two new ones for a quiet hour so they never collide with
-it. The commands are in the last lines of each script.
+default.
+
+The four report tasks are registered by one script, on separate days, because
+the hiring question and the opportunities question do not need to run together:
+
+```powershell
+pwsh -File install_tasks.ps1        # register all four, safe to re-run
+```
+
+| Task | Day, 8am | Runs |
+|---|---|---|
+| `hiring-weekly` | Monday | `weekly.ps1 -Only hiring` |
+| `hiring-twitter-weekly` | Tuesday | `weekly-twitter.ps1 -Only hiring` |
+| `opportunities-weekly` | Thursday | `weekly.ps1 -Only opportunities` |
+| `opportunities-twitter-weekly` | Friday | `weekly-twitter.ps1 -Only opportunities` |
+
+Edit the table at the top of `install_tasks.ps1` to move a day, then run it
+again; `-Force` replaces the task. All four start at 8am and none of them lands
+on the Sunday window. `StartWhenAvailable` runs a missed one when the session
+comes back up, so a sleeping laptop costs nothing.
 
 ## Files
 
@@ -413,8 +431,9 @@ it. The commands are in the last lines of each script.
 | `patterns.json` | Every regex the search uses, as probe plus pattern pairs. Proved against the probe on load. |
 | `searches.json` | Your searches and their queries. Safe to edit by hand, but the CLI and page are easier. |
 | `pat.py` | Regex and query guard. Every pattern must match its own probe, and every saved query must parse as FTS5, or the run stops. |
-| `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. |
+| `weekly.ps1` | Standalone bookmark hunt, if you do not want the control plane. `-Only hiring` or `-Only opportunities` runs one half. |
 | `weekly-twitter.ps1` | Standalone X hunt, same. |
+| `install_tasks.ps1` | Registers the four weekly tasks, hiring and opportunities on separate days. |
 | `opportunities.py` | The grants, hackathons, funds and fellowships report. |
 | `roundup.py` | Finds roundup tweets and parses their dated items. |
 | `dedupe.py` | Collapses one programme that arrived twice, and remembers it across runs. |
