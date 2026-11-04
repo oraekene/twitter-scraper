@@ -170,17 +170,27 @@ inside an alternation still matches the probe and then silently stops matching
 that name.
 
 The names came from `gig_snowball.py`, not from a guess. It starts with the
-platforms and phrases in two known gig tweets, finds every bookmark holding them,
-harvests the words in what it found, and repeats, ranking each candidate by lift,
-which is how much more common a term is inside the tweets found so far than in
-the whole archive. The report is `out\gig-terms.md`.
+platforms and phrases in one known gig tweet, finds every bookmark holding them,
+harvests the words in what it found, and repeats. The report is
+`out\gig-terms.md`.
 
 ```powershell
-python gig_snowball.py --rounds 3 --min-df 5 --min-lift 4
+python gig_snowball.py --rounds 3 --min-df 5 --min-anchored 2 --max-df 50
 ```
 
-That run measured 126 terms over 98,652 bookmarks and found `mindrift`, `micro1`,
-`crowdgen` and `hourly rate`, none of which were in the seed list.
+Two gates decide what it may follow, and neither is a blocklist. A term needs at
+least two tweets that look like a gig ad, judged by the same `GIG` and `GIG_RATE`
+groups the search uses, and it needs to appear in no more than fifty tweets
+overall. The first gate drops a topic: `quantization` is discussed in tweets that
+never quote a rate, so it never reaches the found set at all. The second drops a
+common word: `hour`, `pay` and `expert` do sit beside rates, but in hundreds of
+tweets, which is not what a name looks like. That run followed 26 terms over
+98,652 bookmarks, including `mercor`, `turing`, `handshake`, `mindrift`, `micro1`
+and `crowdgen`, and cut `hour`, `hr`, `pay`, `data`, `job` and `expert` by name.
+
+A seed gets no special treatment, so `rlhf` and `snorkel` removed themselves. The
+report prints every term it measured with the reason it was not followed, so the
+filter can be audited instead of trusted.
 
 Each entry is a pair: a probe, which is real text, then the regex. The regex has
 to match its own probe, and every pair is proved on its own when the file loads,
