@@ -3,7 +3,7 @@
     python opportunities.py                  # bookmarks, dated today
     python opportunities.py --days 30        # wider discovery window
     python opportunities.py --live           # also search X itself
-    python opportunities.py --candidates     # new single-program tweets to name
+    python opportunities.py --candidates     # AI-researched sweep as a table
     python opportunities.py --selftest       # check the parser, touch nothing
 
 Reads the bookmark database, so sync_bookmarks.py has to run first. Write
@@ -60,7 +60,7 @@ def _parse_args():
     ap.add_argument("--min-likes", type=int, default=20,
                     help="live only, drop posts below this many likes")
     ap.add_argument("--candidates", action="store_true",
-                    help="list single-program tweets that still need a name")
+                    help="render the AI-researched sweep as a table")
     ap.add_argument("--selftest", action="store_true",
                     help="check the parser, touch nothing else")
     return ap.parse_args()
@@ -282,6 +282,9 @@ UNDATED = [
 ]
 
 
+EXTRA = {}  # enriched facts per tweet url: apply_url, website, status, ...
+
+
 def _load_manual():
     """Read single-program rows from the data file, seeding it from the arrays
     in this script the first time.
@@ -290,9 +293,17 @@ def _load_manual():
     (timing, program, detail, tweet), which is the shape the rest of the script
     already expects. A row added to the JSON needs no code change.
     """
+    global EXTRA
+    EXTRA = {}
     if os.path.exists(MANUAL_PATH):
         with open(MANUAL_PATH, encoding="utf-8") as fh:
             data = json.load(fh)
+        for r in data.get("dated", []) + data.get("undated", []):
+            if r.get("tweet"):
+                EXTRA[r["tweet"]] = {k: r[k] for k in
+                                     ("apply_url", "website", "status",
+                                      "verified_deadline", "verified_at")
+                                     if r.get(k)}
         dated = [(datetime.strptime(r["deadline"], "%Y-%m-%d").date(),
                   r["label"], r["program"], r["detail"], r["tweet"])
                  for r in data.get("dated", [])]
@@ -317,32 +328,46 @@ DATED, UNDATED = _load_manual()
 
 
 if args.candidates:
-    # Propose single-program rows instead of building the list. The program name
-    # is left blank on purpose; naming it is the one judgement a person makes.
-    _cands = roundup.find_single_tweets(
-        args.db, known_tweets={r[4] for r in DATED} | {u[3] for u in UNDATED},
-        window_days=args.days)
+    # Read the AI research sweep instead of the old regex gate. The model names
+    # the program, so there is nothing left for a person to fill in here.
+    _src = OUT / "research_opportunities.json"
+    _rows = []
+    _when = "never"
+    if _src.exists():
+        try:
+            _rows = json.loads(_src.read_text(encoding="utf-8"))
+            _when = datetime.fromtimestamp(_src.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+        except ValueError as err:
+            print(f"cannot read {_src.name}: {err}")
+    _rows.sort(key=lambda o: -(o.get("confidence") or 0))
     _lines = [
-        "# Single-program tweets that look like opportunities",
+        "# AI-researched opportunity tweets",
         "",
-        f"{len(_cands)} tweet(s) posted in the last {args.days} days that name an",
-        "application window and a date, and are not already in",
-        f"`{MANUAL_PATH.name}`.",
+        f"{len(_rows)} opportunity object(s) from `{_src.name}`, written {_when}.",
+        "One tweet can produce several rows when it lists several programs.",
         "",
-        f"Name the program, then add the row to `{MANUAL_PATH.name}`.",
-        "A tweet whose date has passed belongs in `dated` with `\"label\": \"<date>, closed\"`.",
+        f"Verified facts are merged into `{MANUAL_PATH.name}` by `research.py merge`.",
         "",
-        "| Posted | Dates in tweet | Money | Evidence | Tweet | Program to fill |",
-        "|---|---|---|---|---|---|",
+        "| Confidence | Program | Kind | Deadline | Money | Status | Tweet | Apply |",
+        "|---|---|---|---|---|---|---|---|",
     ]
-    for c in _cands:
-        evidence = c["text"].replace("\n", " ").replace("|", "/")[:220]
+
+    def _cell(v):
+        return str(v or "-").replace("|", "/").replace("\n", " ")[:120]
+
+    for o in _rows:
+        _tid = o.get("tweet_id") or ""
+        _c = o.get("confidence")
+        _conf = f"{_c:.2f}" if isinstance(_c, (int, float)) else "-"
         _lines.append(
-            f"| {c['posted']} | {', '.join(c['dates']) or '-'} | "
-            f"{', '.join(c['money']) or '-'} | {evidence} | {c['tweet']} |  |")
+            f"| {_conf} | {_cell(o.get('program'))} | "
+            f"{_cell(o.get('kind'))} | {_cell(o.get('deadline_iso') or o.get('deadline_text'))} | "
+            f"{_cell(o.get('money'))} | {_cell(o.get('status'))} | "
+            f"{'https://x.com/i/status/' + _tid if _tid else '-'} | "
+            f"{_cell(o.get('apply_url') or o.get('website'))} |")
     OUT.mkdir(exist_ok=True)
     CANDIDATES_PATH.write_text("\n".join(_lines) + "\n", encoding="utf-8")
-    print(f"wrote {CANDIDATES_PATH}: {len(_cands)} candidate(s) to review")
+    print(f"wrote {CANDIDATES_PATH}: {len(_rows)} researched object(s)")
     sys.exit(0)
 
 
@@ -370,6 +395,23 @@ if args.live:
     print(f"live: {len(_live_rows)} roundup row(s) from X")
     for _note in _live_notes:
         print(f"  {_note}")
+
+# Drop roundup rows the AI cleanup named junk (benefit or requirement bullets
+# that the regex split into fake programs). The blocklist is written by
+# `python hiring/research.py clean` and keyed by dedupe.norm.
+_block = set()
+_bp = OUT / "registry_blocklist.json"
+if _bp.exists():
+    try:
+        _block = set(json.loads(_bp.read_text(encoding="utf-8")))
+    except ValueError:
+        pass
+if _block:
+    _pre = len(parsed_roundups)
+    parsed_roundups = [r for r in parsed_roundups
+                       if dedupe.norm(r["program"]) not in _block]
+    if len(parsed_roundups) != _pre:
+        print(f"blocklist: dropped {_pre - len(parsed_roundups)} junk roundup row(s)")
 
 # Collapse a roundup row that restates a programme already in the hand list.
 # The hand list is curated and ordered, so it is never the side that gets
@@ -438,14 +480,22 @@ if _live_notes:
     out.append(f"Live search coverage, {len(_live_notes)} batch(es):")
     out += [f"- {n}" for n in _live_notes]
     out.append("")
-out += ["| # | Deadline | Program | Detail | Tweet |", "|---|---|---|---|---|"]
+out += ["| # | Deadline | Status | Program | Detail | Apply | Tweet |",
+        "|---|---|---|---|---|---|---|"]
 for i, (_, label, program, detail, url) in enumerate(rows, 1):
-    out.append(f"| {i} | {label} | {program} | {detail} | {url} |")
+    x = EXTRA.get(url, {})
+    out.append(f"| {i} | {x.get('verified_deadline') or label} | "
+               f"{x.get('status') or ('closed' if 'closed' in label.lower() else '')} | "
+               f"{program} | {detail} | {x.get('apply_url') or x.get('website') or ''} | "
+               f"{url} |")
 out += ["", "## No deadline in the tweet", "",
-        "| Timing | Program | Detail | Tweet |", "|---|---|---|---|"]
+        "| Timing | Status | Program | Detail | Apply | Tweet |",
+        "|---|---|---|---|---|---|"]
 for when, program, detail, url in UNDATED + _auto_undated:
-    out.append(f"| {when} | {program} | {detail} | {url} |")
-out += ["", f"Single-program tweets that need a name are listed in "
+    x = EXTRA.get(url, {})
+    out.append(f"| {when} | {x.get('status') or ''} | {program} | {detail} | "
+               f"{x.get('apply_url') or x.get('website') or ''} | {url} |")
+out += ["", f"AI-researched opportunities are listed in "
         f"`{CANDIDATES_PATH.name}` after `--candidates` runs.", ""]
 
 md_path = output_path(date.today(), args.live)
@@ -457,5 +507,6 @@ with open(json_path, "w", encoding="utf-8") as fh:
     json.dump({"dated": [[str(r[0]), r[1], r[2], r[3], r[4]] for r in rows],
                "undated": [list(u) for u in UNDATED],
                "parsed_roundups": parsed_roundups,
-               "duplicates": _dropped},
+               "duplicates": _dropped,
+               "extras": EXTRA},
               fh, indent=1, default=str)

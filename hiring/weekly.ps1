@@ -69,7 +69,8 @@ if ($Only -in 'all', 'opportunities') {
     } else {
         Say 'wrote out\opportunities-<today>.md'
     }
-    # Single-program tweets the parser refuses to name, for a two-minute review.
+    # The AI-researched sweep, rendered as a table. It needs research.py merge to
+    # have run at least once; an empty file is not an error.
     & python (Join-Path $Root 'opportunities.py') --candidates *>> $Log
     if ($LASTEXITCODE -ne 0) {
         Say "candidates failed, code $LASTEXITCODE. See $Log"

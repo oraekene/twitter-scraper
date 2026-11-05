@@ -51,14 +51,6 @@ _OPPORTUNITY_WORD = re.compile(
     re.I,
 )
 
-# A tweet that announces an application window, as opposed to one that merely
-# mentions a fund. This is the difference between "applications close Nov 3" and
-# "Norway's wealth fund is losing billions".
-_APPLY_PHRASE = re.compile(
-    r"\b(apply|applying|applications?|deadline|closes?|closing|now accepting|"
-    r"register|registration|submissions?|submit|cohort|batch)\b", re.I)
-_MONEY = re.compile(r"[$€£]\s?\d[\d,.]*")
-
 
 def _parse_date(text, default_year):
     m = _DATE.search(text)
@@ -142,70 +134,6 @@ def parse_text(text, tid, posted_at):
             "link": link.group(0) if link else f"https://x.com/{tid}",
         })
     return rows
-
-
-def find_single_tweets(db_path, known_tweets=(), window_days=45):
-    """Tweets that announce one opportunity rather than a list of them.
-
-    A single-program tweet is the one part of the radar that still needs a
-    person, because naming the program is a judgement: "Applications for the YC
-    Winter 2027 batch are now open" names it, "We are hosting the world's first
-    Autonomous Company Hackathon" names it only once you know the account. So
-    this returns the evidence a reader needs, and leaves `program` empty.
-
-    Filter: posted inside the window, an application phrase, a stated date, and
-    not a roundup. Precision is roughly one in three on live data, which is
-    small enough to review in a minute and wide enough not to miss a call.
-    """
-    con = sqlite3.connect(db_path)
-    try:
-        rows = con.execute(
-            "SELECT tweet_id, text, posted_at FROM bookmarks WHERE posted_at LIKE ?",
-            ("% 2026",),
-        ).fetchall()
-    finally:
-        con.close()
-
-    stamps = [d for d in (_posted_dt(w) for _t, _x, w in rows) if d]
-    if not stamps:
-        return []
-    cutoff = max(stamps).toordinal() - window_days
-    # Stored tweets carry a handle ("x.com/ycombinator/status/123") and new ones
-    # are bare ("x.com/123"), so compare the id, not the URL.
-    known = set()
-    for t in known_tweets:
-        m = re.search(r"(\d{6,})\s*$", t or "")
-        if m:
-            known.add(m.group(1))
-
-    out = []
-    for tid, text, when in rows:
-        if not text or len(text) < 40:
-            continue
-        if tid in known:
-            continue
-        url = f"https://x.com/{tid}"
-        posted = _posted_dt(when)
-        if not posted or posted.toordinal() < cutoff:
-            continue
-        if not _APPLY_PHRASE.search(text):
-            continue
-        if not _OPPORTUNITY_WORD.search(text):
-            continue
-        if not _DATE.search(text):
-            continue
-        if len(parse_text(text, tid, when)) >= 3:
-            continue  # a roundup, handled by discover_tweets
-        out.append({
-            "tweet": url,
-            "posted": posted.date().isoformat(),
-            "text": text,
-            "dates": sorted({m.group(0).strip() for m in _DATE.finditer(text)}),
-            "money": sorted({m.group(0) for m in _MONEY.finditer(text)})[:4],
-            "program": "",
-        })
-    out.sort(key=lambda r: r["posted"], reverse=True)
-    return out
 
 
 def parse_tweet(tid, db_path):

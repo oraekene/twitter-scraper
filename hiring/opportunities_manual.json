@@ -5,14 +5,19 @@
    "label": "Oct 11, closed",
    "program": "a16z Speedrun alpha",
    "detail": "Up to $250k for students and new grads. The list says apps closed on the Sunday.",
-   "tweet": "https://x.com/justmazer/status/2108622120117015026"
+   "tweet": "https://x.com/justmazer/status/2108622120117015026",
+   "apply_url": "https://bit.ly/4zsfxNl"
   },
   {
    "deadline": "2026-10-20",
    "label": "Oct 20, closed",
    "program": "Bolt Builders Week",
    "detail": "$10k for the best app shipped on the free weekend.",
-   "tweet": "https://x.com/boltdotnew/status/2111125198577479919"
+   "tweet": "https://x.com/boltdotnew/status/2111125198577479919",
+   "website": "https://bolt.new/builders-week",
+   "verified_at": "2026-11-05T18:06:54+00:00",
+   "source": "research",
+   "evidence_url": "https://bolt.new/builders-week"
   },
   {
    "deadline": "2026-10-26",
@@ -54,14 +59,19 @@
    "label": "Nov 1",
    "program": "Pivotal Q1 2027 Research Fellowship",
    "detail": "GBP 15k-18k stipend, 15 weeks in London from 18 January, mentors from Anthropic and DeepMind.",
-   "tweet": "https://x.com/pivotal_org/status/2108644575283736780"
+   "tweet": "https://x.com/pivotal_org/status/2108644575283736780",
+   "apply_url": "http://apply.pivo.tl"
   },
   {
    "deadline": "2026-11-02",
    "label": "Nov 2, 8pm PT",
    "program": "YC Winter 2027 batch",
    "detail": "The official YC tweet gives the deadline; the vercinyc roundup repeats it at $500k.",
-   "tweet": "https://x.com/ycombinator/status/2111183078072979886"
+   "tweet": "https://x.com/ycombinator/status/2111183078072979886",
+   "website": "https://www.ycombinator.com/apply",
+   "verified_at": "2026-11-05T18:06:54+00:00",
+   "source": "research",
+   "evidence_url": "https://www.ycombinator.com/apply"
   },
   {
    "deadline": "2026-11-02",
