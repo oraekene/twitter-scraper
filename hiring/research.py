@@ -27,6 +27,7 @@ import argparse
 import concurrent.futures as futures
 import datetime as dt
 import email.utils
+import hashlib
 import html
 import json
 import os
@@ -302,7 +303,12 @@ def get_db():
         # manual delete.
         "CREATE TABLE IF NOT EXISTS checked("
         " tweet_id TEXT PRIMARY KEY, checked_at TEXT,"
-        " version INTEGER DEFAULT 1);")
+        " version INTEGER DEFAULT 1);"
+        # Page text is cached forever above, so the same prompt always yields the
+        # same answer. Keying by the prompt hash makes re-merges free and still
+        # re-extracts when the page text or the opportunity changes.
+        "CREATE TABLE IF NOT EXISTS extractions("
+        " key TEXT PRIMARY KEY, fields TEXT, created_at TEXT);")
     cols = {r[1] for r in con.execute("PRAGMA table_info(checked)")}
     if "version" not in cols:
         con.execute("ALTER TABLE checked ADD COLUMN version INTEGER DEFAULT 1")
@@ -606,21 +612,36 @@ def enrich(limit=None):
             return opp, (final, row[3])
         return opp, "no fetchable url"
 
-    done = 0
+    done = hits = 0
     for opp, info in [enrich_one(o) for o in opps]:
         if isinstance(info, tuple) and info[1]:
-            text, err = ask(extract_prompt(opp, info[1]), system=EXTRACT_SYSTEM,
-                            max_tokens=700)
-            if not err:
-                parsed, perr = extract_json(text)
-                if not perr and isinstance(parsed, dict):
-                    for k in ("apply_url", "website", "deadline_iso",
-                              "deadline_text", "status", "eligibility",
-                              "location", "notes"):
-                        opp[k] = parsed.get(k)
+            prompt = extract_prompt(opp, info[1])
+            key = hashlib.sha1(prompt.encode("utf-8")).hexdigest()
+            row = con.execute("SELECT fields FROM extractions WHERE key=?",
+                              (key,)).fetchone()
+            parsed = None
+            if row:
+                parsed = json.loads(row[0])
+                hits += 1
+            else:
+                text, err = ask(prompt, system=EXTRACT_SYSTEM, max_tokens=700)
+                if not err:
+                    obj, perr = extract_json(text)
+                    if not perr and isinstance(obj, dict):
+                        parsed = obj
+                        con.execute(
+                            "INSERT OR REPLACE INTO extractions VALUES (?,?,?)",
+                            (key, json.dumps(parsed),
+                             dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
+                        con.commit()
+            if parsed:
+                for k in ("apply_url", "website", "deadline_iso",
+                          "deadline_text", "status", "eligibility",
+                          "location", "notes"):
+                    opp[k] = parsed.get(k)
             opp["evidence_url"] = info[0]
             done += 1
-    print(f"fetched and extracted {done} page(s)")
+    print(f"fetched and extracted {done} page(s), {hits} from cache")
     return opps
 
 
@@ -762,6 +783,8 @@ def selftest():
     check("checked version",
           "version" in {r[1] for r in get_db().execute("PRAGMA table_info(checked)")},
           True)
+    check("extractions table",
+          get_db().execute("PRAGMA table_info(extractions)").fetchall() != [], True)
     # Provider tuples must stay 4-tuples in the order the scan unpacks them.
     fake = [("a", "http://a", "k", "m"), ("b", "http://b", "k", "m")]
     root = _ScanRoot(fake, root=_ROOT)
@@ -774,7 +797,7 @@ def selftest():
     check("scan wrapped",
           [o["id"] for o in scan_objects({"opportunities": [{"id": "1"}]})], ["1"])
     check("scan bare", [o["id"] for o in scan_objects([{"id": "2"}])], ["2"])
-    print(f"selftest: {17 - bad}/17 passed")
+    print(f"selftest: {18 - bad}/18 passed")
     return 1 if bad else 0
 
 
