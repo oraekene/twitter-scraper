@@ -157,7 +157,7 @@ class _ScanRoot:
         with self._root._lock:
             pro = self._sorted()
         if not pro:
-            return None, f"no API key in .env ({', '.join(KEY_ORDER)})"
+            return None, f"no API key in .env ({', '.join(KEY_ORDER)})", None
         return self._call(pro, prompt, system, max_tokens, temperature)
 
     def _call(self, pro, prompt, system, max_tokens, temperature):
@@ -212,7 +212,9 @@ class _ScanRoot:
                     if text:
                         with self._root._lock:
                             self._cool.pop(name, None)
-                        return text, None
+                        # FreeLLMAPI's "auto" route answers with the real model
+                        # name here, so keep it for the audit trail.
+                        return text, None, out.get("model") or model
                     # Reasoning models can spend the whole budget thinking and return
                     # an empty content. That is retryable, not a verdict.
                     last = "empty completion"
@@ -221,7 +223,7 @@ class _ScanRoot:
             finally:
                 if lock:
                     lock.release()
-        return None, last or "all providers cooled down"
+        return None, last or "all providers cooled down", None
 
 
 class _Root:
@@ -403,16 +405,17 @@ def scan(years, workers, batch, limit):
     def classify(chunk):
         # 8000 tokens leaves room for a long array when the auto model thinks
         # first; 4000 truncated some replies mid-object.
-        text, err = ask(scan_prompt(chunk), system=SCAN_SYSTEM, max_tokens=8000)
+        text, err, served = ask(scan_prompt(chunk), system=SCAN_SYSTEM, max_tokens=8000)
         if err:
-            return chunk, None, err
+            return chunk, None, err, None
         parsed, perr = extract_json(text)
         if perr:
-            return chunk, None, perr
+            return chunk, None, perr, None
         ids = {t[0] for t in chunk}
-        return chunk, [o for o in scan_objects(parsed) if o.get("id") in ids], None
+        return (chunk, [o for o in scan_objects(parsed) if o.get("id") in ids],
+                None, served)
 
-    def save(chunk, verdicts):
+    def save(chunk, verdicts, model):
         now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
         con.executemany(
             "INSERT OR REPLACE INTO checked(tweet_id, checked_at, version) "
@@ -426,31 +429,30 @@ def scan(years, workers, batch, limit):
             by_id.setdefault(v["id"], []).append(v)
         for tid, objs in by_id.items():
             con.execute("INSERT OR REPLACE INTO scans VALUES (?,?,?,?)",
-                        (tid, providers()[0][3] if providers() else "?",
-                         json.dumps(objs), now))
+                        (tid, model or "?", json.dumps(objs), now))
         con.commit()
 
     found = 0
     failed = []
     with futures.ThreadPoolExecutor(max_workers=workers) as ex:
         batches = [todo[i:i + batch] for i in range(0, len(todo), batch)]
-        for i, (chunk, verdicts, err) in enumerate(ex.map(classify, batches), 1):
+        for i, (chunk, verdicts, err, served) in enumerate(ex.map(classify, batches), 1):
             if err:
                 print(f"batch {i}/{len(batches)} FAILED: {err[:120]}")
                 failed.append(chunk)
                 continue
-            save(chunk, verdicts)
+            save(chunk, verdicts, served)
             found += len(verdicts)
             if i % 10 == 0 or i == len(batches):
                 print(f"  batch {i}/{len(batches)}, opportunities so far {found}")
     if failed:
         print(f"retrying {len(failed)} failed batch(es)")
         with futures.ThreadPoolExecutor(max_workers=workers) as ex:
-            for chunk, verdicts, err in ex.map(classify, failed):
+            for chunk, verdicts, err, served in ex.map(classify, failed):
                 if err:
                     print(f"retry FAILED: {err[:120]}")
                     continue
-                save(chunk, verdicts)
+                save(chunk, verdicts, served)
                 found += len(verdicts)
     print(f"done: {found} opportunity tweet(s) classified")
 
@@ -624,7 +626,7 @@ def enrich(limit=None):
                 parsed = json.loads(row[0])
                 hits += 1
             else:
-                text, err = ask(prompt, system=EXTRACT_SYSTEM, max_tokens=700)
+                text, err, _ = ask(prompt, system=EXTRACT_SYSTEM, max_tokens=700)
                 if not err:
                     obj, perr = extract_json(text)
                     if not perr and isinstance(obj, dict):
@@ -730,8 +732,8 @@ def clean():
                   "\"junk\" if it is a benefit, perk, requirement, skill, VC "
                   "ticket size, location or fragment, not a program name.\n\n" +
                   "\n".join(f"{k}" for k in chunk))
-        text, err = ask(prompt, system=EXTRACT_SYSTEM.split("You research")[0]
-                        + "You judge names. Return JSON only.", max_tokens=3000)
+        text, err, _ = ask(prompt, system=EXTRACT_SYSTEM.split("You research")[0]
+                            + "You judge names. Return JSON only.", max_tokens=3000)
         if err:
             print(f"clean batch failed, keeping {len(chunk)} names: {err[:100]}")
             keep.extend(chunk)
