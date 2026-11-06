@@ -231,6 +231,26 @@ into `hiring\opportunities_manual.json`. `weekly.ps1` runs the bookmarks pass, `
 runs the live pass, and each takes `-Only hiring` or `-Only opportunities` so the two questions can
 be scheduled on different days. `hiring\install_tasks.ps1` registers all four weekly tasks.
 
+### The AI sweep over every bookmark
+
+`research.py` reads every tweet in the database through the local AI gateway and asks the model to
+find anything a person can apply to. It writes nothing but its own database, so stopping and restarting
+costs nothing:
+
+```
+python hiring\research.py scan            # classify tweets, resumable
+python hiring\research.py enrich          # fetch pages found in tweets
+python hiring\research.py merge --stage   # write out\research_opportunities.json
+python hiring\research.py merge           # append approved rows to the curated list
+python hiring\research.py clean          # drop the staging and review files
+python hiring\research.py selftest       # 21 checks, no network
+```
+
+`merge --stage` is the safe one: it writes the staging list and leaves `opportunities_manual.json`
+untouched. The Review tab on the dashboard shows that list and lets you approve or reject each row;
+approving writes it into the curated file with `source: "research"`. A scan that has not finished
+simply stages what it has, so running it on a schedule is harmless.
+
 Paid AI gig work, meaning annotation, expert tasks and hourly rates on platforms such as Mercor,
 Outlier and DataAnnotation, is a third question and has its own saved searches:
 

@@ -17,10 +17,13 @@ subprocess as a list, so there is no shell and no way to splice in a new
 command. Adding a flag to crawl_tweets.py means adding one line to FETCH.
 """
 
+import csv
+import io
 import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -52,6 +55,9 @@ RUNNABLE = {
     'opportunities':       [sys.executable, os.path.join(HERE, 'opportunities.py')],
     'opportunities-live':  [sys.executable, os.path.join(HERE, 'opportunities.py'), '--live'],
     'opportunities-review': [sys.executable, os.path.join(HERE, 'opportunities.py'), '--candidates'],
+    'research-scan':   [sys.executable, os.path.join(HERE, 'research.py'), 'scan'],
+    'research-enrich': [sys.executable, os.path.join(HERE, 'research.py'), 'enrich'],
+    'research-stage':  [sys.executable, os.path.join(HERE, 'research.py'), 'merge', '--stage'],
     'gig-snowball':        [sys.executable, os.path.join(HERE, 'gig_snowball.py')],
     'fix-fieldtheory':     ['node', os.path.join(HERE, 'fix-fieldtheory.js')],
     'fix-twitter-cli':     ['node', os.path.join(HERE, 'fix-twitter-cli.js')],
@@ -464,10 +470,210 @@ def status():
     return info
 
 
+def scheduled_tasks():
+    """The Windows tasks that drive this project, with their next run time.
+
+    The Searches tab used to show only saved searches, so the four weekly
+    opportunities and hiring jobs were invisible there even though they are what
+    actually produces the reports. schtasks verbose CSV is the one interface that
+    gives name, schedule, next run and last result in a single call.
+    """
+    try:
+        r = subprocess.run(['schtasks', '/Query', '/FO', 'CSV', '/V'],
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', timeout=30)
+    except Exception:
+        return []
+    rows = []
+    for rec in csv.DictReader(io.StringIO(r.stdout or '')):
+        name = (rec.get('TaskName') or '').lstrip('\\')
+        if not any(word in name.lower() for word in ('hiring', 'opportunit', 'bookmark', 'twitter')):
+            continue
+        rows.append({'name': name, 'next': (rec.get('Next Run Time') or '').strip(),
+                     'status': (rec.get('Status') or '').strip(),
+                     'last_run': (rec.get('Last Run Time') or '').strip(),
+                     'result': (rec.get('Last Result') or '').strip(),
+                     'schedule': (rec.get('Schedule Type') or '').strip(),
+                     'days': (rec.get('Days') or '').strip(),
+                     'time': (rec.get('Start Time') or '').strip(),
+                     'enabled': (rec.get('Scheduled Task State') or '').strip() != 'Disabled',
+                     'command': (rec.get('Task To Run') or '').strip()})
+    rows.sort(key=lambda t: t['name'].lower())
+    return rows
+
+
 def tail(path, n=25):
     if not os.path.exists(path):
         return []
     return open(path, encoding='utf-8', errors='replace').read().splitlines()[-n:]
+
+
+def _iso(value):
+    """Local file mtime as the ISO string the page already knows how to cut."""
+    return datetime.fromtimestamp(value).isoformat(timespec='seconds')
+
+
+def result_items():
+    """Every run the panel can show, newest first.
+
+    Three shapes exist and all of them are real results. out\\searches rows carry
+    name and ran_at; out\\weekly and out\\weekly-twitter carry generated_at and no
+    name; the opportunities reports have neither but do have dated and undated
+    rows. Normalise here so the Results tab is not stuck on one folder.
+    """
+    items = []
+    for folder in ('searches', 'weekly', 'weekly-twitter'):
+        d = os.path.join(ROOT, 'out', folder)
+        try:
+            names = sorted(os.listdir(d))
+        except FileNotFoundError:
+            continue
+        for fn in reversed(names):
+            if not fn.endswith('.json'):
+                continue
+            full = os.path.join(d, fn)
+            try:
+                with open(full, encoding='utf-8') as fh:
+                    data = json.load(fh)
+            except Exception:
+                continue
+            stem = fn[:-5]
+            items.append({
+                'file': f'{folder}/{fn}',
+                'name': data.get('name') or stem,
+                'source': data.get('source') or folder,
+                'ran_at': data.get('ran_at') or data.get('generated_at') or _iso(os.path.getmtime(full)),
+                'counts': data.get('counts', {}),
+                'openings': data.get('openings', 0),
+                'tweets': data.get('tweets', [])[:200],
+            })
+    try:
+        root_files = sorted(os.listdir(os.path.join(ROOT, 'out')))
+    except FileNotFoundError:
+        root_files = []
+    for fn in reversed(root_files):
+        if not (fn.startswith('opportunities-') and fn.endswith('.json')):
+            continue
+        full = os.path.join(ROOT, 'out', fn)
+        try:
+            with open(full, encoding='utf-8') as fh:
+                data = json.load(fh)
+        except Exception:
+            continue
+        dated = data.get('dated') or []
+        undated = data.get('undated') or []
+        roundups = data.get('parsed_roundups') or []
+        md = fn[:-5] + '.md'
+        items.append({
+            'file': fn,
+            'name': fn[:-5],
+            'source': 'opportunities',
+            'ran_at': _iso(os.path.getmtime(full)),
+            'counts': {'dated': len(dated), 'undated': len(undated),
+                       'roundups': len(roundups)},
+            'openings': len(dated) + len(undated),
+            'tweets': [],
+            'report': md if os.path.exists(os.path.join(ROOT, 'out', md)) else None,
+        })
+    items.sort(key=lambda r: r['ran_at'] or '', reverse=True)
+    return items
+
+
+RESEARCH_LOG = os.path.join(ROOT, 'out', 'scan-run.log')
+
+
+def research_state():
+    """Scan progress plus the staged candidates, read-only.
+
+    The dashboard must never write these files: approve and reject go through
+    research.py, which owns the curated list and its review keys.
+    """
+    import research
+    out_dir = os.path.join(ROOT, 'out')
+    db = os.path.join(out_dir, 'research.db')
+    state = {'db_exists': os.path.exists(db)}
+    if state['db_exists']:
+        con = sqlite3.connect(f'file:{db}?mode=ro', uri=True)
+        try:
+            state['checked'] = con.execute('select count(*) from checked').fetchone()[0]
+            state['opportunity_tweets'] = con.execute('select count(*) from scans').fetchone()[0]
+            state['last_checked'] = con.execute(
+                'select max(checked_at) from checked').fetchone()[0]
+            state['models'] = [{'model': m, 'tweets': n} for m, n in con.execute(
+                'select model, count(*) from scans group by model order by 2 desc limit 6')]
+        finally:
+            con.close()
+    try:
+        total = len(search_rows())
+    except Exception:
+        total = 0
+    state['total'] = total
+    state['remaining'] = max(0, total - state.get('checked', 0))
+    staging = os.path.join(out_dir, 'research_opportunities.json')
+    state['staged'] = []
+    state['staged_at'] = None
+    if os.path.exists(staging):
+        state['staged_at'] = _iso(os.path.getmtime(staging))
+        try:
+            with open(staging, encoding='utf-8') as fh:
+                rows = json.load(fh)
+            skip = research.reviewed_keys()
+            approved = research._read_keys(research.APPROVED)
+            state['staged'] = [
+                {'key': research.candidate_key(o),
+                 'program': o.get('program'), 'kind': o.get('kind'),
+                 'confidence': o.get('confidence'), 'deadline': (o.get('deadline_iso')
+                                                                  or o.get('deadline_text')),
+                 'money': o.get('money'), 'status': o.get('status'),
+                 'tweet_id': o.get('tweet_id'), 'apply_url': o.get('apply_url'),
+                 'manual': bool(o.get('manual')),
+                 'approved': research.candidate_key(o) in approved}
+                for o in rows if research.candidate_key(o) not in skip]
+        except Exception:
+            state['staged'] = []
+    state['approved'] = len(research._read_keys(research.APPROVED))
+    state['rejected'] = len(research._read_keys(research.REJECTED))
+    try:
+        with open(research.MANUAL, encoding='utf-8') as fh:
+            curated = json.load(fh)
+        rows = (curated.get('dated') or []) + (curated.get('undated') or [])
+        state['manual'] = {'dated': len(curated.get('dated') or []),
+                           'undated': len(curated.get('undated') or []),
+                           'research': sum(1 for r in rows if r.get('source') == 'research')}
+        state['manual_at'] = _iso(os.path.getmtime(research.MANUAL))
+    except Exception:
+        state['manual'] = {}
+    state['log'] = tail(RESEARCH_LOG, 12)
+    return state
+
+
+def search_rows():
+    """Tweet count of the bookmark database, for the scan progress bar."""
+    db = os.path.expandvars(r'%USERPROFILE%\.fieldtheory\bookmarks\bookmarks.db')
+    con = sqlite3.connect(f'file:{db}?mode=ro', uri=True)
+    try:
+        return con.execute('select tweet_id from bookmarks').fetchall()
+    finally:
+        con.close()
+
+
+def project_changes():
+    """What has happened in this repo lately, straight from git."""
+    def git(*args):
+        try:
+            r = subprocess.run(['git', '-C', ROOT, *args], capture_output=True,
+                               text=True, encoding='utf-8', errors='replace', timeout=20)
+            return r.stdout.splitlines() if r.returncode == 0 else []
+        except Exception:
+            return []
+    log = []
+    for line in git('log', '-n', '14', '--date=format:%d %b %H:%M',
+                    '--pretty=%h\x1f%ad\x1f%s'):
+        parts = line.split('\x1f')
+        if len(parts) == 3:
+            log.append({'sha': parts[0], 'when': parts[1], 'subject': parts[2]})
+    return {'log': log, 'dirty': git('status', '--short'),
+            'branch': (git('rev-parse', '--abbrev-ref', 'HEAD') or [''])[0]}
 
 
 def run(config, load, save, load_state, run_one, load_lists, save_lists, port=8770,
@@ -539,45 +745,50 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                 return self._send(200, open(PAGE, encoding='utf-8').read(), 'text/html; charset=utf-8')
             if path == '/api/searches':
                 with lock:
-                    return self._send(200, {'searches': load()['searches'], 'state': load_state()})
+                    return self._send(200, {'searches': load()['searches'],
+                                            'state': load_state(),
+                                            'tasks': scheduled_tasks()})
             if path == '/api/lists':
                 with lock:
                     return self._send(200, {'lists': load_lists()['lists']})
             if path == '/api/results':
-                out = os.path.join(ROOT, 'out', 'searches')
-                try:
-                    files = sorted(f for f in os.listdir(out) if f.endswith('.json'))
-                except FileNotFoundError:
-                    files = []
-                files.reverse()
+                items = result_items()
                 try:
                     page = max(1, int(query.get('page', ['1'])[0]))
                     size = min(50, max(1, int(query.get('size', ['10'])[0])))
                 except ValueError:
                     page, size = 1, 10
-                total = len(files)
-                pages = max(1, (total + size - 1) // size)
+                pages = max(1, (len(items) + size - 1) // size)
                 page = min(page, pages)
-                items = []
-                for fn in files[(page - 1) * size:page * size]:
-                    try:
-                        d = json.load(open(os.path.join(out, fn), encoding='utf-8'))
-                    except Exception:
-                        continue
-                    items.append({'file': fn, 'name': d.get('name'), 'source': d.get('source'),
-                                  'ran_at': d.get('ran_at'), 'counts': d.get('counts', {}),
-                                  'openings': d.get('openings', 0),
-                                  'tweets': d.get('tweets', [])[:200]})
-                return self._send(200, {'results': items, 'page': page, 'pages': pages,
-                                        'total': total, 'size': size})
+                return self._send(200, {'results': items[(page - 1) * size:page * size],
+                                        'page': page, 'pages': pages,
+                                        'total': len(items), 'size': size})
+            if path == '/api/report':
+                # The markdown reports live in out\ and are the only files this
+                # route will serve. A name with a separator in it is refused.
+                fn = (query.get('file', [''])[0] or '').strip()
+                if not fn or '/' in fn or '\\' in fn or '..' in fn or not fn.endswith('.md'):
+                    return self._send(400, {'error': 'not a report file'})
+                full = os.path.join(ROOT, 'out', fn)
+                if not os.path.exists(full):
+                    return self._send(404, {'error': 'no such report'})
+                return self._send(200, open(full, encoding='utf-8').read(),
+                                  'text/plain; charset=utf-8')
             if path == '/api/commands':
                 return self._send(200, {'commands': parse_commands(),
                                         'runnable': sorted(RUNNABLE),
                                         'outdir': os.path.join(ROOT, 'out')})
             if path == '/api/fetch':
                 return self._send(200, {'jobs': [{'key': k, **j} for k, j in FETCH.items()]})
+            if path == '/api/research':
+                try:
+                    return self._send(200, research_state())
+                except Exception as e:
+                    return self._send(500, {'error': f'{type(e).__name__}: {e}'})
             if path == '/api/status':
                 return self._send(200, status())
+            if path == '/api/changes':
+                return self._send(200, project_changes())
             if path == '/api/settings':
                 wl = os.path.join(HERE, 'watchlist.txt')
                 return self._send(200, {
@@ -828,6 +1039,68 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
                 with open(wl, 'w', encoding='utf-8') as f:
                     f.write(body.get('text', ''))
                 return self._send(200, {'ok': True})
+
+            # ── research review ────────────────────────────────────────────
+            # Approve and reject are the only writes this tab makes, and both go
+            # through research.py. The curated file never changes on its own.
+            if path in ('/api/research/approve', '/api/research/reject'):
+                key = (body.get('key') or '').strip()
+                if not key:
+                    return self._send(400, {'error': 'no candidate key'})
+                import research
+                staging = os.path.join(ROOT, 'out', 'research_opportunities.json')
+                try:
+                    with open(staging, encoding='utf-8') as fh:
+                        rows = json.load(fh)
+                except Exception as e:
+                    return self._send(500, {'error': f'cannot read the staged list: {e}'})
+                cand = next((o for o in rows if research.candidate_key(o) == key), None)
+                if not cand:
+                    return self._send(404, {'error': 'that candidate is no longer staged'})
+                try:
+                    if path.endswith('approve'):
+                        added = research.approve_candidate(cand)
+                        msg = 'approved' + ('' if added else ' (already in the list)')
+                    else:
+                        research.reject_candidate(cand)
+                        added, msg = False, 'rejected'
+                except ValueError as e:
+                    return self._send(400, {'error': str(e)})
+                return self._send(200, {'ok': True, 'key': key, 'added': added, 'msg': msg})
+
+            if path == '/api/research/add':
+                # Hand entry into the curated list, so the shape is checked here
+                # rather than left to the report script to discover later.
+                program = (body.get('program') or '').strip()
+                detail = (body.get('detail') or '').strip()
+                tweet = (body.get('tweet') or '').strip()
+                apply_url = (body.get('apply_url') or '').strip()
+                if not program:
+                    return self._send(400, {'error': 'program is required'})
+                for label, value in (('tweet', tweet), ('apply url', apply_url)):
+                    if value and not re.match(r'https?://\S+$', value):
+                        return self._send(400, {'error': f'{label} must be a full http(s) link'})
+                deadline = (body.get('deadline') or '').strip()
+                row = {'program': program, 'detail': detail, 'tweet': tweet,
+                       'source': 'manual'}
+                if deadline:
+                    try:
+                        day = datetime.strptime(deadline, '%Y-%m-%d').date()
+                    except ValueError:
+                        return self._send(400, {'error': 'deadline must be YYYY-MM-DD'})
+                    row.update({'deadline': deadline, 'label': day.strftime('%b %-d')
+                                if os.name != 'nt' else f'{day:%b} {day.day}'})
+                else:
+                    row['timing'] = (body.get('timing') or 'Rolling').strip() or 'Rolling'
+                if apply_url:
+                    row['apply_url'] = apply_url
+                import research
+                try:
+                    added = research.manual_add(row)
+                except FileNotFoundError:
+                    return self._send(500, {'error': 'opportunities_manual.json is missing'})
+                return self._send(200, {'ok': True,
+                                        'msg': 'added' if added else 'already in the list'})
 
             if path == '/api/env':
                 upd = body.get('set') or {}

@@ -314,11 +314,18 @@ pre {
 .job .cell .field { width: 100% }
 .job .cell.wide { grid-column: 1/-1 }
 .job .help { margin: 5px 0 0; font-size: 12px; line-height: 1.45 }
-.job .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); height: 100%; }
+.job .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); }
 .job .check input { width: auto; }
 .job .check.danger { color: var(--bad); font-weight: 550; }
 .job .hint.help.warn { color: var(--bad); }
 .job output { max-height: 200px; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+
+/* ── research review ────────────────────────────────────────────────────── */
+#research-rows td .row.tight button { flex: none; }
+.rprog { max-width: 340px; }
+.rbar { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.rbar i { display: block; height: 100%; background: var(--brand); }
+.conf { font: 12.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg-2); }
 
 /* ── toast + dialog ─────────────────────────────────────────────────────── */
 #toast {
@@ -394,6 +401,9 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
         Query Builder</button>
 
       <div class="navlabel">Read</div>
+      <button class="navbtn" data-tab="research">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8.5 11h5M11 8.5v5"/></svg>
+        Research <span class="badge" id="badge-research">0</span></button>
       <button class="navbtn" data-tab="fetch">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
         Fetch</button>
@@ -457,6 +467,75 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
         </div>
       </section>
 
+      <!-- RESEARCH -->
+      <section class="tab" id="tab-research">
+        <div class="banner">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+          <div>
+            <b>The AI sweep, and the review gate</b>
+            <div class="t">The scan reads every bookmark and writes its suggestions to a staging list.
+              Nothing here touches your curated list until you approve it.</div>
+          </div>
+        </div>
+
+        <div class="tiles" id="research-tiles"></div>
+
+        <div class="card">
+          <header><div><h2>Scan</h2><p class="sub">Classifies tweets into out\research.db. Resumable, so stopping costs nothing</p></div>
+            <div class="actions">
+              <button class="primary sm" onclick="runResearch('research-scan')">Run scan</button>
+              <button class="sm" onclick="loadResearch()">Refresh</button></div></header>
+          <div class="body">
+            <div class="kv" id="research-status">loading&hellip;</div>
+            <pre id="research-out" style="margin-top:16px">no research run started from this page</pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <header><div><h2>Candidates</h2><p class="sub">Staged by <code>merge --stage</code>. Approve adds one row to your list, Reject hides it for good</p></div>
+            <div class="actions">
+              <button class="primary sm" onclick="runResearch('research-stage')">Stage from scan</button></div></header>
+          <div class="body">
+            <div class="row">
+              <input id="rs-filter" placeholder="filter by program" style="max-width:240px">
+              <select id="rs-kind" style="max-width:170px"></select>
+              <label class="check" style="font-size:13px;color:var(--fg-2)">
+                <input type="checkbox" id="rs-open" checked> open only</label>
+              <span class="spacer"></span><span class="dim small" id="rs-count"></span>
+            </div>
+            <div style="overflow:auto; margin-top:12px">
+              <table><thead><tr><th>Confidence</th><th>Program</th><th>Kind</th><th>Deadline</th>
+                <th>Status</th><th>Tweet</th><th style="width:190px">Decision</th></tr></thead>
+                <tbody id="research-rows"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <header><div><h2>Add one by hand</h2><p class="sub">Goes straight into opportunities_manual.json, the same file the report reads</p></div></header>
+          <div class="body">
+            <div class="grid">
+              <div class="field"><label>Program</label><input id="ra-program" placeholder="SXSW Pitch 2027"></div>
+              <div class="field"><label>Deadline. Blank means rolling</label><input id="ra-deadline" type="date"></div>
+              <div class="field"><label>Timing, when there is no deadline</label><input id="ra-timing" placeholder="Rolling"></div>
+              <div class="field"><label>Apply url</label><input id="ra-apply" placeholder="https://..."></div>
+              <div class="field" style="grid-column:1/-1"><label>What it is</label><input id="ra-detail" placeholder="$10k prize, pitch in Austin, under $10M raised."></div>
+              <div class="field" style="grid-column:1/-1"><label>Tweet link</label><input id="ra-tweet" placeholder="https://x.com/handle/status/123"></div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="primary" onclick="addManual()">Add to my list</button>
+              <span class="spacer"></span><span class="dim small">A name that already exists is not added twice.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <header><div><h2>Your curated list</h2><p class="sub">opportunities_manual.json, the anchor everything else is checked against</p></div>
+            <div class="actions"><button class="sm" onclick="runCmd('opportunities')">Rebuild report</button></div></header>
+          <div class="body"><div class="kv" id="manual-kv">loading&hellip;</div></div>
+        </div>
+      </section>
+
       <!-- FETCH -->
       <section class="tab" id="tab-fetch">
         <div class="banner">
@@ -472,6 +551,15 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
 
       <!-- SEARCHES -->
       <section class="tab" id="tab-searches">
+        <div class="card">
+          <header><div><h2>Scheduled tasks</h2><p class="sub">The Windows jobs that write the reports, with when they next run</p></div>
+            <div class="actions"><button class="sm" onclick="loadSearches()">Refresh</button></div></header>
+          <div class="body" style="padding:0">
+            <table><thead><tr><th style="width:24%">Task</th><th>Runs</th><th>Schedule</th>
+              <th>Next</th><th>Last run</th><th style="width:10%">State</th></tr></thead>
+              <tbody id="taskrows"></tbody></table>
+          </div>
+        </div>
         <div class="card">
           <header><div><h2>Your searches</h2><p class="sub">Each one has its own source, schedule, and options</p></div>
             <div class="actions"><button class="primary sm" onclick="openAdd()">New search</button></div></header>
@@ -678,6 +766,14 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
           <header><div><h2>Recent run logs</h2></div></header>
           <div class="body" id="logs" class="dim">loading&hellip;</div>
         </div>
+        <div class="card">
+          <header><div><h2>Project changes</h2><p class="sub">The last commits in this repository, so the page shows what the code has become</p></div>
+            <div class="actions"><button class="sm" onclick="loadChanges()">Refresh</button></div></header>
+          <div class="body" style="padding:0">
+            <table><thead><tr><th style="width:9%">Commit</th><th style="width:14%">When</th><th>What changed</th></tr></thead>
+              <tbody id="changegrows"></tbody></table>
+          </div>
+        </div>
       </section>
 
       <!-- SETTINGS -->
@@ -799,6 +895,7 @@ const PAGES = {
   searches:  ['Searches', 'Each one has its own source, schedule, and options'],
   lists:     ['Lists', 'Reusable groups shared by any number of searches'],
   builder:   ['Query Builder', 'Every X search operator in one readable query'],
+  research:  ['Research', 'The AI sweep over every bookmark, and the review gate on top of it'],
   fetch:     ['Fetch', 'Section 1 of COMMANDS.md, with every parameter'],
   results:   ['Results', 'What every scheduled run produced'],
   commands:  ['Commands', 'Everything in COMMANDS.md, and what can be run here'],
@@ -811,13 +908,161 @@ function go(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + tab));
   el('page-title').textContent = PAGES[tab][0];
   el('page-sub').textContent = PAGES[tab][1];
-  if (tab === 'status') loadStatus();
+  if (tab === 'status') { loadStatus(); loadChanges(); }
   if (tab === 'settings') loadSettings();
   if (tab === 'results') loadResults(PAGE);
   if (tab === 'dashboard') loadDashboard();
+  if (tab === 'research') loadResearch();
   if (tab === 'fetch' && !JOBS.length) loadFetch();
 }
 document.querySelectorAll('.navbtn').forEach(b => b.onclick = () => go(b.dataset.tab));
+
+function renderTasks(tasks) {
+  const day = (t) => t.days && t.days !== 'N/A' ? t.days.replace(/,/g, ', ') : '';
+  el('taskrows').innerHTML = tasks.map(t => `
+    <tr>
+      <td><span class="strong">${esc(t.name)}</span></td>
+      <td class="mono small">${esc(t.command || '')}</td>
+      <td class="small">${esc([t.schedule, day(t), t.time].filter(Boolean).join(' · '))}</td>
+      <td class="mono small">${esc(t.next || '—')}</td>
+      <td class="mono small">${esc(t.last_run || 'never')}<br><span class="dim">result ${esc(t.result || '?')}</span></td>
+      <td><span class="pill ${t.enabled && t.status === 'Ready' ? 'on' : t.enabled ? 'warn' : 'off'}">${esc(t.status || (t.enabled ? 'ready' : 'disabled'))}</span></td>
+    </tr>`).join('')
+    || '<tr><td colspan="6" class="dim">no scheduled tasks found</td></tr>';
+}
+
+/* ── research review ────────────────────────────────────────────────────── */
+let RPOLL = null;
+let RESEARCH = null;
+
+async function loadResearch() {
+  const r = await api('/api/research');
+  if (r.status !== 200) return toast(r.data.error || 'research status failed', true);
+  RESEARCH = r.data;
+  el('badge-research').textContent = (RESEARCH.staged || []).filter(c => !c.manual).length;
+  renderResearch();
+}
+
+function fmt(n) { return (n ?? 0).toLocaleString(); }
+
+function renderResearch() {
+  if (!RESEARCH) return;
+  const s = RESEARCH;
+  const tile = (k, v, sub, tint) =>
+    '<div class="tile"><div class="ico" style="background:var(--tint-' + tint +
+    ');color:var(--tint-' + tint + '-fg)">' + v + '</div><div><div class="v">' + esc(k) +
+    '</div><div class="k">' + esc(sub) + '</div></div></div>';
+  const pct = s.total ? Math.round(100 * (s.checked || 0) / s.total) : 0;
+  el('research-tiles').innerHTML = [
+    tile(fmt(s.checked) + ' of ' + fmt(s.total), 'tweets classified', pct + '% read by the model', 1),
+    tile(fmt(s.opportunity_tweets), 'opportunity tweets found', fmt(s.staged_at ? s.staged.filter(c => !c.manual).length : 0) + ' staged for review', 2),
+    tile(fmt(s.approved), 'approved by you', fmt(s.rejected) + ' rejected and hidden', 3),
+    tile(s.remaining ? fmt(s.remaining) : 'done', 'left to scan', 'the scan is resumable', 4),
+  ].join('');
+
+  const when = (t) => (t || '').slice(0, 16).replace('T', ' ') || 'never';
+  const rows = [
+    ['Last tweet checked', esc(when(s.last_checked))],
+    ['Staging list written', esc(when(s.staged_at)) + (s.staged_at ? '' : ' &mdash; run Stage from scan')],
+    ['Models that answered', s.models && s.models.length
+      ? s.models.map(m => `<span class="mono">${esc(m.model)}</span> ${fmt(m.tweets)}`).join('<br>')
+      : '<span class="dim">none yet</span>'],
+    ['Progress', `<div class="rprog">${pct}%<div class="rbar"><i style="width:${pct}%"></i></div></div>`],
+  ];
+  el('research-status').innerHTML = rows.map(([k, v]) =>
+    `<div>${esc(k)}</div><div>${v}</div>`).join('');
+
+  const cands = (s.staged || []).filter(c => !c.manual);
+  const kinds = [...new Set(cands.map(c => c.kind).filter(Boolean))].sort();
+  const sel = el('rs-kind');
+  if (sel.dataset.kinds !== kinds.join(',')) {
+    sel.innerHTML = '<option value="">every kind</option>' +
+      kinds.map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('');
+    sel.dataset.kinds = kinds.join(',');
+  }
+  const text = el('rs-filter').value.trim().toLowerCase();
+  const kind = sel.value;
+  const openOnly = el('rs-open').checked;
+  const shown = cands.filter(c =>
+    (!text || (c.program || '').toLowerCase().includes(text) ||
+     (c.detail || '').toLowerCase().includes(text)) &&
+    (!kind || c.kind === kind) &&
+    (!openOnly || c.status !== 'closed')).slice(0, 300);
+  el('rs-count').textContent = `${shown.length} of ${cands.length} candidates`;
+  el('research-rows').innerHTML = shown.map(c => `
+    <tr>
+      <td><span class="conf">${c.confidence == null ? '&mdash;' : Number(c.confidence).toFixed(2)}</span></td>
+      <td><span class="strong">${esc(c.program)}</span>${c.deadline_text ? `<br><span class="small dim">${esc(c.deadline_text)}</span>` : ''}</td>
+      <td><span class="pill brand">${esc(c.kind || 'other')}</span></td>
+      <td class="mono small">${esc(c.deadline || '&mdash;')}</td>
+      <td><span class="pill ${c.status === 'open' ? 'on' : c.status === 'closed' ? 'bad' : 'off'}">${esc(c.status || 'unknown')}</span></td>
+      <td>${c.tweet_id ? `<a href="https://x.com/i/status/${esc(c.tweet_id)}" target="_blank" rel="noopener">tweet</a>` : '&mdash;'}
+        ${c.apply_url ? ` &middot; <a href="${esc(c.apply_url)}" target="_blank" rel="noopener">apply</a>` : ''}</td>
+      <td><div class="row tight">
+        <button class="sm" data-key="${esc(c.key)}" data-act="approve" onclick="reviewFrom(this)">Approve</button>
+        <button class="sm quiet danger" data-key="${esc(c.key)}" data-act="reject" onclick="reviewFrom(this)">Reject</button>
+      </div></td></tr>`).join('')
+    || `<tr><td colspan="7" class="dim">${cands.length
+        ? 'nothing matches this filter'
+        : 'nothing staged yet. Run Stage from scan once the sweep has finished.'}</td></tr>`;
+
+  const manual = (s.manual || {});
+  el('manual-kv').innerHTML = [
+    ['Dated rows', fmt(manual.dated)],
+    ['Undated rows', fmt(manual.undated)],
+    ['From the AI sweep', fmt(manual.research)],
+    ['Written', esc(when(s.manual_at))],
+  ].map(([k, v]) => `<div>${esc(k)}</div><div>${v}</div>`).join('');
+}
+
+['rs-filter', 'rs-kind', 'rs-open'].forEach(id => {
+  el(id).addEventListener('input', renderResearch);
+  el(id).addEventListener('change', renderResearch);
+});
+
+async function reviewCandidate(key, action) {
+  const r = await api('/api/research/' + action, {key});
+  if (r.status !== 200) return toast(r.data.error || action + ' failed', true);
+  toast(r.data.msg || action);
+  loadResearch();
+}
+
+async function reviewFrom(btn) {
+  const key = btn.dataset.key, act = btn.dataset.act;
+  const r = await api('/api/research/' + act, {key});
+  if (r.status !== 200) return toast(r.data.error || act + ' failed', true);
+  toast(r.data.msg || act);
+  loadResearch();
+}
+
+async function addManual() {
+  const body = {program: el('ra-program').value, detail: el('ra-detail').value,
+                tweet: el('ra-tweet').value, apply_url: el('ra-apply').value,
+                deadline: el('ra-deadline').value, timing: el('ra-timing').value};
+  const r = await api('/api/research/add', body);
+  if (r.status !== 200) return toast(r.data.error || 'could not add it', true);
+  toast(r.data.msg);
+  ['ra-program', 'ra-detail', 'ra-tweet', 'ra-apply', 'ra-deadline'].forEach(i => el(i).value = '');
+  loadResearch();
+}
+
+async function runResearch(key) {
+  const r = await api('/api/command', {key});
+  if (r.status !== 200) return toast(r.data.error || 'failed', true);
+  toast('started ' + key);
+  if (RPOLL) clearInterval(RPOLL);
+  let n = 0;
+  RPOLL = setInterval(async () => {
+    const j = await api('/api/job?job=' + key);
+    if (n++ % 3 === 0 || j.data.state !== 'running')
+      el('research-out').textContent = (j.data.output || []).join('\n') || j.data.state;
+    if (j.data.state !== 'running' && n > 2) {
+      clearInterval(RPOLL);
+      toast(key + ': ' + j.data.state, j.data.state !== 'done');
+      loadResearch();
+    }
+  }, 2000);
+}
 
 /* ── fetch ──────────────────────────────────────────────────────────────── */
 let JOBS = [];
@@ -1024,6 +1269,7 @@ async function loadSearches() {
   const {data} = await api('/api/searches');
   CURRENT = data.searches;
   el('badge-searches').textContent = CURRENT.length;
+  renderTasks(data.tasks || []);
   el('rows').innerHTML = CURRENT.map(s => `
     <tr>
       <td><span class="strong">${esc(s.name)}</span>${s.notes ? `<br><span class="small dim">${esc(s.notes)}</span>` : ''}</td>
@@ -1209,10 +1455,17 @@ async function loadResults(page) {
         ${t.pay && t.pay.length ? '<span class="mono"> ' + esc(t.pay.slice(0,2).join(' ')) + '</span>' : ''}</div>
         <div class="txt">${esc(t.text)}</div>
         <a href="${esc(t.url)}" target="_blank" rel="noopener">open on x</a></div>`).join('');
+    // An opportunities report has no tweets: its result is the dated table, so
+    // link to the markdown instead of showing an empty run.
+    const report = r.report
+      ? `<p class="hint" style="margin:12px 0 0"><a href="/api/report?file=${encodeURIComponent(r.report)}" target="_blank" rel="noopener">open ${esc(r.report)}</a></p>`
+      : '';
     return '<details class="run"><summary><span class="tw-c">&rsaquo;</span>' +
       '<span class="strong">' + esc(r.name) + '</span>' +
+      '<span class="pill brand">' + esc(r.source || '') + '</span>' +
       '<span class="small dim">' + esc((r.ran_at||'').slice(0,16).replace('T',' ')) +
-      ' &middot; ' + r.openings + ' openings &middot; ' + esc(c) + '</span></summary>' + body + '</details>';
+      ' &middot; ' + r.openings + ' openings &middot; ' + esc(c) + '</span></summary>' +
+      (body || report) + '</details>';
   }).join('');
   el('pager').innerHTML =
     '<button class="sm" ' + (data.page <= 1 ? 'disabled' : '') +
@@ -1278,6 +1531,22 @@ async function loadStatus() {
     '<details class="run"><summary><span class="tw-c">&rsaquo;</span><span class="mono">' + esc(l.file) + '</span></summary>' +
     '<pre style="border:0;border-radius:0;margin:0">' + esc(l.lines.join('\n')) + '</pre></details>').join('')
     : '<p class="dim">no logs yet</p>';
+}
+
+async function loadChanges() {
+  const {data} = await api('/api/changes');
+  el('changegrows').innerHTML = (data.log || []).map(c => `
+    <tr>
+      <td class="mono"><a href="https://github.com/rotim/twitter-scraper/commit/${esc(c.sha)}" target="_blank" rel="noopener">${esc(c.sha)}</a></td>
+      <td class="mono small">${esc(c.when)}</td>
+      <td>${esc(c.subject)}</td>
+    </tr>`).join('') || '<tr><td colspan="3" class="dim">no commits found</td></tr>';
+  if (data.dirty && data.dirty.length) {
+    const dirtyHtml = data.dirty.map(d => '<div class="mono small">' + esc(d) + '</div>').join('');
+    el('changegrows').insertAdjacentHTML('afterend', '<tr><td colspan="3"><div class="dim">uncommitted changes</div>' + dirtyHtml + '</td></tr>');
+  }
+  const branch = data.branch || '?';
+  el('page-sub').textContent = 'The AI sweep over every bookmark, and the review gate on top of it (branch ' + branch + ')';
 }
 
 /* ── settings ───────────────────────────────────────────────────────────── */

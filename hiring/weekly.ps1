@@ -77,6 +77,15 @@ if ($Only -in 'all', 'opportunities') {
     } else {
         Say 'wrote out\single-candidates.md'
     }
+    # Staging writes out\research_opportunities.json, the list the Review tab
+    # approves from. It does not touch the curated file, so it is safe to run on
+    # a schedule; a scan that has not finished simply stages what it has.
+    & python (Join-Path $Root 'research.py') merge --stage *>> $Log
+    if ($LASTEXITCODE -ne 0) {
+        Say "merge --stage failed, code $LASTEXITCODE. See $Log"
+    } else {
+        Say 'wrote out\research_opportunities.json'
+    }
 }
 
 # Keep the last N runs so the folder does not grow forever.

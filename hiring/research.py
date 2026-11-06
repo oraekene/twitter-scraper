@@ -48,6 +48,8 @@ MANUAL = HERE / "opportunities_manual.json"
 RESEARCH_DB = OUT / "research.db"
 REGISTRY = OUT / "dedupe_registry.json"
 BLOCKLIST = OUT / "registry_blocklist.json"
+APPROVED = OUT / "research_approved.json"
+REJECTED = OUT / "research_rejected.json"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/125.0 Safari/537.36")
 
@@ -583,7 +585,7 @@ def enrich(limit=None):
         o["tweet_text"] = text or ""
         o["_links"] = links or "[]"
         o["manual"] = False
-        add(o, o.get("tweet_id"))
+        add(o, candidate_key(o))
     print(f"{len(opps)} opportunities to enrich "
           f"({sum(1 for o in opps if o['manual'])} manual)")
     if limit:
@@ -647,6 +649,104 @@ def enrich(limit=None):
     return opps
 
 
+def candidate_key(o):
+    """Stable id for review state: one tweet can carry several programs."""
+    program = re.sub(r"\s+", " ", (o.get("program") or "").strip().lower())
+    return f"{o.get('tweet_id') or ''}|{program}"
+
+
+def _read_keys(path):
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return set(value) if isinstance(value, list) else set()
+    except (OSError, ValueError):
+        return set()
+
+
+def _write_keys(path, keys):
+    path.write_text(json.dumps(sorted(keys), indent=1), encoding="utf-8")
+
+
+def reviewed_keys():
+    return _read_keys(APPROVED) | _read_keys(REJECTED)
+
+
+def real_url(u):
+    """Drop X's shortener: it is never the program's own page."""
+    return u if u and not re.match(r"https?://t\.co/", u) else None
+
+
+def candidate_facts(o, today=None):
+    today = today or dt.date.today().isoformat()
+    status = (o.get("status") or "unknown").lower()
+    deadline = o.get("deadline_iso") or ""
+    closed = status == "closed" or bool(deadline and deadline < today)
+    if closed:
+        status = "closed"
+    facts = {
+        "apply_url": real_url(o.get("apply_url")),
+        "website": real_url(o.get("website") or o.get("evidence_url")),
+        "status": status if status != "unknown" else None,
+        "verified_deadline": deadline or None,
+        "deadline_text": o.get("deadline_text") or None,
+        "verified_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "source": "research",
+        "evidence_url": real_url(o.get("evidence_url")),
+    }
+    return status, deadline, closed, facts
+
+
+def candidate_row(o, today=None):
+    """The row merge and the dashboard both write for one approved candidate."""
+    status, deadline, closed, facts = candidate_facts(o, today)
+    if closed:
+        return None
+    base = {
+        "program": o.get("program"),
+        "detail": o.get("notes") or (o.get("money") or ""),
+        "tweet": (f"https://x.com/i/status/{o['tweet_id']}"
+                  if o.get("tweet_id") else ""),
+        **facts,
+    }
+    if deadline:
+        return {"deadline": deadline, "label": deadline, **base}
+    return {"timing": "Rolling" if status != "closed" else "Unknown", **base}
+
+
+def manual_add(row):
+    """Append one row to the curated file, returning False when it exists."""
+    import dedupe
+    data = json.loads(MANUAL.read_text(encoding="utf-8"))
+    for existing in data["dated"] + data["undated"]:
+        if dedupe.known(dedupe.norm(row.get("program")),
+                        {dedupe.norm(existing.get("program"))}):
+            return False
+    kind = "dated" if row.get("deadline") else "undated"
+    data[kind].append(row)
+    if kind == "dated":
+        data["dated"].sort(key=lambda r: r["deadline"])
+    MANUAL.write_text(json.dumps(data, indent=1, ensure_ascii=False),
+                      encoding="utf-8")
+    return True
+
+
+def approve_candidate(o):
+    row = candidate_row(o)
+    if not row:
+        raise ValueError("that program is already closed")
+    added = manual_add(row)
+    keys = _read_keys(APPROVED)
+    keys.add(candidate_key(o))
+    _write_keys(APPROVED, keys)
+    return added
+
+
+def reject_candidate(o):
+    keys = _read_keys(REJECTED)
+    keys.add(candidate_key(o))
+    _write_keys(REJECTED, keys)
+
+
 def merge(enriched=None, stage=False):
     """Fold researched facts into opportunities_manual.json and write a report.
 
@@ -659,53 +759,25 @@ def merge(enriched=None, stage=False):
         return
     data = json.loads(pathlib.Path(MANUAL).read_text(encoding="utf-8"))
     today = dt.date.today().isoformat()
-
-    def norm_tweet(u):
-        return (u or "").rstrip("/")
-
-    def real_url(u):
-        """Drop X's shortener: it is never the program's own page."""
-        return u if u and not re.match(r"https?://t\.co/", u) else None
+    skip = reviewed_keys()
+    enriched = [o for o in enriched
+                if o.get("manual") or candidate_key(o) not in skip]
 
     dated, undated = data["dated"], data["undated"]
     for o in enriched:
-        status = (o.get("status") or "unknown").lower()
-        deadline = o.get("deadline_iso") or ""
-        closed = status == "closed" or (deadline and deadline < today)
-        if closed:
-            # A stated deadline in the past outranks a page that still says open.
-            status = "closed"
+        status, deadline, closed, facts = candidate_facts(o, today)
         # Never add a settled-closed program as a brand-new row; it only fills
         # the tables with noise. Update it if it is already listed.
         row = next((r for r in dated + undated
                     if dedupe.known(dedupe.norm(o.get("program")),
                                     {dedupe.norm(r.get("program"))})), None)
-        facts = {
-            "apply_url": real_url(o.get("apply_url")),
-            "website": real_url(o.get("website") or o.get("evidence_url")),
-            "status": status if status != "unknown" else None,
-            "verified_deadline": deadline or None,
-            "deadline_text": o.get("deadline_text") or None,
-            "verified_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-            "source": "research",
-            "evidence_url": real_url(o.get("evidence_url")),
-        }
         if row:
             row.update({k: v for k, v in facts.items() if v})
             continue
         if closed:
             continue
-        if deadline:
-            dated.append({"deadline": deadline, "label": deadline,
-                          "program": o.get("program"), "detail": o.get("notes")
-                          or (o.get("money") or ""), "tweet": o.get("tweet_id")
-                          and f"https://x.com/i/status/{o['tweet_id']}" or "", **facts})
-        else:
-            undated.append({"timing": "Rolling" if status != "closed" else "Unknown",
-                            "program": o.get("program"),
-                            "detail": o.get("notes") or (o.get("money") or ""),
-                            "tweet": o.get("tweet_id")
-                            and f"https://x.com/i/status/{o['tweet_id']}" or "", **facts})
+        new = candidate_row(o, today)
+        (dated if new.get("deadline") else undated).append(new)
     dated.sort(key=lambda r: r["deadline"])
     data["dated"], data["undated"] = dated, undated
     if not stage:
@@ -806,7 +878,13 @@ def selftest():
     check("scan wrapped",
           [o["id"] for o in scan_objects({"opportunities": [{"id": "1"}]})], ["1"])
     check("scan bare", [o["id"] for o in scan_objects([{"id": "2"}])], ["2"])
-    print(f"selftest: {18 - bad}/18 passed")
+    one = {"tweet_id": "1", "program": "Foo", "deadline_iso": "2099-01-01",
+           "status": "open", "apply_url": "https://a.example"}
+    check("keys differ per program",
+          candidate_key(one) != candidate_key({**one, "program": "Bar"}), True)
+    check("candidate dated", candidate_row(one).get("deadline"), "2099-01-01")
+    check("candidate closed", candidate_row({**one, "status": "closed"}), None)
+    print(f"selftest: {21 - bad}/21 passed")
     return 1 if bad else 0
 
 
