@@ -647,8 +647,11 @@ def enrich(limit=None):
     return opps
 
 
-def merge(enriched=None):
-    """Fold researched facts into opportunities_manual.json and write a report."""
+def merge(enriched=None, stage=False):
+    """Fold researched facts into opportunities_manual.json and write a report.
+
+    With stage=True the JSON is written but the manual file is left alone, so the
+    candidates can be reviewed before any row enters the curated list."""
     import dedupe  # local import keeps this module importable without hiring ctx
     enriched = enriched if enriched is not None else enrich()
     if not os.path.exists(MANUAL):
@@ -696,18 +699,22 @@ def merge(enriched=None):
             dated.append({"deadline": deadline, "label": deadline,
                           "program": o.get("program"), "detail": o.get("notes")
                           or (o.get("money") or ""), "tweet": o.get("tweet_id")
-                          and f"https://x.com/{o['tweet_id']}" or "", **facts})
+                          and f"https://x.com/i/status/{o['tweet_id']}" or "", **facts})
         else:
             undated.append({"timing": "Rolling" if status != "closed" else "Unknown",
                             "program": o.get("program"),
                             "detail": o.get("notes") or (o.get("money") or ""),
                             "tweet": o.get("tweet_id")
-                            and f"https://x.com/{o['tweet_id']}" or "", **facts})
+                            and f"https://x.com/i/status/{o['tweet_id']}" or "", **facts})
     dated.sort(key=lambda r: r["deadline"])
     data["dated"], data["undated"] = dated, undated
-    pathlib.Path(MANUAL).write_text(json.dumps(data, indent=1, ensure_ascii=False),
-                                    encoding="utf-8")
-    print(f"merged: {len(dated)} dated, {len(undated)} undated rows in {MANUAL.name}")
+    if not stage:
+        pathlib.Path(MANUAL).write_text(json.dumps(data, indent=1, ensure_ascii=False),
+                                        encoding="utf-8")
+        print(f"merged: {len(dated)} dated, {len(undated)} undated rows in {MANUAL.name}")
+    else:
+        print(f"staged {len(enriched)} opportunities in research_opportunities.json; "
+              f"{MANUAL.name} unchanged")
 
     with open(OUT / "research_opportunities.json", "w", encoding="utf-8") as fh:
         json.dump(enriched, fh, indent=1, default=str)
@@ -814,7 +821,9 @@ def main():
     p.add_argument("--workers", type=int, default=2)
     p.add_argument("--batch", type=int, default=30)
     sub.add_parser("enrich").add_argument("--limit", type=int)
-    sub.add_parser("merge")
+    p = sub.add_parser("merge")
+    p.add_argument("--stage", action="store_true",
+                   help="write the candidates JSON only, leave the manual file alone")
     sub.add_parser("clean")
     sub.add_parser("selftest")
     args = ap.parse_args()
@@ -833,7 +842,7 @@ def main():
               f"{sum(1 for o in enriched if o.get('status'))} with a status")
         return 0
     if args.cmd == "merge":
-        merge()
+        merge(stage=args.stage)
         return 0
     if args.cmd == "clean":
         clean()

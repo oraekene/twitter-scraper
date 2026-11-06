@@ -346,10 +346,11 @@ if args.candidates:
         f"{len(_rows)} opportunity object(s) from `{_src.name}`, written {_when}.",
         "One tweet can produce several rows when it lists several programs.",
         "",
-        f"Verified facts are merged into `{MANUAL_PATH.name}` by `research.py merge`.",
+        f"Run `research.py merge --stage` to refresh this table; add only the rows "
+        f"you approve to `{MANUAL_PATH.name}`.",
         "",
-        "| Confidence | Program | Kind | Deadline | Money | Status | Tweet | Apply |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Confidence | Source | Program | Kind | Deadline | Money | Status | Tweet | Apply |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
 
     def _cell(v):
@@ -360,7 +361,8 @@ if args.candidates:
         _c = o.get("confidence")
         _conf = f"{_c:.2f}" if isinstance(_c, (int, float)) else "-"
         _lines.append(
-            f"| {_conf} | {_cell(o.get('program'))} | "
+            f"| {_conf} | {'manual' if o.get('manual') else 'scan'} | "
+            f"{_cell(o.get('program'))} | "
             f"{_cell(o.get('kind'))} | {_cell(o.get('deadline_iso') or o.get('deadline_text'))} | "
             f"{_cell(o.get('money'))} | {_cell(o.get('status'))} | "
             f"{'https://x.com/i/status/' + _tid if _tid else '-'} | "
