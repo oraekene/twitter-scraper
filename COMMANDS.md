@@ -238,18 +238,24 @@ find anything a person can apply to. It writes nothing but its own database, so 
 costs nothing:
 
 ```
-python hiring\research.py scan            # classify tweets, resumable
-python hiring\research.py enrich          # fetch pages found in tweets
-python hiring\research.py merge --stage   # write out\research_opportunities.json
-python hiring\research.py merge           # append approved rows to the curated list
-python hiring\research.py clean          # drop the staging and review files
-python hiring\research.py selftest       # 21 checks, no network
+python hiring\research.py scan                  # classify tweets, resumable
+python hiring\research.py enrich                # fetch pages found in tweets
+python hiring\research.py merge --stage --raw   # fast staging from the scans table
+python hiring\research.py merge --stage         # full staging with page-extracted details
+python hiring\research.py merge                 # append approved rows to the curated list
+python hiring\research.py clean                # drop the staging and review files
+python hiring\research.py selftest             # 21 checks, no network
 ```
 
 `merge --stage` is the safe one: it writes the staging list and leaves `opportunities_manual.json`
 untouched. The Review tab on the dashboard shows that list and lets you approve or reject each row;
 approving writes it into the curated file with `source: "research"`. A scan that has not finished
 simply stages what it has, so running it on a schedule is harmless.
+
+`--raw` stages straight from the scans table without the slow `enrich()` step, which fetches
+web pages and asks the model to extract facts from each one. It is the right flag for the weekly
+schedule; run `merge --stage` without `--raw` when you want the staging list to carry page-extracted
+details for every candidate.
 
 Paid AI gig work, meaning annotation, expert tasks and hourly rates on platforms such as Mercor,
 Outlier and DataAnnotation, is a third question and has its own saved searches:

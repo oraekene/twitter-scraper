@@ -747,13 +747,67 @@ def reject_candidate(o):
     _write_keys(REJECTED, keys)
 
 
-def merge(enriched=None, stage=False):
+def _raw_candidates():
+    """Stage directly from the scans table, skipping the slow enrich() step.
+
+    The candidates have the scan verdict fields but no page-extracted details.
+    The review gate (approve/reject/manual) still works on them."""
+    import datetime as dt
+    today = dt.date.today().isoformat()
+    con = get_db()
+    rows = con.execute("SELECT tweet_id, model, verdict, checked_at FROM scans").fetchall()
+    con.close()
+
+    candidates, seen = [], set()
+    for tid, model, verdict_json, checked_at in rows:
+        for o in verdict_objects(verdict_json):
+            if not isinstance(o, dict):
+                continue
+            if (o.get("confidence") or 0) < 0.5:
+                continue
+            if not o.get("program"):
+                continue
+            key = o.get("id", tid) + "|" + o["program"].lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            status = (o.get("status") or "unknown").lower()
+            deadline_iso = o.get("deadline_iso") or ""
+            if status == "closed":
+                continue
+            if deadline_iso and deadline_iso < today:
+                continue
+            candidates.append({
+                "tweet_id": o.get("id", tid),
+                "program": o["program"],
+                "kind": o.get("kind"),
+                "confidence": o.get("confidence"),
+                "deadline_iso": deadline_iso,
+                "deadline_text": o.get("deadline_text"),
+                "money": o.get("money"),
+                "status": status,
+                "apply_url": o.get("apply_url"),
+                "source": "scan",
+                "manual": False,
+                "model": model,
+                "checked_at": checked_at,
+            })
+    return candidates
+
+
+def merge(enriched=None, stage=False, raw=False):
     """Fold researched facts into opportunities_manual.json and write a report.
 
     With stage=True the JSON is written but the manual file is left alone, so the
-    candidates can be reviewed before any row enters the curated list."""
-    import dedupe  # local import keeps this module importable without hiring ctx
-    enriched = enriched if enriched is not None else enrich()
+    candidates can be reviewed before any row enters the curated list.
+
+    With raw=True, skip the slow enrich() step and stage directly from the scans
+    table. The candidates will have less detail but the review gate still works."""
+    if raw:
+        enriched = _raw_candidates()
+    else:
+        import dedupe  # local import keeps this module importable without hiring ctx
+        enriched = enriched if enriched is not None else enrich()
     if not os.path.exists(MANUAL):
         print(f"no {MANUAL} yet; run opportunities.py once to seed it")
         return
@@ -763,6 +817,16 @@ def merge(enriched=None, stage=False):
     enriched = [o for o in enriched
                 if o.get("manual") or candidate_key(o) not in skip]
 
+    # With --raw and --stage we only need the staging file, not the manual list.
+    # Skip the dedupe merge loop entirely.
+    if raw and stage:
+        with open(OUT / "research_opportunities.json", "w", encoding="utf-8") as fh:
+            json.dump(enriched, fh, indent=1, default=str)
+        print(f"staged {len(enriched)} opportunities in research_opportunities.json; "
+              f"{MANUAL.name} unchanged")
+        return
+
+    import dedupe  # local import keeps this module importable without hiring ctx
     dated, undated = data["dated"], data["undated"]
     for o in enriched:
         status, deadline, closed, facts = candidate_facts(o, today)
@@ -902,6 +966,8 @@ def main():
     p = sub.add_parser("merge")
     p.add_argument("--stage", action="store_true",
                    help="write the candidates JSON only, leave the manual file alone")
+    p.add_argument("--raw", action="store_true",
+                   help="stage directly from the scans table, skipping slow enrich()")
     sub.add_parser("clean")
     sub.add_parser("selftest")
     args = ap.parse_args()
@@ -920,7 +986,7 @@ def main():
               f"{sum(1 for o in enriched if o.get('status'))} with a status")
         return 0
     if args.cmd == "merge":
-        merge(stage=args.stage)
+        merge(stage=args.stage, raw=args.raw)
         return 0
     if args.cmd == "clean":
         clean()

@@ -575,6 +575,31 @@ def result_items():
             'tweets': [],
             'report': md if os.path.exists(os.path.join(ROOT, 'out', md)) else None,
         })
+    # The AI research scan: one row per scan run, with its opportunity count.
+    # research.db holds the verdicts; the staging file is the review gate.
+    db = os.path.join(ROOT, 'out', 'research.db')
+    if os.path.exists(db):
+        try:
+            con = sqlite3.connect(f'file:{db}?mode=ro', uri=True)
+            runs = con.execute(
+                'select count(*) as n, min(checked_at) as first, max(checked_at) as last '
+                'from checked').fetchone()
+            opps = con.execute('select count(*) from scans').fetchone()[0]
+            con.close()
+            items.append({
+                'file': 'research.db',
+                'name': 'research-scan',
+                'source': 'research',
+                'ran_at': runs[2] or _iso(os.path.getmtime(db)),
+                'counts': {'checked': runs[0], 'opportunities': opps,
+                           'first': runs[1], 'last': runs[2]},
+                'openings': opps,
+                'tweets': [],
+                'report': None,
+                'hint': 'AI sweep over the bookmark corpus. See the Research tab to review candidates.',
+            })
+        except Exception:
+            pass
     items.sort(key=lambda r: r['ran_at'] or '', reverse=True)
     return items
 

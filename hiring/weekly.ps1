@@ -78,11 +78,14 @@ if ($Only -in 'all', 'opportunities') {
         Say 'wrote out\single-candidates.md'
     }
     # Staging writes out\research_opportunities.json, the list the Review tab
-    # approves from. It does not touch the curated file, so it is safe to run on
-    # a schedule; a scan that has not finished simply stages what it has.
-    & python (Join-Path $Root 'research.py') merge --stage *>> $Log
+    # approves from. --raw stages straight from the scans table, skipping the
+    # slow enrich() step that fetches pages and asks the model to extract facts.
+    # The full enrich can be run manually when a candidate needs details.
+    # It does not touch the curated file, so it is safe to run on a schedule;
+    # a scan that has not finished simply stages what it has.
+    & python (Join-Path $Root 'research.py') merge --stage --raw *>> $Log
     if ($LASTEXITCODE -ne 0) {
-        Say "merge --stage failed, code $LASTEXITCODE. See $Log"
+        Say "merge --stage --raw failed, code $LASTEXITCODE. See $Log"
     } else {
         Say 'wrote out\research_opportunities.json'
     }
