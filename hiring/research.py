@@ -71,6 +71,18 @@ def env(name):
 def providers():
     """(name, base, key, model) endpoints, first is preferred."""
     out = []
+    # The local FreeLLMAPI gateway is the preferred route: one bearer token,
+    # 14 upstream keys, and the "auto" model picks whichever is free.
+    fl = env("FREELMAPI_API_KEY")
+    if fl:
+        out.append(("freellmapi",
+                    env("FREELMAPI_BASE_URL") or "http://127.0.0.1:3001/v1",
+                    fl, env("FREELMAPI_MODEL") or "auto"))
+    # Explabs is the fallback when the local router has no free model left.
+    ex = env("EXPLABS_API_KEY")
+    if ex:
+        out.append(("explabs", "https://api.experientiallabs.ai/v1", ex,
+                    "deepseek-v4.1-flash"))
     th = env("TOKENHARBOR_API_KEY") or env("LLM_API_KEY")
     if th:
         out.append(("tokenharbor-v41", "https://tokenharbor.ai/v1", th,
@@ -104,9 +116,9 @@ def providers():
 class _ScanRoot:
     """Thread-safe roving provider order with per-provider cooldowns, shared
     across threads. Free routes 429 often, so the first provider is usually a
-    dead one; the one that answered most recently is tried first. The *same*
-    instance is reused for the whole process so cooldowns persist across all
-    `ask` calls and threads."""
+    dead one; ready providers are tried in declared order, and cooling ones
+    only after every ready one failed. The *same* instance is reused for the
+    whole process so cooldowns persist across all `ask` calls and threads."""
 
     # Literouter's basic tier rejects a second message within 7 seconds, so its
     # calls are serialised with that gap; concurrent workers get 403 otherwise.
@@ -116,18 +128,17 @@ class _ScanRoot:
 
     def __init__(self, providers_list, root):
         self._provs = list(providers_list)
-        self._ok = {}  # name -> (base, key, model)
         self._cool = {}  # name -> epoch when it may be tried again
         self._last = {}  # name -> epoch of the last request
         self._prov_lock = {p[0]: threading.Lock() for p in self._provs}
         self._root = root  # contains the lock
 
     def _sorted(self):
-        """Working providers first, then ready ones in .env order, then the
-        cooling ones by how soon they recover."""
+        """Ready providers in declared order, then cooling ones by how soon
+        they recover. Keeping the declared order stops a slow fallback from
+        taking over after one success."""
         now = time.time()
         ready = [p for p in self._provs if self._cool.get(p[0], 0) <= now]
-        ready.sort(key=lambda p: p[0] not in self._ok)  # stable sort
         cooling = sorted((p for p in self._provs
                           if self._cool.get(p[0], 0) > now),
                          key=lambda p: self._cool.get(p[0], 0))
@@ -135,9 +146,9 @@ class _ScanRoot:
 
     def ask(self, prompt, system="", max_tokens=3500, temperature=0.0):
         """One chat completion with provider rotation, retries and backoff.
-        All retries run on the same provider list, sorted with "ok" and "cool"
-        maps updated under the lock, so concurrent workers don't all collapse
-        onto the same dead route."""
+        All retries run on the same provider list, sorted with the "cool" map
+        updated under the lock, so concurrent workers don't all collapse onto
+        the same dead route."""
         with self._root._lock:
             pro = self._sorted()
         if not pro:
@@ -154,8 +165,11 @@ class _ScanRoot:
                             + [{"role": "user", "content": prompt}],
             }).encode()
             gap = self.GAPS.get(name, 0)
-            lock = self._prov_lock[name]
-            lock.acquire()
+            # Only a provider with a required gap needs its calls serialised;
+            # the rest can run in parallel across workers.
+            lock = self._prov_lock[name] if gap else None
+            if lock:
+                lock.acquire()
             cool_for = 45
             try:
                 for attempt in range(4):
@@ -192,7 +206,6 @@ class _ScanRoot:
                     text = (msg.get("content") or "").strip()
                     if text:
                         with self._root._lock:
-                            self._ok[name] = prov
                             self._cool.pop(name, None)
                         return text, None
                     # Reasoning models can spend the whole budget thinking and return
@@ -201,7 +214,8 @@ class _ScanRoot:
                 with self._root._lock:
                     self._cool[name] = time.time() + cool_for
             finally:
-                lock.release()
+                if lock:
+                    lock.release()
         return None, last or "all providers cooled down"
 
 
@@ -695,11 +709,9 @@ def selftest():
     check("extract none", e is not None, True)
     check("resolve cache cols", get_db().execute("PRAGMA table_info(pages)").fetchall() != [], True)
     check("checked table", get_db().execute("PRAGMA table_info(checked)").fetchall() != [], True)
-    # A provider that answered once used to be stored as a 3-tuple and then
-    # returned by _sorted, so the next call crashed unpacking it into four.
+    # Provider tuples must stay 4-tuples in the order the scan unpacks them.
     fake = [("a", "http://a", "k", "m"), ("b", "http://b", "k", "m")]
     root = _ScanRoot(fake, root=_ROOT)
-    root._ok["a"] = ("http://a", "k", "m")  # the old, wrong shape
     check("sorted shape", [len(p) for p in root._sorted()], [4, 4])
     check("verdict old shape", len(verdict_objects('{"program":"old"}')), 1)
     check("verdict roundup shape",

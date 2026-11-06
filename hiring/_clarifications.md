@@ -22,7 +22,7 @@ _discovered, _new_roundups = roundup.discover_tweets(
 
 `discover_tweets()` caches per-tweet results so once a tweet is tested it costs nothing on later runs, but it *does* run every time. And note the window: only tweets within `window_days` (default 45) of the newest bookmark are tested at all.
 
-**Does cutting the single-program regex path solve it?** Partially. research.py scans *every* tweet with `length(text)>=40` and asks the model directly whether it is an opportunity, so one- or two-program tweets are caught by the LLM and named in one step. The remaining gap is the 45-day window: `read_tweets()` only queries `posted_at LIKE '% 2026'`, so a tweet older than your window (older than 45 days from the newest bookmark) is never sent to the model. The single-program gate has the same window, so the real exposure is older tweets in general, not the 1-vs-3-item threshold. The 1-vs-3 threshold gap is fully solved; the age gap is not.
+**Does cutting the single-program regex path solve it?** Partially. research.py scans *every* tweet with `length(text)>=40` and asks the model directly whether it is an opportunity, so one- or two-program tweets are caught by the LLM and named in one step. The remaining gap is the year window: `research.py scan` defaults to `--year 2026`, so a tweet older than 2026 is never sent unless you pass another year. `read_tweets()` itself has no year filter when `years=None`, so the limit is in the scan default, not the query. The 1-vs-3 threshold gap is fully solved; the age gap is not.
 
 ## Q2: Does the roundup pass filter by keywords, and is research.py the semantic primary instrument?
 
@@ -93,7 +93,7 @@ So the roundup pass was created as a **zero-cost filter**: pure Python, no netwo
 
 **Is the cost reduced?** No — the raw token/time cost goes from $0 / seconds to many hours and paid tokens. What is reduced is *work-per-unit-recall*: before, every missed tweet was a human finding and typing a row; after, the model does that classification at the same rate as everything else. The trade-off you already accepted when you asked for the researched pass: full semantic coverage at the price of a long LLM pass. If you want the cheap path kept, the roundups stay exactly as they are; if you want full coverage, the LLM scan is the cost of it.
 
-A way to cut the cost without losing much: keep `--limit` small until the scan warms. The scans table caches every classified tweet_id, so a second full run classifies zero tweets. You run the expensive scan once, then every scheduled `opportunities.py` run stays instant because it no longer needs `find_single_tweets()` or the human hand-off. Also note `research.py scan` currently queries only `% 2026`, so it will naturally stop when your newest bookmark passes 2026 — plan to widen `years` over time rather than re-scanning the whole 99k on every run.
+A way to cut the cost without losing much: keep `--limit` small until the scan warms. The `checked` table caches every tweet the model answered, including tweets with no opportunity, so a second full run classifies almost zero tweets. You run the expensive scan once, then every scheduled `opportunities.py` run stays instant because it no longer needs `find_single_tweets()` or the human hand-off. Also note `research.py scan` defaults to 2026, so it will naturally stop when your newest bookmark passes 2026 - plan to widen `--year` over time rather than re-scanning the whole 99k on every run.
 
 ## Q4: What is the regex candidate generator, and why was `find_single_tweets()` created?
 
@@ -107,4 +107,4 @@ It was created in 2024-2025 because the roundup parser can only handle lists of 
 
 ## Q5
 
-You ended with "5." and no question. The remaining gap is the **45-day window and the `% 2026` year filter**, so both `find_single_tweets()` and `research.py scan` only ever see tweets newer than the cutoff. As 2026 progresses into 2027, you will need to widen `years` in both `read_tweets()` and `discover_tweets()` and raise `window_days` if you want older tweets re-evaluated. Also the manual list stays your recall anchor regardless, since `opportunities.py` reads `opportunities_manual.json` first and auto-discovered rows never override a matching hand row.
+You ended with "5." and no question. The remaining gap is the **year filter**: `research.py scan` defaults to 2026, so it only sees tweets from that year. As 2026 progresses into 2027, you will need to widen `--year` and raise `window_days` if you want older tweets re-evaluated. Also the manual list stays your recall anchor regardless, since `opportunities.py` reads `opportunities_manual.json` first and auto-discovered rows never override a matching hand row.
