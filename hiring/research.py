@@ -56,6 +56,10 @@ KEY_ORDER = ("LLM_API_KEY", "TOKENHARBOR_API_KEY", "NVIDIA_API_KEY",
              "OPENAI_API_KEY", "DEEPSEEK_API_KEY", "OPENROUTER_API_KEY",
              "OPENCODE_ZEN_KEY", "LITEROUTER_API_KEY", "UNOROUTER_API_KEY")
 
+# Bump this when the scan prompt changes enough that earlier verdicts should be
+# rechecked. `checked.version` makes that a filter instead of a manual delete.
+CHECKED_VERSION = 2
+
 
 def env(name):
     """Read a key from the parent .env, then the process env. Never echoes it."""
@@ -250,17 +254,37 @@ def ask(prompt, system="", max_tokens=3500, temperature=0.0, verbose=False):
 
 def extract_json(text):
     """Pull a JSON array or object out of a model reply that added prose."""
-    m = re.search(r"```(?:json)?\s*(\[.*?\]|\{.*\})\s*```", text or "", re.S)
+    text = text or ""
+    m = re.search(r"```(?:json)?\s*(\[.*?\]|\{.*\})\s*```", text, re.S)
     if m:
         text = m.group(1)
-    start = min([i for i in (text.find("["), text.find("{")) if i >= 0] or [0])
-    end = max(text.rfind("]"), text.rfind("}"))
-    if end <= start:
-        return None, "no JSON in reply"
-    try:
-        return json.loads(text[start:end + 1]), None
-    except ValueError as e:
-        return None, f"bad JSON: {e}"
+    # Reasoning models often explain first and print the JSON later; the first
+    # brace can belong to an example. Keep the best parse: an array beats an
+    # object, then more elements win.
+    dec = json.JSONDecoder()
+    best, score = None, None
+    for i, ch in enumerate(text):
+        if ch not in "[{":
+            continue
+        try:
+            obj, _ = dec.raw_decode(text[i:])
+        except ValueError:
+            continue
+        if not isinstance(obj, (list, dict)):
+            continue
+        rank = (1 if isinstance(obj, list) else 0, len(obj))
+        if score is None or rank > score:
+            best, score = obj, rank
+    if best is not None:
+        return best, None
+    return None, "no JSON in reply"
+
+
+def scan_objects(parsed):
+    """The scan asks for an array, but some models wrap it in an object."""
+    if isinstance(parsed, dict):
+        parsed = next((v for v in parsed.values() if isinstance(v, list)), [parsed])
+    return [o for o in parsed if isinstance(o, dict)]
 
 
 def get_db():
@@ -274,8 +298,14 @@ def get_db():
         " fetched_at TEXT);"
         # Every tweet in a batch the model answered, including the ones it found
         # nothing in. Without this, a non-opportunity is re-sent on every run.
+        # `version` lets a prompt change invalidate old verdicts without a
+        # manual delete.
         "CREATE TABLE IF NOT EXISTS checked("
-        " tweet_id TEXT PRIMARY KEY, checked_at TEXT);")
+        " tweet_id TEXT PRIMARY KEY, checked_at TEXT,"
+        " version INTEGER DEFAULT 1);")
+    cols = {r[1] for r in con.execute("PRAGMA table_info(checked)")}
+    if "version" not in cols:
+        con.execute("ALTER TABLE checked ADD COLUMN version INTEGER DEFAULT 1")
     return con
 
 
@@ -360,44 +390,62 @@ def scan(years, workers, batch, limit):
     con = get_db()
     rows = read_tweets(DB_PATH, years, limit)
     done = {r[0] for r in con.execute(
-        "SELECT tweet_id FROM checked UNION SELECT tweet_id FROM scans")}
+        "SELECT tweet_id FROM checked WHERE version >= ?", (CHECKED_VERSION,))}
     todo = [r for r in rows if r[0] not in done]
     print(f"{len(rows)} tweets selected, {len(done)} cached, {len(todo)} to classify")
 
     def classify(chunk):
-        text, err = ask(scan_prompt(chunk), system=SCAN_SYSTEM, max_tokens=4000)
+        # 8000 tokens leaves room for a long array when the auto model thinks
+        # first; 4000 truncated some replies mid-object.
+        text, err = ask(scan_prompt(chunk), system=SCAN_SYSTEM, max_tokens=8000)
         if err:
             return chunk, None, err
         parsed, perr = extract_json(text)
         if perr:
             return chunk, None, perr
         ids = {t[0] for t in chunk}
-        return chunk, [o for o in parsed if isinstance(o, dict) and o.get("id") in ids], None
+        return chunk, [o for o in scan_objects(parsed) if o.get("id") in ids], None
+
+    def save(chunk, verdicts):
+        now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+        con.executemany(
+            "INSERT OR REPLACE INTO checked(tweet_id, checked_at, version) "
+            "VALUES (?,?,?)",
+            [(t[0], now, CHECKED_VERSION) for t in chunk])
+        # One row per tweet, holding every object the model returned. A roundup
+        # yields several objects with the same id; keying the table by tweet_id
+        # alone used to keep only the last one.
+        by_id = {}
+        for v in verdicts:
+            by_id.setdefault(v["id"], []).append(v)
+        for tid, objs in by_id.items():
+            con.execute("INSERT OR REPLACE INTO scans VALUES (?,?,?,?)",
+                        (tid, providers()[0][3] if providers() else "?",
+                         json.dumps(objs), now))
+        con.commit()
 
     found = 0
+    failed = []
     with futures.ThreadPoolExecutor(max_workers=workers) as ex:
         batches = [todo[i:i + batch] for i in range(0, len(todo), batch)]
         for i, (chunk, verdicts, err) in enumerate(ex.map(classify, batches), 1):
             if err:
                 print(f"batch {i}/{len(batches)} FAILED: {err[:120]}")
+                failed.append(chunk)
                 continue
-            now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-            con.executemany("INSERT OR IGNORE INTO checked VALUES (?,?)",
-                            [(t[0], now) for t in chunk])
-            # One row per tweet, holding every object the model returned. A
-            # roundup yields several objects with the same id; keying the table
-            # by tweet_id alone used to keep only the last one.
-            by_id = {}
-            for v in verdicts:
-                by_id.setdefault(v["id"], []).append(v)
-            for tid, objs in by_id.items():
-                con.execute("INSERT OR REPLACE INTO scans VALUES (?,?,?,?)",
-                            (tid, providers()[0][3] if providers() else "?",
-                             json.dumps(objs), now))
-            con.commit()
+            save(chunk, verdicts)
             found += len(verdicts)
             if i % 10 == 0 or i == len(batches):
                 print(f"  batch {i}/{len(batches)}, opportunities so far {found}")
+    if failed:
+        print(f"retrying {len(failed)} failed batch(es)")
+        with futures.ThreadPoolExecutor(max_workers=workers) as ex:
+            for chunk, verdicts, err in ex.map(classify, failed):
+                if err:
+                    print(f"retry FAILED: {err[:120]}")
+                    continue
+                save(chunk, verdicts)
+                found += len(verdicts)
     print(f"done: {found} opportunity tweet(s) classified")
 
 
@@ -707,8 +755,13 @@ def selftest():
     check("extract array", (arr, e), ([{"id": "1"}], None))
     _, e = extract_json("no json here")
     check("extract none", e is not None, True)
+    mixed = 'The shape is {"id": "x"} and the answer is\n[{"id":"1"},{"id":"2"}]'
+    check("extract after prose", len(extract_json(mixed)[0]), 2)
     check("resolve cache cols", get_db().execute("PRAGMA table_info(pages)").fetchall() != [], True)
     check("checked table", get_db().execute("PRAGMA table_info(checked)").fetchall() != [], True)
+    check("checked version",
+          "version" in {r[1] for r in get_db().execute("PRAGMA table_info(checked)")},
+          True)
     # Provider tuples must stay 4-tuples in the order the scan unpacks them.
     fake = [("a", "http://a", "k", "m"), ("b", "http://b", "k", "m")]
     root = _ScanRoot(fake, root=_ROOT)
@@ -718,7 +771,10 @@ def selftest():
           [o["program"] for o in verdict_objects('[{"program":"a"},{"program":"b"}]')],
           ["a", "b"])
     check("verdict junk", verdict_objects("not json"), [])
-    print(f"selftest: {13 - bad}/13 passed")
+    check("scan wrapped",
+          [o["id"] for o in scan_objects({"opportunities": [{"id": "1"}]})], ["1"])
+    check("scan bare", [o["id"] for o in scan_objects([{"id": "2"}])], ["2"])
+    print(f"selftest: {17 - bad}/17 passed")
     return 1 if bad else 0
 
 
