@@ -251,16 +251,37 @@ def run_command_source(s, limit, since):
     undated = data.get('undated') or []
     rows = []
     for r in dated + undated:
+        # opportunities.py writes rows as lists: [deadline, label, program,
+        # detail, tweet]. Older files used dicts. Support both so a stale file
+        # does not break the scheduled search.
+        if isinstance(r, dict):
+            deadline = r.get('deadline') or r.get('label') or ''
+            label = r.get('label') or ''
+            program = r.get('program') or ''
+            detail = r.get('detail') or ''
+            tweet = r.get('tweet') or ''
+            apply_url = r.get('apply_url') or ''
+            website = r.get('website') or ''
+            status = r.get('status') or ''
+        else:
+            deadline = r[0] if len(r) > 0 else ''
+            label = r[1] if len(r) > 1 else ''
+            program = r[2] if len(r) > 2 else ''
+            detail = r[3] if len(r) > 3 else ''
+            tweet = r[4] if len(r) > 4 else ''
+            apply_url = r[5] if len(r) > 5 else ''
+            website = r[6] if len(r) > 6 else ''
+            status = r[7] if len(r) > 7 else ''
         rows.append({
-            'id': '', 'url': r.get('tweet') or '', 'text': r.get('detail') or '',
+            'id': '', 'url': tweet, 'text': detail,
             'author_handle': '', 'author_name': '',
             'posted_at': '', 'like_count': 0, 'repost_count': 0,
             'reply_count': 0, 'bucket': 'opening',
             'dt': None, 'roles': [], 'pay': [],
-            'program': r.get('program'), 'deadline': r.get('deadline') or r.get('label'),
-            'detail': r.get('detail'), 'tweet': r.get('tweet'),
-            'apply_url': r.get('apply_url'), 'website': r.get('website'),
-            'status': r.get('status'), 'verified_deadline': r.get('verified_deadline'),
+            'program': program, 'deadline': deadline, 'label': label,
+            'detail': detail, 'tweet': tweet,
+            'apply_url': apply_url, 'website': website,
+            'status': status,
         })
     stamp = datetime.now().strftime('%Y-%m-%d_%H%M')
     base = os.path.join(OUTDIR, f"{s['name']}-{stamp}")
@@ -376,7 +397,7 @@ def markdown(s, p, rows):
         for r in rows:
             dl = r.get('deadline') or r.get('label') or 'Rolling'
             prog = (r.get('program') or '-').replace('|', '/')
-            det = S.snip(r.get('detail') or '') if hasattr(S, 'snip') else (r.get('detail') or '-')
+            det = S.snip(r.get('detail') or '')
             url = r.get('apply_url') or r.get('url') or ''
             L.append(f"| {dl} | {prog} | {det} |"
                      + (f" [{url[:60]}]({url})" if url else ' -') + " |")
