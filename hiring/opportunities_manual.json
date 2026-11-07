@@ -352,6 +352,48 @@
    "verified_at": "2026-11-07T22:15:52+00:00",
    "source": "research",
    "evidence_url": "https://cloud.google.com/startup"
+  },
+  {
+   "timing": "Rolling",
+   "program": "First/pre-seed checks ($50-100k)",
+   "detail": "$50-100k first/pre-seed checks",
+   "tweet": "https://x.com/i/status/2104011746533077091",
+   "apply_url": null,
+   "website": null,
+   "status": null,
+   "verified_deadline": null,
+   "deadline_text": null,
+   "verified_at": "2026-11-07T22:21:42+00:00",
+   "source": "research",
+   "evidence_url": null
+  },
+  {
+   "timing": "Rolling",
+   "program": "16VC Pre-Seed & Seed Investment",
+   "detail": "$100k–$2m",
+   "tweet": "https://x.com/i/status/2117470492961677654",
+   "apply_url": null,
+   "website": null,
+   "status": null,
+   "verified_deadline": null,
+   "deadline_text": null,
+   "verified_at": "2026-11-07T22:21:49+00:00",
+   "source": "research",
+   "evidence_url": null
+  },
+  {
+   "timing": "Rolling",
+   "program": "Named Community Sponsorship and Refugee study safe and legal routes",
+   "detail": "",
+   "tweet": "https://x.com/i/status/2115846410230718745",
+   "apply_url": null,
+   "website": null,
+   "status": null,
+   "verified_deadline": null,
+   "deadline_text": null,
+   "verified_at": "2026-11-07T22:21:53+00:00",
+   "source": "research",
+   "evidence_url": null
   }
  ]
 }

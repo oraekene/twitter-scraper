@@ -93,7 +93,7 @@
     {
       "name": "concept-hiring",
       "source": "concept",
-      "enabled": true,
+      "enabled": false,
       "every_days": 1,
       "time": "09:30",
       "days_back": 30,
@@ -107,7 +107,7 @@
     {
       "name": "concept-raise",
       "source": "concept",
-      "enabled": true,
+      "enabled": false,
       "every_days": 1,
       "time": "09:00",
       "days_back": 7,

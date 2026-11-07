@@ -24,8 +24,7 @@ OUT = HERE.parent / "out"
 DB_PATH = os.path.expandvars(r"%USERPROFILE%\.fieldtheory\bookmarks\bookmarks.db")
 
 # Single-program rows live in a data file, not in this script, so adding an
-# opportunity never means editing code. The two arrays below are only the seed
-# used the first time that file does not exist.
+# opportunity never means editing code. Data is maintained in opportunities_manual.json.
 MANUAL_PATH = HERE / "opportunities_manual.json"
 CANDIDATES_PATH = OUT / "single-candidates.md"
 
