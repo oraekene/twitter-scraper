@@ -149,12 +149,15 @@ h1, h2, h3 { letter-spacing: -0.018em; }
   border-radius: var(--r3); box-shadow: var(--shadow-1);
 }
 .card > header {
-  display: flex; align-items: center; gap: var(--s3);
+  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
   padding: var(--s4) var(--s5); border-bottom: 1px solid var(--line);
 }
+.card > header > div { min-width: 0; }
 .card > header h2 { font-size: 16px; font-weight: 620; margin: 0; letter-spacing: -0.02em; }
-.card > header .sub { font-size: 13px; color: var(--fg-3); margin: 1px 0 0; }
-.card > header .actions { margin-left: auto; display: flex; gap: var(--s2); }
+.card > header .sub { font-size: 13px; color: var(--fg-3); margin: 1px 0 0;
+                     overflow-wrap: anywhere; }
+.card > header .actions { margin-left: auto; display: flex; gap: var(--s2);
+                         flex-wrap: wrap; }
 .card .body { padding: var(--s5); }
 .card.tint { border-left: 3px solid var(--brand); }
 .hint { font-size: 13.5px; color: var(--fg-2); margin: 0 0 var(--s4); line-height: 1.55; }
@@ -169,6 +172,7 @@ button, .btn {
   font: inherit; font-size: 13.5px; font-weight: 550; letter-spacing: -0.005em;
   color: var(--fg); background: var(--surface); border: 1px solid var(--line-2);
   border-radius: 9px; padding: 7px 14px; cursor: pointer; white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   box-shadow: var(--shadow-1);
   transition: transform 160ms var(--ease-out), background 160ms var(--ease-out),
               border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
@@ -508,16 +512,21 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
                 <input type="checkbox" id="rs-open" checked> open only</label>
               <span class="spacer"></span><span class="dim small" id="rs-count"></span>
             </div>
-            <div style="overflow:auto; margin-top:12px">
-              <table><thead><tr><th><input type="checkbox" id="rs-all" title="select all"></th>
-                <th data-sort="confidence">Confidence</th><th data-sort="program">Program</th><th data-sort="kind">Kind</th><th data-sort="deadline">Deadline</th>
-                <th data-sort="status">Status</th><th>Tweet</th><th style="width:210px">Decision</th></tr></thead>
-                <tbody id="research-rows"></tbody></table>
-            </div>
             <div class="row" style="margin-top:10px">
               <button class="sm primary" id="rs-approve-btn" disabled onclick="reviewAllSelected('approve')">Approve selected</button>
               <button class="sm quiet danger" id="rs-reject-btn" disabled onclick="reviewAllSelected('reject')">Reject selected</button>
-              <span class="spacer"></span><span class="dim small" id="rs-sel-count"></span>
+              <span class="dim small" id="rs-sel-count">none selected</span>
+              <span class="spacer"></span>
+              <span class="dim small">tick rows, then use these. The buttons in a row act on that row only.</span>
+            </div>
+            <p class="hint small" style="margin:10px 0 0">Status and deadline come from the programme page.
+              <code>unknown</code> means the page was unreachable or did not state it; <code>no link</code>
+              means the tweet carried no URL to research.</p>
+            <div style="overflow:auto; margin-top:12px">
+              <table><thead><tr><th><input type="checkbox" id="rs-all" title="select all shown"></th>
+                <th data-sort="confidence">Confidence</th><th data-sort="program">Program</th><th data-sort="kind">Kind</th><th data-sort="deadline">Deadline</th>
+                <th data-sort="status">Status</th><th>Tweet</th><th style="width:170px">Decision</th></tr></thead>
+                <tbody id="research-rows"></tbody></table>
             </div>
           </div>
         </div>
@@ -1011,18 +1020,22 @@ function renderResearch() {
       <td><span class="conf">${c.confidence == null ? '&mdash;' : Number(c.confidence).toFixed(2)}</span></td>
       <td><span class="strong">${esc(c.program)}</span>${c.deadline_text ? `<br><span class="small dim">${esc(c.deadline_text)}</span>` : ''}</td>
       <td><span class="pill brand">${esc(c.kind || 'other')}</span></td>
-      <td class="mono small">${esc(c.deadline || '&mdash;')}</td>
-      <td><span class="pill ${c.status === 'open' ? 'on' : c.status === 'closed' ? 'bad' : 'off'}">${esc(c.status || 'unknown')}</span></td>
-      <td>${c.tweet_id ? `<a href="https://x.com/i/status/${esc(c.tweet_id)}" target="_blank" rel="noopener">tweet</a>` : '&mdash;'}
-        ${c.apply_url ? ` &middot; <a href="${esc(c.apply_url)}" target="_blank" rel="noopener">apply</a>` : ''}</td>
+      <td class="mono small">${esc(c.deadline || '—')}</td>
+      <td><span class="pill ${c.status === 'open' ? 'on' : c.status === 'closed' ? 'bad' : 'off'}"
+        title="from the programme page, or inferred from a live apply link">${esc(c.status || 'unknown')}</span></td>
+      <td>${c.tweet_id ? `<a href="https://x.com/i/status/${esc(c.tweet_id)}" target="_blank" rel="noopener">tweet</a>` : '—'}
+        ${c.apply_url ? ` &middot; <a href="${esc(c.apply_url)}" target="_blank" rel="noopener">apply</a>` : ''}
+        ${c.website && c.website !== c.apply_url ? ` &middot; <a href="${esc(c.website)}" target="_blank" rel="noopener">site</a>` : ''}
+        ${!c.has_link ? '<br><span class="dim small">no link in tweet</span>' : ''}</td>
       <td><div class="row tight">
-        <button class="sm" data-key="${esc(c.key)}" data-act="approve" onclick="reviewFrom(this)">Approve</button>
-        <button class="sm quiet danger" data-key="${esc(c.key)}" data-act="reject" onclick="reviewFrom(this)">Reject</button>
+        <button class="sm" title="approve only this row" data-key="${esc(c.key)}" data-act="approve" onclick="reviewFrom(this)">Approve</button>
+        <button class="sm quiet danger" title="reject only this row" data-key="${esc(c.key)}" data-act="reject" onclick="reviewFrom(this)">Reject</button>
       </div></td>`;
   }).join('')
-    || `<tr><td colspan="7" class="dim">${cands.length
+    || `<tr><td colspan="8" class="dim">${cands.length
         ? 'nothing matches this filter'
         : 'nothing staged yet. Run Stage (enriched) once the sweep has finished.'}</td></tr>`;
+  updateSelCount();
 
   const manual = (s.manual || {});
   el('manual-kv').innerHTML = [
@@ -1047,20 +1060,31 @@ el('research-rows').addEventListener('change', (e) => {
 });
 
 function updateSelCount() {
-  const n = document.querySelectorAll('.rs-cb:checked').length;
-  el('rs-sel-count').textContent = n + ' selected';
+  const boxes = [...document.querySelectorAll('.rs-cb')];
+  const n = boxes.filter(cb => cb.checked).length;
+  el('rs-sel-count').textContent = n ? n + ' selected' : 'none selected';
   el('rs-approve-btn').disabled = n === 0;
   el('rs-reject-btn').disabled = n === 0;
+  el('rs-approve-btn').textContent = n ? 'Approve ' + n : 'Approve selected';
+  el('rs-reject-btn').textContent = n ? 'Reject ' + n : 'Reject selected';
+  const all = el('rs-all');
+  if (all) all.checked = boxes.length > 0 && n === boxes.length;
   localStorage.setItem('rs-sel', JSON.stringify(
-    [...document.querySelectorAll('.rs-cb:checked')].map(cb => cb.dataset.key)));
+    boxes.filter(cb => cb.checked).map(cb => cb.dataset.key)));
 }
 
 async function reviewAllSelected(action) {
   const keys = [...document.querySelectorAll('.rs-cb:checked')].map(cb => cb.dataset.key);
+  if (!keys.length) return toast('nothing selected', true);
+  if (keys.length > 25 && !confirm('Apply ' + action + ' to ' + keys.length + ' rows?')) return;
+  let ok = 0;
   for (const key of keys) {
-    await api('/api/research/' + action, {key});
+    const r = await api('/api/research/' + action, {key});
+    if (r.status === 200) ok++;
   }
-  toast(keys.length + ' ' + action + 'd');
+  localStorage.removeItem('rs-sel');
+  toast(ok + ' ' + (action === 'approve' ? 'approved' : 'rejected')
+    + (ok < keys.length ? ', ' + (keys.length - ok) + ' failed' : ''));
   loadResearch();
 }
 

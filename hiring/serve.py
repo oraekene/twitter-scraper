@@ -644,16 +644,35 @@ def research_state():
                 rows = json.load(fh)
             skip = research.reviewed_keys()
             approved = research._read_keys(research.APPROVED)
-            state['staged'] = [
-                {'key': research.candidate_key(o),
-                 'program': o.get('program'), 'kind': o.get('kind'),
-                 'confidence': o.get('confidence'), 'deadline': (o.get('deadline_iso')
-                                                                  or o.get('deadline_text')),
-                 'money': o.get('money'), 'status': o.get('status'),
-                 'tweet_id': o.get('tweet_id'), 'apply_url': o.get('apply_url'),
-                 'manual': bool(o.get('manual')),
-                 'approved': research.candidate_key(o) in approved}
-                for o in rows if research.candidate_key(o) not in skip]
+            staged = []
+            for o in rows:
+                key = research.candidate_key(o)
+                if key in skip:
+                    continue
+                try:
+                    links = json.loads(o.get('_links') or '[]')
+                except ValueError:
+                    links = []
+                staged.append({
+                    'key': key,
+                    'program': o.get('program'), 'kind': o.get('kind'),
+                    'confidence': o.get('confidence'),
+                    'deadline': (o.get('deadline_iso')
+                                 or research.parse_deadline_text(o.get('deadline_text'))
+                                 or o.get('deadline_text')),
+                    'deadline_text': o.get('deadline_text'),
+                    'money': o.get('money'),
+                    'detail': o.get('notes') or o.get('money') or '',
+                    'status': research.status_for(o),
+                    'tweet_id': o.get('tweet_id'),
+                    'apply_url': research.real_url(o.get('apply_url')),
+                    'website': research.real_url(o.get('website')
+                                                 or o.get('evidence_url')),
+                    'has_link': bool(research.candidate_urls(o, links_override=links)),
+                    'manual': bool(o.get('manual')),
+                    'approved': key in approved,
+                })
+            state['staged'] = staged
         except Exception:
             state['staged'] = []
     state['approved'] = len(research._read_keys(research.APPROVED))

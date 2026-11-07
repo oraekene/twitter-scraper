@@ -81,7 +81,7 @@ if ($Only -in 'all', 'opportunities') {
     # approves from. This runs enrich() to fetch pages and extract facts,
     # then stages the enriched data. The curated manual file is not touched,
     # so this is safe to run on a schedule.
-    & python (Join-Path $Root 'research.py') merge --stage *>> $Log
+    & python (Join-Path $Root 'research.py') merge --stage --workers 4 *>> $Log
     if ($LASTEXITCODE -ne 0) {
         Say "merge --stage failed, code $LASTEXITCODE. See $Log"
     } else {

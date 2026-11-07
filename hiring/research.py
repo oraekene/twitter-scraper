@@ -34,11 +34,19 @@ import os
 import pathlib
 import re
 import sqlite3
+import ssl
 import sys
 import threading
 import time
 import urllib.error
 import urllib.request
+
+try:  # The Windows store Python often has an incomplete root store.
+    import certifi
+
+    SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except Exception:  # noqa: BLE001
+    SSL_CTX = None
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -151,18 +159,20 @@ class _ScanRoot:
                          key=lambda p: self._cool.get(p[0], 0))
         return ready + cooling
 
-    def ask(self, prompt, system="", max_tokens=3500, temperature=0.0):
+    def ask(self, prompt, system="", max_tokens=3500, temperature=0.0,
+            validate=None):
         """One chat completion with provider rotation, retries and backoff.
         All retries run on the same provider list, sorted with the "cool" map
         updated under the lock, so concurrent workers don't all collapse onto
-        the same dead route."""
+        the same dead route. `validate` lets a caller reject a chatty reply and
+        try the next provider instead of accepting prose where JSON is needed."""
         with self._root._lock:
             pro = self._sorted()
         if not pro:
             return None, f"no API key in .env ({', '.join(KEY_ORDER)})", None
-        return self._call(pro, prompt, system, max_tokens, temperature)
+        return self._call(pro, prompt, system, max_tokens, temperature, validate)
 
-    def _call(self, pro, prompt, system, max_tokens, temperature):
+    def _call(self, pro, prompt, system, max_tokens, temperature, validate=None):
         last = None
         for prov in pro:
             name, base, key, model = prov
@@ -211,12 +221,17 @@ class _ScanRoot:
                     self._last[name] = time.time()
                     msg = (out.get("choices") or [{}])[0].get("message") or {}
                     text = (msg.get("content") or "").strip()
-                    if text:
+                    if text and (validate is None or validate(text)):
                         with self._root._lock:
                             self._cool.pop(name, None)
                         # FreeLLMAPI's "auto" route answers with the real model
                         # name here, so keep it for the audit trail.
                         return text, None, out.get("model") or model
+                    if text:
+                        # The provider is healthy, it just answered in prose.
+                        # Try the next one rather than paying for a retry here.
+                        last = "reply failed validation"
+                        break
                     # An empty completion is a dead end for this provider, not a
                     # transient retry: reasoning models burn their budget and
                     # come back empty every time. Move to the next one instead of
@@ -250,14 +265,10 @@ class _Root:
 _ROOT = _Root()
 
 
-
-
-_ROOT = _Root()
-
-
-def ask(prompt, system="", max_tokens=3500, temperature=0.0, verbose=False):
+def ask(prompt, system="", max_tokens=3500, temperature=0.0, verbose=False,
+        validate=None):
     """Thin wrapper so call sites keep reading `ask(...)` unchanged."""
-    return _ROOT.root().ask(prompt, system, max_tokens, temperature)
+    return _ROOT.root().ask(prompt, system, max_tokens, temperature, validate)
 
 
 def extract_json(text):
@@ -487,15 +498,54 @@ def opportunity_rows():
     return out
 
 
-def resolve(url):
-    """Follow redirects to the final URL. Returns (final_url, error)."""
+_SHORTENERS = ("t.co", "bit.ly", "tinyurl.com", "lnkd.in", "buff.ly",
+               "rebrand.ly", "shorturl.at", "ow.ly", "dlvr.it", "ift.tt",
+               "hub.am", "bit.do", "t.ly", "is.gd", "v.gd", "cutt.ly",
+               "rb.gy", "tiny.one")
+
+
+def _short_host(url):
+    m = re.match(r"https?://([^/]+)/", url or "")
+    host = (m.group(1) if m else "").lower().split(":")[0]
+    return any(host == h or host.endswith("." + h) for h in _SHORTENERS)
+
+
+def resolve(url, hops=0):
+    """Follow redirects to the final URL. Returns (final_url, error).
+
+    t.co answers with status 200 and a tiny HTML page that redirects from
+    JavaScript, so urllib never follows it. Parse that page and keep going,
+    at most three hops, or every tweet link stays a t.co dead end."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "*/*"})
-        with urllib.request.urlopen(req, timeout=12) as r:
-            return r.geturl(), None
+        with urllib.request.urlopen(req, timeout=12, context=SSL_CTX) as r:
+            final = r.geturl()
+            body = r.read(8000).decode("utf-8", "replace") \
+                if final == url and _short_host(url) else ""
+        if final != url:
+            return final, None
+        if body and hops < 3:
+            m = (re.search(r'URL=([^"\'>\s]+)', body) or
+                 re.search(r'location\.replace\(\s*["\']([^"\']+)', body))
+            if m:
+                nxt = html.unescape((m.group(1) or "").replace("\\/", "/"))
+                if nxt.startswith("http"):
+                    return resolve(nxt, hops + 1)
+        return final, None
     except Exception as e:  # noqa: BLE001
         return None, f"{type(e).__name__}: {e}"
+
+
+def _page(raw):
+    """Title and visible text from one HTML byte string."""
+    doc = raw.decode("utf-8", errors="replace")
+    m = re.search(r"<title>(.*?)</title>", doc, re.S | re.I)
+    title = html.unescape(m.group(1).strip()) if m else ""
+    data = re.sub(r"<script.*?</script>|<style.*?</style>", " ", doc, flags=re.S)
+    data = re.sub(r"<[^>]+>", " ", data)
+    data = html.unescape(re.sub(r"\s+", " ", data)).strip()
+    return title, data[:12000]
 
 
 def fetch(url):
@@ -503,38 +553,93 @@ def fetch(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "text/html,*/*"})
-        with urllib.request.urlopen(req, timeout=12) as r:
+        with urllib.request.urlopen(req, timeout=12, context=SSL_CTX) as r:
             ctype = r.headers.get("Content-Type", "")
             if "text" not in ctype and "html" not in ctype and "json" not in ctype:
                 return None, "", "not text"
             raw = r.read(1_600_000)
-            data = raw.decode("utf-8", errors="replace")
-        data = re.sub(r"<script.*?</script>|<style.*?</style>", " ", data, flags=re.S)
-        data = re.sub(r"<[^>]+>", " ", data)
-        data = html.unescape(re.sub(r"\s+", " ", data)).strip()
-        m = re.search(r"<title>(.*?)</title>", raw.decode("utf-8", errors="replace"),
-                      re.S | re.I)
-        title = html.unescape(m.group(1).strip()) if m else ""
-        return title, data[:12000], None
+        return (*_page(raw), None)
     except Exception as e:  # noqa: BLE001
-        return None, "", f"{type(e).__name__}: {e}"
+        err = f"{type(e).__name__}: {e}"
+    # Devpost answers 403 to urllib but 200 to requests and curl, so retry
+    # once through requests before calling the page unreachable.
+    try:
+        import requests
+        r = requests.get(url, headers={"User-Agent": UA, "Accept": "text/html,*/*"},
+                         timeout=12)
+        r.raise_for_status()
+        return (*_page(r.content), None)
+    except Exception:  # noqa: BLE001
+        return None, "", err
+
+
+def page_matches(opp, text, title=""):
+    """True when the page title names the programme.
+
+    A roundup's links can point at a different programme, and a sponsor logo in
+    the body is not proof: ETHGlobal Mumbai mentions GitLab and code, so the
+    body alone once accepted it for a GitLab row. The title is short and
+    specific, so it decides whenever it exists. With no title, two distinct
+    words are required, because 'code' alone also matches other competitions."""
+    words = set(re.findall(r"[a-z0-9]{4,}", (opp.get("program") or "").lower()))
+    if not words:
+        return True
+    if title:
+        low = title.lower()
+        return any(w in low for w in words)
+    if not text:
+        return False
+    low = text.lower()
+    return sum(1 for w in words if w in low) >= min(2, len(words))
 
 
 def candidate_urls(opp, links_override=None):
-    """URLs worth fetching for one opportunity: apply_url, then tweet links."""
+    """URLs worth fetching for one opportunity: apply_url, then tweet links
+    nearest the program's own name.
+
+    t.co links stay in: resolve() reads the interstitial and follows it. Only
+    links back into X itself are useless as evidence. A roundup tweet lists
+    several programmes, so the link next to this programme's name is its own;
+    otherwise every row from that tweet fetches the first programme's page."""
+    text = opp.get("tweet_text") or ""
+    name = (opp.get("program") or "").strip()
+    words = sorted(set(re.findall(r"[A-Za-z0-9]{3,}", name.lower())),
+                   key=len, reverse=True)
+    apply_url = opp.get("apply_url") or ""
     urls = []
-    for u in [opp.get("apply_url")] + (links_override or []) \
-             + re.findall(r"https?://t\.co/\S+", opp.get("tweet_text") or ""):
+    for u in [apply_url] + (links_override or []) \
+             + re.findall(r"https?://t\.co/\S+", text):
+        u = (u or "").rstrip(".,);")
         if not u:
             continue
-        u = u.rstrip(".,);")
-        # X's shortener serves an interstitial page, and its certificate chain
-        # fails here, so a t.co link is never evidence of a real program page.
-        if "x.com/" in u or "twitter.com/" in u or "t.co/" in u:
+        if re.search(r"https?://(?:www\.)?(?:x|twitter)\.com/", u):
             continue
         if u not in urls:
             urls.append(u)
-    return urls
+    if apply_url in urls:
+        urls.remove(apply_url)
+
+    def near(u):
+        """How well the text block just before this link names the program.
+
+        The block runs from the end of the previous link, so a roundup's
+        second item is scored on its own words, not the whole tweet."""
+        pos = text.find(u)
+        if pos < 0:
+            return (0, 10 ** 9)
+        ends = [text.find(v) + len(v) for v in urls
+                if 0 <= text.find(v) < pos]
+        block = text[max(ends) if ends else 0:pos].lower()
+        hits = sum(1 for w in words if w in block)
+        spots = [m.start() for w in words
+                 for m in re.finditer(re.escape(w), text.lower())]
+        return (-hits, min((abs(pos - p) for p in spots), default=10 ** 9))
+
+    # Score before sorting: list.sort() shows the list as empty to its own key
+    # function, so near() must not read `urls` while the sort is running.
+    order = {u: near(u) for u in urls}
+    urls.sort(key=lambda u: order[u])
+    return ([apply_url] if apply_url and apply_url not in urls else []) + urls
 
 
 EXTRACT_SYSTEM = (
@@ -637,14 +742,24 @@ def enrich(limit=None, workers=4):
                               if opp["_links"] else [])
         if not urls:
             return opp, "no url"
-        for u in urls:
+        first_final = None
+        for i, u in enumerate(urls):
             final, _ = resolve(u)
-            if not final:
+            if i == 0:
+                first_final = final
+            if not final or re.search(
+                    r"https?://(?:www\.)?(?:t\.co|x|twitter)\.com/", final):
                 continue
             with db_lock:
                 row = con.execute(
-                    "SELECT status,error,title,text FROM pages WHERE url=?",
+                    "SELECT status,error,title,text,fetched_at FROM pages WHERE url=?",
                     (final,)).fetchone()
+            if row and row[1]:
+                # A failure is not permanent: retry it after half a day, so a
+                # block or a dead host does not hide the page forever.
+                cutoff = (dt.datetime.now(dt.timezone.utc)
+                          - dt.timedelta(hours=12)).isoformat(timespec="seconds")
+                row = None if (row[4] or "") < cutoff else row
             if not row:
                 title, text, err = fetch(final)
                 with db_lock:
@@ -653,13 +768,24 @@ def enrich(limit=None, workers=4):
                                  text, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
                     con.commit()
                     row = con.execute(
-                        "SELECT status,error,title,text FROM pages WHERE url=?",
+                        "SELECT status,error,title,text,fetched_at FROM pages WHERE url=?",
                         (final,)).fetchone()
             if row and row[1]:
+                continue
+            if not page_matches(opp, row[3] if row else "",
+                                row[2] if row else ""):
+                # A roundup link can point at another programme's page. Copying
+                # facts from it would attach the wrong deadline and apply form.
                 continue
             opp["_page"] = final
             opp["_title"] = row[2] if row else ""
             return opp, (final, row[3] if row else "")
+        # The page would not load, but the nearest link still names the right
+        # programme, so keep it as the apply link rather than showing none.
+        if first_final and not re.search(
+                r"https?://(?:www\.)?(?:t\.co|x|twitter)\.com/", first_final):
+            # A t.co value from the scan is not a usable apply link either.
+            opp["apply_url"] = real_url(opp.get("apply_url")) or first_final
         return opp, "no fetchable url"
 
     def extract_one(opp, info):
@@ -672,7 +798,11 @@ def enrich(limit=None, workers=4):
                               (key,)).fetchone()
         if row:
             return opp, json.loads(row[0]), True
-        text, err, _ = ask(prompt, system=EXTRACT_SYSTEM, max_tokens=700)
+        text, err, _ = ask(
+            prompt, system=EXTRACT_SYSTEM, max_tokens=700,
+            # Chatty free models answer in prose; reject that reply and let the
+            # next provider try instead of caching a page as unreadable.
+            validate=lambda t: isinstance(extract_json(t)[0], dict))
         if err:
             return opp, None, False
         obj, perr = extract_json(text)
@@ -706,13 +836,35 @@ def enrich(limit=None, workers=4):
             else (oi[0], None, False),
             fetched))
     for (opp, parsed, from_cache), (_, info) in zip(results, fetched):
-        if parsed:
-            for k in ("apply_url", "website", "deadline_iso",
-                      "deadline_text", "status", "eligibility",
-                      "location", "notes"):
-                opp[k] = parsed.get(k)
+        # Record the page before reading parsed facts: the fallback apply link
+        # below needs it.
         if isinstance(info, tuple) and len(info) == 2:
             opp["evidence_url"] = info[0]
+        if parsed:
+            for k in ("apply_url", "website", "deadline_iso",
+                      "deadline_text", "eligibility", "location", "notes"):
+                value = parsed.get(k)
+                # A null from the page must not erase a fact the scan already
+                # found in the tweet.
+                if value:
+                    opp[k] = value
+            status = normal_status(parsed.get("status"))
+            if status != "unknown":
+                opp["status"] = status
+        if not real_url(opp.get("apply_url")) and real_url(opp.get("evidence_url")):
+            # The fetched page is the best link we have when the model did not
+            # name a separate application form, or did not answer at all.
+            opp["apply_url"] = opp["evidence_url"]
+        # The written wording wins over a model-made ISO date; a free model
+        # happily writes 2024 for "Oct 27" when the tweet gives no year.
+        if (not opp.get("deadline_text") and not opp.get("deadline_iso")
+                and isinstance(info, tuple)):
+            text, iso = page_deadline(info[1])
+            if iso:
+                opp["deadline_text"], opp["deadline_iso"] = text, iso
+        iso = parse_deadline_text(opp.get("deadline_text"))
+        if iso:
+            opp["deadline_iso"] = iso
         done += 1
         if from_cache:
             hits += 1
@@ -743,17 +895,116 @@ def reviewed_keys():
 
 
 def real_url(u):
-    """Drop X's shortener: it is never the program's own page."""
-    return u if u and not re.match(r"https?://t\.co/", u) else None
+    """Drop links back into X: they are never the program's own page."""
+    return u if u and not re.match(
+        r"https?://(?:www\.)?(?:t\.co|x|twitter)\.com/", u) else None
+
+
+_MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+           "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+
+
+def normal_status(value):
+    """One of open, closed or unknown, even when the model echoed the menu."""
+    s = (value or "").strip().lower()
+    if "open" in s and "closed" in s:
+        return "unknown"
+    if "closed" in s:
+        return "closed"
+    if "open" in s:
+        return "open"
+    return "unknown"
+
+
+def parse_deadline_text(text, today=None):
+    """Best-effort ISO date from the wording the extractor copied.
+
+    Handles 2026-11-09, Nov 9, Nov 9 2026 and 9 Nov. Returns '' for 'rolling'
+    or anything with no explicit month and day. A month-day more than a month
+    past is read as next year, because a live advert is not describing last
+    year's deadline."""
+    if not text:
+        return ""
+    today = today or dt.date.today()
+    s = str(text)
+    m = re.search(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})\b", s)
+    if m:
+        y, mo, d = (int(x) for x in m.groups())
+        explicit = True
+    else:
+        m = re.search(r"\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b"
+                      r"(?:,?\s*(20\d{2}))?", s)
+        if m and m.group(1).lower()[:3] in _MONTHS:
+            mo, d = _MONTHS[m.group(1).lower()[:3]], int(m.group(2))
+            y = int(m.group(3)) if m.group(3) else today.year
+        else:
+            m = re.search(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\b"
+                          r"(?:,?\s*(20\d{2}))?", s)
+            if not (m and m.group(2).lower()[:3] in _MONTHS):
+                return ""
+            d, mo = int(m.group(1)), _MONTHS[m.group(2).lower()[:3]]
+            y = int(m.group(3)) if m.group(3) else today.year
+        explicit = bool(m.group(3))
+    try:
+        got = dt.date(y, mo, d)
+    except ValueError:
+        return ""
+    if not explicit and got < today - dt.timedelta(days=30):
+        try:
+            got = got.replace(year=got.year + 1)
+        except ValueError:
+            return ""
+    return got.isoformat()
+
+
+_DEADLINE_CUE = re.compile(
+    r"(?:applications?|submissions?|entries)\s+(?:close|are due)\s+(?:on\s+)?"
+    r"|apply by\s+"
+    r"|deadline(?:\s+to apply)?(?:\s+for [^.]{0,30})?\s+(?:is|:)\s*"
+    r"|closes on\s+", re.I)
+
+
+def page_deadline(text):
+    """Deadline date from the page wording when the model did not find one.
+
+    The date must follow its own cue, because a page can say 'apply by the
+    deadline, you will get a decision by December 11' where December 11 is a
+    decision date, not the deadline."""
+    for m in _DEADLINE_CUE.finditer(text or ""):
+        tail = text[m.end():m.end() + 45]
+        if re.match(r"(?:the|our|their|its)\s+deadline\b", tail, re.I):
+            continue
+        iso = parse_deadline_text(tail)
+        if iso:
+            return (m.group(0) + tail[:40]).strip(), iso
+    return "", ""
+
+
+def status_for(o, today=None):
+    """What the Status column means: the page's own open/closed word.
+
+    When the page is silent, a real application link and a deadline that has
+    not passed are evidence enough to call it open. No link and no page means
+    unknown, and the table says so rather than guessing."""
+    today = today or dt.date.today().isoformat()
+    status = normal_status(o.get("status"))
+    deadline = o.get("deadline_iso") or parse_deadline_text(o.get("deadline_text"))
+    # The page's own word wins: YC keeps accepting late applications after its
+    # stated deadline, so a past date alone must not close it.
+    if status != "unknown":
+        return status
+    if deadline and deadline < today:
+        return "closed"
+    if deadline and (real_url(o.get("apply_url")) or real_url(o.get("website"))):
+        return "open"
+    return "unknown"
 
 
 def candidate_facts(o, today=None):
     today = today or dt.date.today().isoformat()
-    status = (o.get("status") or "unknown").lower()
-    deadline = o.get("deadline_iso") or ""
-    closed = status == "closed" or bool(deadline and deadline < today)
-    if closed:
-        status = "closed"
+    status = status_for(o, today)
+    deadline = o.get("deadline_iso") or parse_deadline_text(o.get("deadline_text")) or ""
+    closed = status == "closed"
     facts = {
         "apply_url": real_url(o.get("apply_url")),
         "website": real_url(o.get("website") or o.get("evidence_url")),
@@ -866,7 +1117,7 @@ def _raw_candidates():
     return candidates
 
 
-def merge(enriched=None, stage=False, raw=False):
+def merge(enriched=None, stage=False, raw=False, workers=4):
     """Fold researched facts into opportunities_manual.json and write a report.
 
     With stage=True the JSON is written but the manual file is left alone, so the
@@ -878,7 +1129,7 @@ def merge(enriched=None, stage=False, raw=False):
         enriched = _raw_candidates()
     else:
         import dedupe  # local import keeps this module importable without hiring ctx
-        enriched = enriched if enriched is not None else enrich()
+        enriched = enriched if enriched is not None else enrich(workers=workers)
     if not os.path.exists(MANUAL):
         print(f"no {MANUAL} yet; run opportunities.py once to seed it")
         return
@@ -978,10 +1229,11 @@ def plan(years):
 
 
 def selftest():
-    bad = 0
+    bad = total = 0
 
     def check(label, got, want):
-        nonlocal bad
+        nonlocal bad, total
+        total += 1
         ok = got == want
         bad += 0 if ok else 1
         print(f"  {'ok ' if ok else 'BAD'} {label}: {got!r}")
@@ -1019,7 +1271,50 @@ def selftest():
           candidate_key(one) != candidate_key({**one, "program": "Bar"}), True)
     check("candidate dated", candidate_row(one).get("deadline"), "2099-01-01")
     check("candidate closed", candidate_row({**one, "status": "closed"}), None)
-    print(f"selftest: {21 - bad}/21 passed")
+    today = dt.date(2026, 11, 7)
+    check("deadline month-day", parse_deadline_text("Nov 9, 9am PST", today), "2026-11-09")
+    check("deadline iso", parse_deadline_text("apply by 2027-01-05", today), "2027-01-05")
+    check("deadline rolls next year", parse_deadline_text("Jan 5", today), "2027-01-05")
+    check("deadline rolling", parse_deadline_text("Rolling", today), "")
+    check("status menu echo", normal_status("open|closed|unknown"), "unknown")
+    check("status case", normal_status("Open"), "open")
+    check("t.co kept for resolve",
+          candidate_urls({"tweet_text": "x https://t.co/abc", "_links": "[]"}),
+          ["https://t.co/abc"])
+    roundup = {"program": "GitLab Life After Code",
+               "tweet_text": "1. GitLab Life After Code https://t.co/aaa\n"
+                             "2. Nebius https://t.co/bbb"}
+    check("roundup nearest link", candidate_urls(roundup)[0], "https://t.co/aaa")
+    check("roundup second program",
+          candidate_urls({**roundup, "program": "Nebius"})[0], "https://t.co/bbb")
+    check("page names program",
+          page_matches({"program": "GitLab Life After Code"},
+                       "GitLab presents Life After Code"), True)
+    check("page shares one word",
+          page_matches({"program": "GitLab Life After Code"},
+                       "Twitch x OpenAI Codex hackathon"), False)
+    check("status from apply link and future deadline",
+          status_for({"apply_url": "https://a.example",
+                      "deadline_iso": "2027-01-01"}, "2026-11-07"), "open")
+    check("status link alone",
+          status_for({"apply_url": "https://a.example"}, "2026-11-07"), "unknown")
+    check("page open after deadline",
+          status_for({"status": "open", "deadline_iso": "2026-11-02",
+                      "apply_url": "https://a.example"}, "2026-11-08"), "open")
+    check("page deadline cue",
+          page_deadline("Submissions close Jan 9, 2027. Apply now.")[1], "2027-01-09")
+    check("page deadline past tense",
+          page_deadline("The deadline was Jan 9, 2027. Late entries open.")[1], "")
+    check("page deadline decision date",
+          page_deadline("If you apply by the deadline, you will get a decision "
+                        "by December 11.")[1], "")
+    check("page deadline for batch",
+          page_deadline("The deadline to apply for the batch is February 21.")[1],
+          "2027-02-21")
+    check("sponsor mention rejected",
+          page_matches({"program": "GitLab Life After Code"},
+                       "GitLab is a sponsor. Write code.", "ETHGlobal Mumbai"), False)
+    print(f"selftest: {total - bad}/{total} passed")
     return 1 if bad else 0
 
 
@@ -1042,6 +1337,8 @@ def main():
                    help="write the candidates JSON only, leave the manual file alone")
     p.add_argument("--raw", action="store_true",
                    help="stage directly from the scans table, skipping slow enrich()")
+    p.add_argument("--workers", type=int, default=4,
+                   help="threads for enrich(); ignored with --raw")
     sub.add_parser("clean")
     sub.add_parser("selftest")
     args = ap.parse_args()
@@ -1060,7 +1357,7 @@ def main():
               f"{sum(1 for o in enriched if o.get('status'))} with a status")
         return 0
     if args.cmd == "merge":
-        merge(stage=args.stage, raw=args.raw)
+        merge(stage=args.stage, raw=args.raw, workers=args.workers)
         return 0
     if args.cmd == "clean":
         clean()

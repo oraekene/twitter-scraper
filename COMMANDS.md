@@ -256,8 +256,8 @@ costs nothing:
 python hiring\research.py scan                  # classify tweets, resumable
 python hiring\research.py enrich                # fetch pages found in tweets
 python hiring\research.py enrich --workers 4   # same, four threads
-python hiring\research.py merge --stage --raw   # fast staging from the scans table
-python hiring\research.py merge --stage         # full staging with page-extracted details
+python hiring\research.py merge --stage --raw --workers 4   # fast staging from the scans table
+python hiring\research.py merge --stage --workers 4         # full staging with page-extracted details
 python hiring\research.py merge                 # append approved rows to the curated list
 python hiring\research.py clean                # drop the staging and review files
 python hiring\research.py selftest             # 21 checks, no network
