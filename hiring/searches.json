@@ -1,6 +1,28 @@
 {
   "searches": [
     {
+      "name": "opportunities",
+      "source": "command-source",
+      "command": "opportunities",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:00",
+      "days_back": 45,
+      "limit": 200,
+      "notes": "The curated opportunities list, rebuilt from your bookmarks every day. Same as the Fetch tab's opportunities command, but scheduled."
+    },
+    {
+      "name": "opportunities-live",
+      "source": "command-source",
+      "command": "opportunities-live",
+      "enabled": true,
+      "every_days": 1,
+      "time": "09:05",
+      "days_back": 7,
+      "limit": 200,
+      "notes": "Same as opportunities, plus a live X search for new roundup tweets. Noisier, so it runs after the bookmark pass."
+    },
+    {
       "name": "hiring-bookmarks",
       "source": "bookmarks",
       "enabled": true,

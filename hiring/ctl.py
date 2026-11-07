@@ -39,7 +39,17 @@ CONFIG = os.path.join(HERE, 'searches.json')
 LISTS = os.path.join(HERE, 'lists.json')
 STATE = os.path.join(HERE, 'searches-state.json')
 OUTDIR = os.path.join(os.path.dirname(HERE), 'out', 'searches')
-SOURCES = ('bookmarks', 'live', 'watchlist', 'list', 'concept')
+SOURCES = ('bookmarks', 'live', 'watchlist', 'list', 'concept', 'command-source')
+
+# RUNNABLE commands that produce a report rather than a tweet search. Mirrors
+# serve.py's RUNNABLE; ctl.py cannot import it (serve imports ctl), so the two
+# are kept in sync by hand. Add a line here and in serve.py together.
+COMMAND_SOURCES = {
+    'opportunities': [sys.executable, os.path.join(HERE, 'opportunities.py')],
+    'opportunities-live': [sys.executable, os.path.join(HERE, 'opportunities.py'), '--live'],
+    'research-enrich': [sys.executable, os.path.join(HERE, 'research.py'), 'enrich'],
+    'research-stage': [sys.executable, os.path.join(HERE, 'research.py'), 'merge', '--stage'],
+}
 
 
 # ---------- config ----------
@@ -131,6 +141,11 @@ def check(s):
         if c.lower() in ('hiring', 'layoff', 'advice'):
             raise ValueError(f"{s['name']}: a concept of one word is what the query sources "
                              f"are for. Say what the tweets are about.")
+    if s['source'] == 'command-source':
+        cmd = s.get('command')
+        if cmd not in COMMAND_SOURCES:
+            raise ValueError(f"{s['name']}: no such command {cmd!r}. "
+                             f"Choose from {', '.join(sorted(COMMAND_SOURCES))}")
     if int(s.get('every_days', 1)) < 1:
         raise ValueError(f"{s['name']}: every_days must be 1 or more")
     if not re.fullmatch(r'\d{2}:\d{2}', s.get('time', '09:00')):
@@ -207,6 +222,66 @@ def run_concept(s, limit, since):
     return rows, notes
 
 
+def run_command_source(s, limit, since):
+    """Run a RUNNABLE command and fold its report into the same payload shape
+    every other source produces, so the markdown writer and the Results tab need
+    no special case.
+
+    The command is allowed to write anywhere in out\\, but the payload is read
+    from the most recent opportunities[-live]-*.json file, which is what the
+    command actually produces. Nothing here runs a shell string."""
+    import subprocess as _sp
+    cmd = COMMAND_SOURCES[s['command']]
+    p = _sp.run([*cmd, '--days', str(int(s.get('days_back', 45)))],
+                cwd=HERE, capture_output=True, text=True, timeout=3600)
+    out_lines = (p.stdout or '').splitlines()[-40:]
+    if p.returncode != 0:
+        raise RuntimeError(f"{s['command']} failed: " + (p.stderr or p.stdout or '')[:300])
+    # The command names its own output file by date, so find the newest one
+    # rather than hardcoding a path that would go stale tomorrow.
+    import glob as _glob
+    pat = 'opportunities' + ('-live' if s['command'] == 'opportunities-live' else '') + '-*.json'
+    files = sorted(_glob.glob(os.path.join(OUTDIR, '..', pat)))
+    if not files:
+        raise RuntimeError(f"{s['command']} wrote no {pat} file")
+    latest = files[-1]
+    with open(latest, encoding='utf-8') as fh:
+        data = json.load(fh)
+    dated = data.get('dated') or []
+    undated = data.get('undated') or []
+    rows = []
+    for r in dated + undated:
+        rows.append({
+            'id': '', 'url': r.get('tweet') or '', 'text': r.get('detail') or '',
+            'author_handle': '', 'author_name': '',
+            'posted_at': '', 'like_count': 0, 'repost_count': 0,
+            'reply_count': 0, 'bucket': 'opening',
+            'dt': None, 'roles': [], 'pay': [],
+            'program': r.get('program'), 'deadline': r.get('deadline') or r.get('label'),
+            'detail': r.get('detail'), 'tweet': r.get('tweet'),
+            'apply_url': r.get('apply_url'), 'website': r.get('website'),
+            'status': r.get('status'), 'verified_deadline': r.get('verified_deadline'),
+        })
+    stamp = datetime.now().strftime('%Y-%m-%d_%H%M')
+    base = os.path.join(OUTDIR, f"{s['name']}-{stamp}")
+    payload = {
+        'name': s['name'], 'source': 'command-source',
+        'command': s['command'], 'ran_at': datetime.now(timezone.utc).isoformat(),
+        'since': since.isoformat(),
+        'coverage': [f"ran {s['command']}"] + out_lines,
+        'counts': {'opening': len(rows)}, 'openings': len(rows),
+        'tweets': rows,
+    }
+    with open(base + '.json', 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    with open(base + '.md', 'w', encoding='utf-8') as f:
+        f.write(markdown(s, payload, rows))
+    st = load_state()
+    st[s['name']] = {'last_run': stamp, 'rows': len(rows), 'openings': payload['openings']}
+    save_state(st)
+    return payload
+
+
 def run_one(s):
     check(s)
     limit = int(s.get('limit', 50))
@@ -238,6 +313,8 @@ def run_one(s):
                         for l in open(path, encoding='utf-8')
                         if l.split('#', 1)[0].strip()]
         rows, notes = S.fetch_handles(handles, limit, float(s.get('pause', 2.0)))
+    elif src == 'command-source':
+        return run_command_source(s, limit, since)
     else:
         list_id = s.get('list_id')
         if s.get('list'):
@@ -287,10 +364,23 @@ def run_one(s):
 def markdown(s, p, rows):
     L = [f"# {s['name']}", '',
          f"Source: {p['source']}. Ran {p['ran_at'][:19].replace('T', ' ')} UTC, "
-         f"since {p['since'][:10]}. **{len(p['tweets'])}** tweets, "
+         f"since {p['since'][:10]}. **{len(p['tweets'])}** rows, "
          f"**{p['openings']}** openings.", '']
     if p['coverage']:
         L += ['Coverage:', ''] + [f'- {n}' for n in p['coverage']] + ['']
+    if p['source'] == 'command-source':
+        # Command-source rows are program entries, not tweets, so the tweet
+        # layout below would read as noise. Show the table the user actually
+        # came for: deadline, program, apply link.
+        L += ['| Deadline | Program | Detail | Apply |', '|---|---|---|---|']
+        for r in rows:
+            dl = r.get('deadline') or r.get('label') or 'Rolling'
+            prog = (r.get('program') or '-').replace('|', '/')
+            det = S.snip(r.get('detail') or '') if hasattr(S, 'snip') else (r.get('detail') or '-')
+            url = r.get('apply_url') or r.get('url') or ''
+            L.append(f"| {dl} | {prog} | {det} |"
+                     + (f" [{url[:60]}]({url})" if url else ' -') + " |")
+        return '\n'.join(L)
     L += ['| Group | Tweets |', '|---|---|']
     for k in ('opening', 'layoff', 'list', 'advice', 'craft', 'other', 'misc'):
         if p['counts'].get(k):

@@ -294,7 +294,7 @@ def scan_objects(parsed):
 
 def get_db():
     OUT.mkdir(exist_ok=True)
-    con = sqlite3.connect(RESEARCH_DB)
+    con = sqlite3.connect(RESEARCH_DB, check_same_thread=False)
     con.executescript(
         "CREATE TABLE IF NOT EXISTS scans("
         " tweet_id TEXT PRIMARY KEY, model TEXT, verdict TEXT, checked_at TEXT);"
@@ -551,11 +551,16 @@ def extract_prompt(opp, page_text):
             '"notes":"one short sentence about what it offers"}')
 
 
-def enrich(limit=None):
+def enrich(limit=None, workers=4):
     """Fetch pages for scan-found opportunities AND the hand-curated rows, then
     extract verified facts. Manual rows go first so they get resolved even when
-    a full scan is still running. Returns the enriched opportunity list."""
+    a full scan is still running. Returns the enriched opportunity list.
+
+    Two I/O-bound stages run in a thread pool: HTTP fetches first, then model
+    extraction. SQLite writes are serialised with a lock because the default
+    connect() refuses writes from a worker thread."""
     con = get_db()
+    db_lock = threading.Lock()
     opps, seen = [], set()
 
     def add(o, key):
@@ -592,6 +597,8 @@ def enrich(limit=None):
         opps = opps[:limit]
 
     def enrich_one(opp):
+        """Fetch the first reachable page for one opportunity. Returns
+        (opp, (url, page_text)) on success or (opp, reason) on failure."""
         urls = candidate_urls(opp, links_override=json.loads(opp["_links"])
                               if opp["_links"] else [])
         if not urls:
@@ -600,51 +607,78 @@ def enrich(limit=None):
             final, _ = resolve(u)
             if not final:
                 continue
-            row = con.execute("SELECT status,error,title,text FROM pages WHERE url=?",
-                              (final,)).fetchone()
+            with db_lock:
+                row = con.execute(
+                    "SELECT status,error,title,text FROM pages WHERE url=?",
+                    (final,)).fetchone()
             if not row:
                 title, text, err = fetch(final)
-                con.execute("INSERT OR REPLACE INTO pages VALUES (?,?,?,?,?,?)",
-                            (final, "ok" if not err else "err", err, title,
-                             text, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
-                con.commit()
-                row = (None, err, title, text)
-            if row[1]:
+                with db_lock:
+                    con.execute("INSERT OR REPLACE INTO pages VALUES (?,?,?,?,?,?)",
+                                (final, "ok" if not err else "err", err, title,
+                                 text, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
+                    con.commit()
+                    row = con.execute(
+                        "SELECT status,error,title,text FROM pages WHERE url=?",
+                        (final,)).fetchone()
+            if row and row[1]:
                 continue
             opp["_page"] = final
-            opp["_title"] = row[2]
-            return opp, (final, row[3])
+            opp["_title"] = row[2] if row else ""
+            return opp, (final, row[3] if row else "")
         return opp, "no fetchable url"
 
-    done = hits = 0
-    for opp, info in [enrich_one(o) for o in opps]:
-        if isinstance(info, tuple) and info[1]:
-            prompt = extract_prompt(opp, info[1])
-            key = hashlib.sha1(prompt.encode("utf-8")).hexdigest()
+    def extract_one(opp, info):
+        """Ask the model for verified facts, caching by prompt hash. Returns
+        (opp, parsed_dict_or_None, from_cache_bool)."""
+        prompt = extract_prompt(opp, info[1])
+        key = hashlib.sha1(prompt.encode("utf-8")).hexdigest()
+        with db_lock:
             row = con.execute("SELECT fields FROM extractions WHERE key=?",
                               (key,)).fetchone()
-            parsed = None
-            if row:
-                parsed = json.loads(row[0])
-                hits += 1
-            else:
-                text, err, _ = ask(prompt, system=EXTRACT_SYSTEM, max_tokens=700)
-                if not err:
-                    obj, perr = extract_json(text)
-                    if not perr and isinstance(obj, dict):
-                        parsed = obj
-                        con.execute(
-                            "INSERT OR REPLACE INTO extractions VALUES (?,?,?)",
-                            (key, json.dumps(parsed),
-                             dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
-                        con.commit()
-            if parsed:
-                for k in ("apply_url", "website", "deadline_iso",
-                          "deadline_text", "status", "eligibility",
-                          "location", "notes"):
-                    opp[k] = parsed.get(k)
+        if row:
+            return opp, json.loads(row[0]), True
+        text, err, _ = ask(prompt, system=EXTRACT_SYSTEM, max_tokens=700)
+        if err:
+            return opp, None, False
+        obj, perr = extract_json(text)
+        if perr or not isinstance(obj, dict):
+            return opp, None, False
+        with db_lock:
+            con.execute(
+                "INSERT OR REPLACE INTO extractions VALUES (?,?,?)",
+                (key, json.dumps(obj),
+                 dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
+            con.commit()
+        return opp, obj, False
+
+    # Stage 1: HTTP fetches in parallel. Each worker resolves URLs and pulls
+    # the first reachable page; the DB page cache is checked under a lock.
+    fetched = []
+    with futures.ThreadPoolExecutor(max_workers=workers) as ex:
+        for opp, info in ex.map(enrich_one, opps):
+            fetched.append((opp, info))
+
+    # Stage 2: model extractions in parallel. Cache hits are free; misses
+    # rotate providers through the shared _ScanRoot, which is already
+    # thread-safe. DB writes go through the same lock.
+    done = hits = 0
+    with futures.ThreadPoolExecutor(max_workers=workers) as ex:
+        results = list(ex.map(
+            lambda oi: extract_one(oi[0], oi[1]) if isinstance(oi[1], tuple) and oi[1][1]
+            else (oi[0], None, False),
+            fetched))
+    for (opp, parsed, from_cache), (_, info) in zip(results, fetched):
+        if parsed:
+            for k in ("apply_url", "website", "deadline_iso",
+                      "deadline_text", "status", "eligibility",
+                      "location", "notes"):
+                opp[k] = parsed.get(k)
+        if isinstance(info, tuple) and len(info) == 2:
             opp["evidence_url"] = info[0]
-            done += 1
+        done += 1
+        if from_cache:
+            hits += 1
     print(f"fetched and extracted {done} page(s), {hits} from cache")
     return opps
 
@@ -962,7 +996,10 @@ def main():
     p.add_argument("--limit", type=int)
     p.add_argument("--workers", type=int, default=2)
     p.add_argument("--batch", type=int, default=30)
-    sub.add_parser("enrich").add_argument("--limit", type=int)
+    p = sub.add_parser("enrich")
+    p.add_argument("--limit", type=int)
+    p.add_argument("--workers", type=int, default=4,
+                   help="threads for the HTTP and model stages; 4 is safe on a laptop")
     p = sub.add_parser("merge")
     p.add_argument("--stage", action="store_true",
                    help="write the candidates JSON only, leave the manual file alone")
@@ -981,7 +1018,7 @@ def main():
         scan(args.year, args.workers, args.batch, args.limit)
         return 0
     if args.cmd == "enrich":
-        enriched = enrich(limit=args.limit)
+        enriched = enrich(limit=args.limit, workers=args.workers)
         print(f"{len(enriched)} opportunities, " +
               f"{sum(1 for o in enriched if o.get('status'))} with a status")
         return 0

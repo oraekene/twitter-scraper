@@ -199,10 +199,25 @@ python hiring\ctl.py add --name y --source watchlist --handle aakashgupta
 python hiring\ctl.py add --name z --source list --list-id 1908587200419422252
 ```
 
-Four sources: `bookmarks` reads your saved tweets from disk, `live` searches X with the full 81
-phrase set in batches, `watchlist` reads named accounts with no query at all, and `list` reads one X
-list by numeric id. A list id is the last number in `x.com/i/lists/<id>`. X refuses cookie auth on
+Five sources: `bookmarks` reads your saved tweets from disk, `live` searches X with the full 81
+phrase set in batches, `watchlist` reads named accounts with no query at all, `list` reads one X
+list by numeric id, and `command-source` runs a command and folds its report into the same payload.
+A list id is the last number in `x.com/i/lists/<id>`. X refuses cookie auth on
 every list-enumeration endpoint, so ids must be copied by hand.
+
+`command-source` is how the opportunities list gets its own saved search. It runs one of four
+commands and reads the newest `opportunities[-live]-*.json` file the command wrote:
+
+| Command | What it does |
+|---|---|
+| `opportunities` | The curated list, rebuilt from bookmarks. |
+| `opportunities-live` | The same plus a live X search. |
+| `research-enrich` | Run the page-fetch and model-extraction pass. |
+| `research-stage` | Run `merge --stage --raw` and write the staging list. |
+
+The two opportunities searches are already in `searches.json` and enabled. Adding one is the
+same as adding any other search: `python hiring\ctl.py add --name x --source command-source
+--command opportunities`.
 
 The engine underneath is `hiring\search.py`, which also runs standalone:
 
@@ -240,12 +255,19 @@ costs nothing:
 ```
 python hiring\research.py scan                  # classify tweets, resumable
 python hiring\research.py enrich                # fetch pages found in tweets
+python hiring\research.py enrich --workers 4   # same, four threads
 python hiring\research.py merge --stage --raw   # fast staging from the scans table
 python hiring\research.py merge --stage         # full staging with page-extracted details
 python hiring\research.py merge                 # append approved rows to the curated list
 python hiring\research.py clean                # drop the staging and review files
 python hiring\research.py selftest             # 21 checks, no network
 ```
+
+`enrich` has two I/O-bound stages that run in a thread pool: HTTP fetches first, then
+model extraction. `--workers` sets the thread count (default 4). SQLite writes go through
+a lock, so the default `connect()` refusal to write from a worker thread is not a
+problem. The page cache (`pages` table) and the extraction cache (`extractions` table,
+keyed by prompt hash) mean a second run is mostly cache hits.
 
 `merge --stage` is the safe one: it writes the staging list and leaves `opportunities_manual.json`
 untouched. The Review tab on the dashboard shows that list and lets you approve or reject each row;
