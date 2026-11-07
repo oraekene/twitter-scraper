@@ -83,7 +83,7 @@ if ($Only -in 'all', 'opportunities') {
     # so this is safe to run on a schedule.
     & python (Join-Path $Root 'research.py') merge --stage *>> $Log
     if ($LASTEXITCODE -ne 0) {
-        Say "merge --stage --raw failed, code $LASTEXITCODE. See $Log"
+        Say "merge --stage failed, code $LASTEXITCODE. See $Log"
     } else {
         Say 'wrote out\research_opportunities.json'
     }

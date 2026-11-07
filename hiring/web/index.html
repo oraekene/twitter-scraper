@@ -499,7 +499,7 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
         <div class="card">
           <header><div><h2>Candidates</h2><p class="sub">Staged by <code>merge --stage</code>. Approve adds one row to your list, Reject hides it for good</p></div>
             <div class="actions">
-              <button class="primary sm" onclick="runResearch('research-stage')">Stage from scan</button></div></header>
+              <button class="primary sm" onclick="runResearch('research-stage')">Stage (enriched)</button></div></header>
           <div class="body">
             <div class="row">
               <input id="rs-filter" placeholder="filter by program" style="max-width:240px">
@@ -977,7 +977,7 @@ function renderResearch() {
   const when = (t) => (t || '').slice(0, 16).replace('T', ' ') || 'never';
   const rows = [
     ['Last tweet checked', esc(when(s.last_checked))],
-    ['Staging list written', esc(when(s.staged_at)) + (s.staged_at ? '' : ' &mdash; run Stage from scan')],
+    ['Staging list written', esc(when(s.staged_at)) + (s.staged_at ? '' : ' &mdash; run Stage (enriched)')],
     ['Models that answered', s.models && s.models.length
       ? s.models.map(m => `<span class="mono">${esc(m.model)}</span> ${fmt(m.tweets)}`).join('<br>')
       : '<span class="dim">none yet</span>'],
@@ -1022,7 +1022,7 @@ function renderResearch() {
   }).join('')
     || `<tr><td colspan="7" class="dim">${cands.length
         ? 'nothing matches this filter'
-        : 'nothing staged yet. Run Stage from scan once the sweep has finished.'}</td></tr>`;
+        : 'nothing staged yet. Run Stage (enriched) once the sweep has finished.'}</td></tr>`;
 
   const manual = (s.manual || {});
   el('manual-kv').innerHTML = [

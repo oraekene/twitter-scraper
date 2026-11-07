@@ -213,7 +213,7 @@ commands and reads the newest `opportunities[-live]-*.json` file the command wro
 | `opportunities` | The curated list, rebuilt from bookmarks. |
 | `opportunities-live` | The same plus a live X search. |
 | `research-enrich` | Run the page-fetch and model-extraction pass. |
-| `research-stage` | Run `merge --stage --raw` and write the staging list. |
+| `research-stage` | Run `merge --stage` with enriched data (pages, deadlines, status). |
 
 The two opportunities searches are already in `searches.json` and enabled. Adding one is the
 same as adding any other search: `python hiring\ctl.py add --name x --source command-source
