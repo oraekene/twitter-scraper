@@ -322,9 +322,14 @@ pre {
 
 /* ── research review ────────────────────────────────────────────────────── */
 #research-rows td .row.tight button { flex: none; }
+#research-rows td .row.tight button { padding: 1px 5px; font-size: 11px; }
+#research-rows td .row.tight button.sm { padding: 1px 5px; font-size: 11px; }
 .rprog { max-width: 340px; }
 .rbar { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 6px; }
 .rbar i { display: block; height: 100%; background: var(--brand); }
+th.sorted { color: var(--fg); }
+th.sorted.asc::after { content: ' ▲'; font-size: 10px; }
+th.sorted.desc::after { content: ' ▼'; font-size: 10px; }
 .conf { font: 12.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg-2); }
 
 /* ── toast + dialog ─────────────────────────────────────────────────────── */
@@ -504,9 +509,15 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
               <span class="spacer"></span><span class="dim small" id="rs-count"></span>
             </div>
             <div style="overflow:auto; margin-top:12px">
-              <table><thead><tr><th>Confidence</th><th>Program</th><th>Kind</th><th>Deadline</th>
-                <th>Status</th><th>Tweet</th><th style="width:190px">Decision</th></tr></thead>
+              <table><thead><tr><th><input type="checkbox" id="rs-all" title="select all"></th>
+                <th data-sort="confidence">Confidence</th><th data-sort="program">Program</th><th data-sort="kind">Kind</th><th data-sort="deadline">Deadline</th>
+                <th data-sort="status">Status</th><th>Tweet</th><th style="width:210px">Decision</th></tr></thead>
                 <tbody id="research-rows"></tbody></table>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="sm primary" id="rs-approve-btn" disabled onclick="reviewAllSelected('approve')">Approve selected</button>
+              <button class="sm quiet danger" id="rs-reject-btn" disabled onclick="reviewAllSelected('reject')">Reject selected</button>
+              <span class="spacer"></span><span class="dim small" id="rs-sel-count"></span>
             </div>
           </div>
         </div>
@@ -555,8 +566,8 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
           <header><div><h2>Scheduled tasks</h2><p class="sub">The Windows jobs that write the reports, with when they next run</p></div>
             <div class="actions"><button class="sm" onclick="loadSearches()">Refresh</button></div></header>
           <div class="body" style="padding:0">
-            <table><thead><tr><th style="width:24%">Task</th><th>Runs</th><th>Schedule</th>
-              <th>Next</th><th>Last run</th><th style="width:10%">State</th></tr></thead>
+            <table><thead><tr><th style="width:24%" data-sort="task">Task</th><th data-sort="runs">Runs</th><th data-sort="schedule">Schedule</th>
+              <th data-sort="next">Next</th><th data-sort="last">Last run</th><th style="width:10%" data-sort="state">State</th></tr></thead>
               <tbody id="taskrows"></tbody></table>
           </div>
         </div>
@@ -565,8 +576,8 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
             <div class="actions"><button class="primary sm" onclick="openAdd()">New search</button></div></header>
           <div class="body" style="padding:0">
             <table>
-              <thead><tr><th>Name</th><th style="width:20%">Source</th><th style="width:12%">Schedule</th>
-                <th style="width:7%">On</th><th style="width:12%">Last run</th><th style="width:22%"></th></tr></thead>
+              <thead><tr><th data-sort="name">Name</th><th style="width:20%" data-sort="source">Source</th><th style="width:12%" data-sort="schedule">Schedule</th>
+                <th style="width:7%" data-sort="on">On</th><th style="width:12%" data-sort="last">Last run</th><th style="width:22%"></th></tr></thead>
               <tbody id="rows"></tbody>
             </table>
           </div>
@@ -580,8 +591,8 @@ dialog::backdrop { background: rgba(16,24,40,.35); backdrop-filter: blur(2px); }
             <div class="actions"><button class="primary sm" onclick="openListAdd()">New list</button></div></header>
           <div class="body" style="padding:0">
             <table>
-              <thead><tr><th style="width:24%">Name</th><th style="width:12%">Kind</th>
-                <th style="width:9%">Items</th><th>Detail</th><th style="width:18%"></th></tr></thead>
+              <thead><tr><th style="width:24%" data-sort="name">Name</th><th style="width:12%" data-sort="kind">Kind</th>
+                <th style="width:9%" data-sort="items">Items</th><th data-sort="detail">Detail</th><th style="width:18%"></th></tr></thead>
               <tbody id="listrows"></tbody>
             </table>
           </div>
@@ -989,8 +1000,11 @@ function renderResearch() {
     (!kind || c.kind === kind) &&
     (!openOnly || c.status !== 'closed')).slice(0, 300);
   el('rs-count').textContent = `${shown.length} of ${cands.length} candidates`;
-  el('research-rows').innerHTML = shown.map(c => `
-    <tr>
+  const selected = new Set(JSON.parse(localStorage.getItem('rs-sel') || '[]'));
+  el('research-rows').innerHTML = shown.map(c => {
+    const sel = selected.has(c.key);
+    return `<tr data-key="${esc(c.key)}">
+      <td><input type="checkbox" class="rs-cb" data-key="${esc(c.key)}" ${sel ? 'checked' : ''}></td>
       <td><span class="conf">${c.confidence == null ? '&mdash;' : Number(c.confidence).toFixed(2)}</span></td>
       <td><span class="strong">${esc(c.program)}</span>${c.deadline_text ? `<br><span class="small dim">${esc(c.deadline_text)}</span>` : ''}</td>
       <td><span class="pill brand">${esc(c.kind || 'other')}</span></td>
@@ -1001,7 +1015,8 @@ function renderResearch() {
       <td><div class="row tight">
         <button class="sm" data-key="${esc(c.key)}" data-act="approve" onclick="reviewFrom(this)">Approve</button>
         <button class="sm quiet danger" data-key="${esc(c.key)}" data-act="reject" onclick="reviewFrom(this)">Reject</button>
-      </div></td></tr>`).join('')
+      </div></td>`;
+  }).join('')
     || `<tr><td colspan="7" class="dim">${cands.length
         ? 'nothing matches this filter'
         : 'nothing staged yet. Run Stage from scan once the sweep has finished.'}</td></tr>`;
@@ -1019,6 +1034,32 @@ function renderResearch() {
   el(id).addEventListener('input', renderResearch);
   el(id).addEventListener('change', renderResearch);
 });
+el('rs-all').addEventListener('change', () => {
+  document.querySelectorAll('.rs-cb').forEach(cb => cb.checked = el('rs-all').checked);
+  updateSelCount();
+});
+
+el('research-rows').addEventListener('change', (e) => {
+  if (e.target.classList.contains('rs-cb')) updateSelCount();
+});
+
+function updateSelCount() {
+  const n = document.querySelectorAll('.rs-cb:checked').length;
+  el('rs-sel-count').textContent = n + ' selected';
+  el('rs-approve-btn').disabled = n === 0;
+  el('rs-reject-btn').disabled = n === 0;
+  localStorage.setItem('rs-sel', JSON.stringify(
+    [...document.querySelectorAll('.rs-cb:checked')].map(cb => cb.dataset.key)));
+}
+
+async function reviewAllSelected(action) {
+  const keys = [...document.querySelectorAll('.rs-cb:checked')].map(cb => cb.dataset.key);
+  for (const key of keys) {
+    await api('/api/research/' + action, {key});
+  }
+  toast(keys.length + ' ' + action + 'd');
+  loadResearch();
+}
 
 async function reviewCandidate(key, action) {
   const r = await api('/api/research/' + action, {key});
@@ -1576,6 +1617,45 @@ async function saveEnv() {
   toast(r.status === 200 ? 'written: ' + (r.data.written || []).join(', ') : (r.data.error || 'failed'), r.status !== 200);
   if (r.status === 200) { el('f-token').value = ''; el('f-ct0').value = ''; loadSettings(); }
 }
+
+/* ── sortable tables ────────────────────────────────────────────────────── */
+const SORT = { dir: {} };
+function sortTable(table, col) {
+  const tbody = table.querySelector('tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+  if (!rows.length) return;
+  const prev = SORT.dir[table.id] || { col: null, asc: true };
+  const asc = prev.col === col ? !prev.asc : true;
+  SORT.dir[table.id] = { col, asc };
+  const idx = [...table.querySelectorAll('thead th')].findIndex(th => th.dataset.sort === col);
+  table.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  if (idx >= 0) {
+    table.querySelectorAll('thead th')[idx].classList.add('sorted', asc ? 'asc' : 'desc');
+  }
+  const num = (s) => {
+    const n = parseFloat((s || '').replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+  };
+  const txt = (el) => (el.textContent || '').trim().toLowerCase();
+  rows.sort((a, b) => {
+    const av = txt(a.children[idx]);
+    const bv = txt(b.children[idx]);
+    const an = num(av), bn = num(bv);
+    const r = (!isNaN(an) && !isNaN(bn)) ? an - bn : av.localeCompare(bv);
+    return asc ? r : -r;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+function makeSortable(tableId) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.querySelectorAll('thead th[data-sort]').forEach((th) => {
+    th.style.cursor = 'pointer';
+    th.title = 'click to sort';
+    th.addEventListener('click', () => sortTable(table, th.dataset.sort));
+  });
+}
+['taskrows', 'rows', 'listrows', 'research-rows'].forEach(makeSortable);
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
 el('q-words').value = 'hiring';
