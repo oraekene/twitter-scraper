@@ -217,9 +217,12 @@ class _ScanRoot:
                         # FreeLLMAPI's "auto" route answers with the real model
                         # name here, so keep it for the audit trail.
                         return text, None, out.get("model") or model
-                    # Reasoning models can spend the whole budget thinking and return
-                    # an empty content. That is retryable, not a verdict.
+                    # An empty completion is a dead end for this provider, not a
+                    # transient retry: reasoning models burn their budget and
+                    # come back empty every time. Move to the next one instead of
+                    # burning four attempts on the same dead route.
                     last = "empty completion"
+                    break
                 with self._root._lock:
                     self._cool[name] = time.time() + cool_for
             finally:
@@ -485,7 +488,7 @@ def resolve(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "*/*"})
-        with urllib.request.urlopen(req, timeout=25) as r:
+        with urllib.request.urlopen(req, timeout=12) as r:
             return r.geturl(), None
     except Exception as e:  # noqa: BLE001
         return None, f"{type(e).__name__}: {e}"
@@ -496,7 +499,7 @@ def fetch(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "text/html,*/*"})
-        with urllib.request.urlopen(req, timeout=25) as r:
+        with urllib.request.urlopen(req, timeout=12) as r:
             ctype = r.headers.get("Content-Type", "")
             if "text" not in ctype and "html" not in ctype and "json" not in ctype:
                 return None, "", "not text"
@@ -642,7 +645,10 @@ def enrich(limit=None, workers=4):
         if err:
             return opp, None, False
         obj, perr = extract_json(text)
-        if perr or not isinstance(obj, dict):
+        # Some models answer with a tool call instead of the facts. Caching that
+        # would poison the row forever, so only keep a real extraction.
+        if perr or not isinstance(obj, dict) or not (
+                {"apply_url", "deadline_iso", "status", "program"} & obj.keys()):
             return opp, None, False
         with db_lock:
             con.execute(
