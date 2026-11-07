@@ -356,14 +356,18 @@ def read_tweets(db_path, years, limit):
     return rows
 
 
-def tweet_by_id(tweet_id):
+def tweet_by_id(tweet_id, con=None):
     """(text, links_json) for one bookmark, or (None, None)."""
-    con = sqlite3.connect(DB_PATH)
+    close = False
+    if con is None:
+        con = sqlite3.connect(DB_PATH)
+        close = True
     try:
         r = con.execute("SELECT text, links_json FROM bookmarks WHERE tweet_id=?",
                         (tweet_id,)).fetchone()
     finally:
-        con.close()
+        if close:
+            con.close()
     return (r[0], r[1]) if r else (None, None)
 
 
@@ -573,6 +577,33 @@ def enrich(limit=None, workers=4):
             seen.add(key)
         opps.append(o)
 
+    # Load every tweet we will need in ONE query. Calling tweet_by_id per
+    # opportunity is 4569 round-trips to a 134MB database; a single scan is
+    # enough, and the worker threads only read the dict.
+    needed = set()
+    if os.path.exists(MANUAL):
+        data = json.loads(pathlib.Path(MANUAL).read_text(encoding="utf-8"))
+        for row in data.get("dated", []) + data.get("undated", []):
+            tid = re.search(r"(\d{6,})\s*$", row.get("tweet") or "")
+            if tid:
+                needed.add(tid.group(1))
+    for o in opportunity_rows():
+        if (o.get("confidence") or 0) < 0.5:
+            continue
+        if o.get("tweet_id"):
+            needed.add(o["tweet_id"])
+    tweets = {}
+    if needed:
+        bcon = sqlite3.connect(DB_PATH)
+        try:
+            for tid, text, links in bcon.execute(
+                    "SELECT tweet_id, text, links_json FROM bookmarks "
+                    "WHERE tweet_id IN (%s)" % ",".join("?" * len(needed)),
+                    tuple(needed)):
+                tweets[tid] = (text, links)
+        finally:
+            bcon.close()
+
     # The hand-curated rows: their tweets are in the DB, so link resolution can
     # start immediately without waiting for the scan.
     if os.path.exists(MANUAL):
@@ -581,7 +612,7 @@ def enrich(limit=None, workers=4):
             tid = re.search(r"(\d{6,})\s*$", row.get("tweet") or "")
             if not tid:
                 continue
-            text, links = tweet_by_id(tid.group(1))
+            text, links = tweets.get(tid.group(1)) or (None, None)
             add({"program": row.get("program"), "tweet_id": tid.group(1),
                  "tweet_text": text or "", "_links": links or "[]",
                  "manual": True}, tid.group(1))
@@ -589,7 +620,7 @@ def enrich(limit=None, workers=4):
     for o in opportunity_rows():
         if (o.get("confidence") or 0) < 0.5:
             continue
-        text, links = tweet_by_id(o.get("tweet_id") or "")
+        text, links = tweets.get(o.get("tweet_id") or "") or (None, None)
         o["tweet_text"] = text or ""
         o["_links"] = links or "[]"
         o["manual"] = False
