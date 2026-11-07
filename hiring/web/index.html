@@ -1659,7 +1659,9 @@ function sortTable(table, col) {
   rows.forEach(r => tbody.appendChild(r));
 }
 function makeSortable(tableId) {
-  const table = document.getElementById(tableId);
+  // Called with tbody ids (rows are filled by id), so walk up to the table.
+  const node = document.getElementById(tableId);
+  const table = node && (node.tagName === 'TABLE' ? node : node.closest('table'));
   if (!table) return;
   table.querySelectorAll('thead th[data-sort]').forEach((th) => {
     th.style.cursor = 'pointer';

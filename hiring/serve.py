@@ -756,6 +756,9 @@ def run(config, load, save, load_state, run_one, load_lists, save_lists, port=87
             self.send_response(code)
             self.send_header('Content-Type', ctype)
             self.send_header('Content-Length', str(len(raw)))
+            # The page and its data change whenever the code does; a cached
+            # copy hides the fix the user is looking for.
+            self.send_header('Cache-Control', 'no-store')
             self.end_headers()
             self.wfile.write(raw)
 

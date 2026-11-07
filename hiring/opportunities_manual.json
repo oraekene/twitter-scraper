@@ -338,6 +338,20 @@
    "detail": "No equity, open to anyone 13+.",
    "tweet": "https://x.com/vercinyc/status/2102035123885822296",
    "source": "old roundup"
+  },
+  {
+   "timing": "Rolling",
+   "program": "AWS startup credits",
+   "detail": "Up to $350,000 in cloud credits over two years plus Google Workspace Business Plus, technical support, and access to AI models like Gemini",
+   "tweet": "https://x.com/i/status/2117650218317685144",
+   "apply_url": "https://cloud.google.com/startup-program",
+   "website": "https://cloud.google.com/startup-program",
+   "status": "open",
+   "verified_deadline": null,
+   "deadline_text": null,
+   "verified_at": "2026-11-07T22:15:52+00:00",
+   "source": "research",
+   "evidence_url": "https://cloud.google.com/startup"
   }
  ]
 }
