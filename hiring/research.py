@@ -39,6 +39,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 try:  # The Windows store Python often has an incomplete root store.
@@ -573,23 +574,45 @@ def fetch(url):
         return None, "", err
 
 
-def page_matches(opp, text, title=""):
-    """True when the page title names the programme.
+_APPLY_CUE = re.compile(
+    r"(?:apply|application|submit|submission|register|registration|"
+    r"enroll|enrollment|sign up|sign-up|request an? application|"
+    r"fill out|fill in an? application|take the first step|"
+    r"start your? application|begin your? application|"
+    r"now accepting|open for applications|applications? open|"
+    r"application deadline|apply today|apply now|apply here)", re.I)
+
+
+def page_matches(opp, text="", title="", is_apply_url=False):
+    """True when the page is the programme's own application page.
 
     A roundup's links can point at a different programme, and a sponsor logo in
     the body is not proof: ETHGlobal Mumbai mentions GitLab and code, so the
     body alone once accepted it for a GitLab row. The title is short and
     specific, so it decides whenever it exists. With no title, two distinct
-    words are required, because 'code' alone also matches other competitions."""
+    words are required, because 'code' alone also matches other competitions.
+
+    When `is_apply_url` is True the URL being checked is the one the tweet
+    gave as the apply link, so the page is accepted when it contains
+    apply-related content even when the programme name is not on it. YC's
+    apply page is titled "Apply to YC | Y Combinator" with no "winter" or
+    "batch" anywhere, and the old check threw it away."""
     words = set(re.findall(r"[a-z0-9]{4,}", (opp.get("program") or "").lower()))
     if not words:
         return True
     if title:
         low = title.lower()
-        return any(w in low for w in words)
+        if any(w in low for w in words):
+            return True
+        if is_apply_url and _APPLY_CUE.search(low):
+            return True
+        if not is_apply_url:
+            return False
     if not text:
         return False
     low = text.lower()
+    if is_apply_url:
+        return bool(_APPLY_CUE.search(low) or any(w in low for w in words))
     return sum(1 for w in words if w in low) >= min(2, len(words))
 
 
@@ -608,11 +631,14 @@ def candidate_urls(opp, links_override=None):
     apply_url = opp.get("apply_url") or ""
     urls = []
     for u in [apply_url] + (links_override or []) \
-             + re.findall(r"https?://t\.co/\S+", text):
+             + re.findall(r"https?://t\.co/\S+", text) \
+             + re.findall(r"(?<!\S)(?:[a-z0-9-]+\.)+[a-z]{2,}(?:/[^\s]*)?", text, re.I):
         u = (u or "").rstrip(".,);")
         if not u:
             continue
         if re.search(r"https?://(?:www\.)?(?:x|twitter)\.com/", u):
+            continue
+        if not _valid_url("https://" + u) and not u.startswith("http"):
             continue
         if u not in urls:
             urls.append(u)
@@ -646,6 +672,89 @@ EXTRACT_SYSTEM = (
     "You research one program from its application page and report only facts "
     "the page states. If a field is not on the page, return null for it. "
     "status is exactly one of open, closed, unknown.")
+
+SEARCH_SYSTEM = (
+    "You are a research assistant. Given a programme name and what a tweet "
+    "said about it, return the single best URL where a person can apply. "
+    "Use your training knowledge of well-known programmes (YC, Techstars, "
+    "a16z Speedrun, MIT Solve, Entrepreneur First, Thiel Fellowship, etc.). "
+    "If you are not sure, return null. Return JSON only: "
+    '{"url":"https://... or null"}')
+
+
+def _valid_url(u):
+    """True for an http(s) URL with a real dotted host.
+
+    Free models echo the prompt's example, so "https://... or null" arrives as
+    a URL and passes a bare startswith("http") check."""
+    if not isinstance(u, str) or not u.startswith("http"):
+        return False
+    host = urllib.parse.urlsplit(u).hostname or ""
+    return bool(re.match(r"^[a-z0-9-]+(?:\.[a-z0-9-]+)+$", host))
+
+
+def _web_search(query):
+    """Fallback web search using DuckDuckGo HTML (no API key needed)."""
+    try:
+        import urllib.parse as up
+        import urllib.request as ur
+        from html.parser import HTMLParser
+
+        class LinkParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.links = []
+            def handle_starttag(self, tag, attrs):
+                if tag == "a":
+                    href = dict(attrs).get("href")
+                    if href and href.startswith("http"):
+                        self.links.append(href)
+
+        url = "https://html.duckduckgo.com/html/?q=" + up.quote(query)
+        req = ur.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with ur.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+        parser = LinkParser()
+        parser.feed(html)
+        # Filter out DDG internal links and social media
+        return [l for l in parser.links
+                if not re.search(r"(duckduckgo|facebook|twitter|linkedin|youtube)\.com", l)
+                and _valid_url(l)][:5]
+    except Exception:
+        return []
+
+
+def search_url(opp):
+    """Ask the model for the apply URL when the tweet gave none.
+
+    The scan model misses URLs that are plainly in tweets, and roundup tweets
+    list several programmes without linking each one. For those, the LLM's
+    training knowledge is the only available source of where to apply.
+    Falls back to a real web search if the model returns nothing valid."""
+    # First try the model
+    prompt = (f"Programme: {opp.get('program')}\n"
+              f"Organiser: {opp.get('org') or 'unknown'}\n"
+              f"Kind: {opp.get('kind') or 'unknown'}\n"
+              f"Tweet said: {(opp.get('tweet_text') or '')[:400]}\n\n"
+              f"Where can a person apply?")
+    text, err, _ = ask(prompt, system=SEARCH_SYSTEM, max_tokens=200,
+                       validate=lambda t: isinstance(extract_json(t)[0], dict))
+    if not err:
+        obj, perr = extract_json(text)
+        if not perr and isinstance(obj, dict):
+            url = obj.get("url")
+            if _valid_url(url) and not re.search(
+                    r"https?://(?:www\.)?(?:t\.co/|(?:x|twitter)\.com/)", url):
+                return url
+
+    # Fallback: real web search for "apply <program>"
+    query = f"apply {opp.get('program', '')}"
+    for url in _web_search(query):
+        if re.search(r"(apply|application|careers|join)", url, re.I):
+            return url
+        # First non-social result is often the right one
+        return url
+    return None
 
 
 def extract_prompt(opp, page_text):
@@ -740,50 +849,77 @@ def enrich(limit=None, workers=4):
         (opp, (url, page_text)) on success or (opp, reason) on failure."""
         urls = candidate_urls(opp, links_override=json.loads(opp["_links"])
                               if opp["_links"] else [])
-        if not urls:
-            return opp, "no url"
         first_final = None
-        for i, u in enumerate(urls):
-            final, _ = resolve(u)
-            if i == 0:
-                first_final = final
-            if not final or re.search(
-                    r"https?://(?:www\.)?(?:t\.co|x|twitter)\.com/", final):
-                continue
-            with db_lock:
-                row = con.execute(
-                    "SELECT status,error,title,text,fetched_at FROM pages WHERE url=?",
-                    (final,)).fetchone()
-            if row and row[1]:
-                # A failure is not permanent: retry it after half a day, so a
-                # block or a dead host does not hide the page forever.
-                cutoff = (dt.datetime.now(dt.timezone.utc)
-                          - dt.timedelta(hours=12)).isoformat(timespec="seconds")
-                row = None if (row[4] or "") < cutoff else row
-            if not row:
-                title, text, err = fetch(final)
+
+        def attempt(cands, record=False, is_model_guess=False):
+            """Try each candidate URL in order; return (url, text) on a match.
+
+            Only the tweet's own links set first_final, the last-resort link
+            kept when a page will not load. A model guess must never become
+            that fallback."""
+            nonlocal first_final
+            for i, u in enumerate(cands):
+                final, _ = resolve(u)
+                if i == 0 and record:
+                    first_final = final
+                if not final or re.search(
+                        r"https?://(?:www\.)?(?:t\.co/|(?:x|twitter)\.com/)", final):
+                    continue
                 with db_lock:
-                    con.execute("INSERT OR REPLACE INTO pages VALUES (?,?,?,?,?,?)",
-                                (final, "ok" if not err else "err", err, title,
-                                 text, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
-                    con.commit()
                     row = con.execute(
                         "SELECT status,error,title,text,fetched_at FROM pages WHERE url=?",
                         (final,)).fetchone()
-            if row and row[1]:
-                continue
-            if not page_matches(opp, row[3] if row else "",
-                                row[2] if row else ""):
-                # A roundup link can point at another programme's page. Copying
-                # facts from it would attach the wrong deadline and apply form.
-                continue
-            opp["_page"] = final
-            opp["_title"] = row[2] if row else ""
-            return opp, (final, row[3] if row else "")
+                if row and row[1]:
+                    # A failure is not permanent: retry it after half a day, so a
+                    # block or a dead host does not hide the page forever.
+                    cutoff = (dt.datetime.now(dt.timezone.utc)
+                              - dt.timedelta(hours=12)).isoformat(timespec="seconds")
+                    row = None if (row[4] or "") < cutoff else row
+                if not row:
+                    title, text, err = fetch(final)
+                    with db_lock:
+                        con.execute("INSERT OR REPLACE INTO pages VALUES (?,?,?,?,?,?)",
+                                    (final, "ok" if not err else "err", err, title,
+                                     text, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")))
+                        con.commit()
+                        row = con.execute(
+                            "SELECT status,error,title,text,fetched_at FROM pages WHERE url=?",
+                            (final,)).fetchone()
+                if row and row[1]:
+                    continue
+                # For model guesses, require the programme name to actually
+                # appear on the page (not just apply cues). For tweet links,
+                # accept on apply content for the first URL (the apply link).
+                apply_url_mode = (i == 0 and not is_model_guess)
+                if not page_matches(opp, row[3] if row else "",
+                                    row[2] if row else "", is_apply_url=apply_url_mode):
+                    # A roundup link can point at another programme's page. Copying
+                    # facts from it would attach the wrong deadline and apply form.
+                    continue
+                opp["_page"] = final
+                opp["_title"] = row[2] if row else ""
+                return final, row[3] if row else ""
+            return None
+
+        hit = attempt(urls, record=True)
+        if not hit:
+            # No link, or every link was dead, blocked, or another programme's
+            # page. Ask the model where to apply and check that page the same way.
+            found = search_url(opp)
+            if found and found not in urls:
+                # Keep the guess only when its page actually loads and matches:
+                # enrich() then copies that fetched page into apply_url. An
+                # unverified guess must not make status_for call the row open.
+                urls = urls + [found]
+                hit = attempt([found], is_model_guess=True)
+        if hit:
+            return opp, hit
+        if not urls:
+            return opp, "no url"
         # The page would not load, but the nearest link still names the right
         # programme, so keep it as the apply link rather than showing none.
         if first_final and not re.search(
-                r"https?://(?:www\.)?(?:t\.co|x|twitter)\.com/", first_final):
+                r"https?://(?:www\.)?(?:t\.co/|(?:x|twitter)\.com/)", first_final):
             # A t.co value from the scan is not a usable apply link either.
             opp["apply_url"] = real_url(opp.get("apply_url")) or first_final
         return opp, "no fetchable url"
@@ -897,7 +1033,7 @@ def reviewed_keys():
 def real_url(u):
     """Drop links back into X: they are never the program's own page."""
     return u if u and not re.match(
-        r"https?://(?:www\.)?(?:t\.co|x|twitter)\.com/", u) else None
+        r"https?://(?:www\.)?(?:t\.co/|(?:x|twitter)\.com/)", u) else None
 
 
 _MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
@@ -983,8 +1119,8 @@ def page_deadline(text):
 def status_for(o, today=None):
     """What the Status column means: the page's own open/closed word.
 
-    When the page is silent, a real application link and a deadline that has
-    not passed are evidence enough to call it open. No link and no page means
+    When the page is silent, a real application link is evidence enough to
+    call it open. A past deadline closes it. No link and no page means
     unknown, and the table says so rather than guessing."""
     today = today or dt.date.today().isoformat()
     status = normal_status(o.get("status"))
@@ -993,9 +1129,10 @@ def status_for(o, today=None):
     # stated deadline, so a past date alone must not close it.
     if status != "unknown":
         return status
+    has_link = bool(real_url(o.get("apply_url")) or real_url(o.get("website")))
     if deadline and deadline < today:
         return "closed"
-    if deadline and (real_url(o.get("apply_url")) or real_url(o.get("website"))):
+    if has_link:
         return "open"
     return "unknown"
 
@@ -1281,6 +1418,12 @@ def selftest():
     check("t.co kept for resolve",
           candidate_urls({"tweet_text": "x https://t.co/abc", "_links": "[]"}),
           ["https://t.co/abc"])
+    check("real_url drops t.co", real_url("https://t.co/abc"), None)
+    check("real_url drops x.com", real_url("https://x.com/a/status/1"), None)
+    check("real_url keeps program page", real_url("https://apply.ycombinator.com/"),
+          "https://apply.ycombinator.com/")
+    check("model url placeholder rejected", _valid_url("https://... or null"), False)
+    check("model url real accepted", _valid_url("https://www.ycombinator.com/apply"), True)
     roundup = {"program": "GitLab Life After Code",
                "tweet_text": "1. GitLab Life After Code https://t.co/aaa\n"
                              "2. Nebius https://t.co/bbb"}
@@ -1293,11 +1436,28 @@ def selftest():
     check("page shares one word",
           page_matches({"program": "GitLab Life After Code"},
                        "Twitch x OpenAI Codex hackathon"), False)
+    check("apply url page matches by cue",
+          page_matches({"program": "YC Winter 2027 batch"},
+                       "apply to yc y combinator", "Apply to YC | Y Combinator",
+                       is_apply_url=True), True)
+    check("apply url page no cue no match",
+          page_matches({"program": "Quantum Leap Initiative"},
+                       "nothing relevant here", "Some Page", is_apply_url=True),
+          False)
+    check("apply url page body cue",
+          page_matches({"program": "YC Winter 2027 batch"},
+                       "applications are now open for winter 2027 batch", "",
+                       is_apply_url=True), True)
     check("status from apply link and future deadline",
           status_for({"apply_url": "https://a.example",
                       "deadline_iso": "2027-01-01"}, "2026-11-07"), "open")
     check("status link alone",
-          status_for({"apply_url": "https://a.example"}, "2026-11-07"), "unknown")
+          status_for({"apply_url": "https://a.example"}, "2026-11-07"), "open")
+    check("status no link no deadline",
+          status_for({"program": "test"}, "2026-11-07"), "unknown")
+    check("status past deadline closes",
+          status_for({"apply_url": "https://a.example",
+                      "deadline_iso": "2026-11-01"}, "2026-11-08"), "closed")
     check("page open after deadline",
           status_for({"status": "open", "deadline_iso": "2026-11-02",
                       "apply_url": "https://a.example"}, "2026-11-08"), "open")
