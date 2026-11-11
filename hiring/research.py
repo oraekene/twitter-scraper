@@ -549,29 +549,102 @@ def _page(raw):
     return title, data[:12000]
 
 
-def fetch(url):
-    """Download a page as text, capped at 1.5MB. Returns (title, text, error)."""
+# Hosts that answered urllib with a Cloudflare challenge. Populated at runtime
+# and written to disk so the next run skips the urllib attempt for them and
+# goes straight to requests, which handles the challenge handshake.
+_CF_HOSTS_FILE = HERE / "cloudflare_hosts.json"
+_CF_HOSTS = set()
+if _CF_HOSTS_FILE.exists():
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA,
-                                                   "Accept": "text/html,*/*"})
+        _CF_HOSTS = set(json.loads(_CF_HOSTS_FILE.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        pass
+
+
+def _record_cf(host):
+    """Remember that `host` served a Cloudflare challenge, and persist it."""
+    if host in _CF_HOSTS:
+        return
+    _CF_HOSTS.add(host)
+    try:
+        _CF_HOSTS_FILE.write_text(json.dumps(sorted(_CF_HOSTS), indent=1),
+                                  encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _host_of(url):
+    m = re.match(r"https?://([^/]+)", url or "")
+    return (m.group(1) if m else "").lower()
+
+
+def fetch(url):
+    """Download a page as text, capped at 1.5MB. Returns (title, text, error).
+
+    urllib and requests use different SSL stacks and different connection
+    pools, so a site that challenges urllib (Cloudflare, Devpost) often
+    answers requests. Hosts known to challenge are tried through requests
+    first, so the failed urllib round is skipped entirely."""
+    host = _host_of(url)
+    err = ""
+
+    def _try_urllib():
+        req = urllib.request.Request(
+            url, headers={"User-Agent": UA, "Accept": "text/html,*/*"})
         with urllib.request.urlopen(req, timeout=12, context=SSL_CTX) as r:
             ctype = r.headers.get("Content-Type", "")
             if "text" not in ctype and "html" not in ctype and "json" not in ctype:
                 return None, "", "not text"
-            raw = r.read(1_600_000)
-        return (*_page(raw), None)
+            return (*_page(r.read(1_600_000)), None)
+
+    def _try_requests():
+        import requests
+        r = requests.get(url, headers={"User-Agent": UA,
+                                       "Accept": "text/html,*/*"}, timeout=12)
+        r.raise_for_status()
+        return (*_page(r.content), None)
+
+    # A host already known to challenge urllib goes straight to requests,
+    # avoiding a wasted round trip and a challenge page in the logs.
+    if host in _CF_HOSTS:
+        try:
+            return _try_requests()
+        except Exception as e:  # noqa: BLE001
+            return None, "", f"{type(e).__name__}: {e}"
+
+    try:
+        return _try_urllib()
+    except urllib.error.HTTPError as e:
+        err = f"HTTP {e.code}: {e.reason}"
+        # Cloudflare challenge pages come back as 403 with error code 1010 in
+        # the body, or as a 503 with a challenge page. Record the host so the
+        # next fetch of any URL on it skips urllib.
+        raw = ""
+        try:
+            raw = e.read()[:300].decode("utf-8", "replace")
+        except Exception:  # noqa: BLE001
+            pass
+        if e.code == 403 and "error code: 1010" in raw:
+            print(f"  cloudflare challenge from {host} (urllib), switching to requests")
+            _record_cf(host)
+        elif e.code in (503, 502) and ("cloudflare" in raw.lower()
+                                       or "challenge" in raw.lower()):
+            print(f"  cloudflare challenge from {host} (urllib), switching to requests")
+            _record_cf(host)
+        elif e.code == 403:
+            print(f"  403 from {host} (urllib), retrying through requests")
+        else:
+            print(f"  {e.code} from {host} (urllib), retrying through requests")
     except Exception as e:  # noqa: BLE001
         err = f"{type(e).__name__}: {e}"
+        print(f"  urllib error from {host}: {err}")
+
     # Devpost answers 403 to urllib but 200 to requests and curl, so retry
     # once through requests before calling the page unreachable.
     try:
-        import requests
-        r = requests.get(url, headers={"User-Agent": UA, "Accept": "text/html,*/*"},
-                         timeout=12)
-        r.raise_for_status()
-        return (*_page(r.content), None)
-    except Exception:  # noqa: BLE001
-        return None, "", err
+        return _try_requests()
+    except Exception as e:  # noqa: BLE001
+        return None, "", err or f"{type(e).__name__}: {e}"
 
 
 _APPLY_CUE = re.compile(
@@ -711,7 +784,10 @@ def _web_search(query):
                         self.links.append(href)
 
         url = "https://html.duckduckgo.com/html/?q=" + up.quote(query)
-        req = ur.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        # A bare "Mozilla/5.0" UA is what Cloudflare serves error 1010 for.
+        # Use the same desktop Chrome signature every other request in this
+        # file already uses, or the search silently returns nothing.
+        req = ur.Request(url, headers={"User-Agent": UA})
         with ur.urlopen(req, timeout=10) as resp:
             html = resp.read().decode("utf-8", errors="ignore")
         parser = LinkParser()
