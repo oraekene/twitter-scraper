@@ -841,6 +841,13 @@ def enrich(limit=None, workers=4):
         add(o, candidate_key(o))
     print(f"{len(opps)} opportunities to enrich "
           f"({sum(1 for o in opps if o['manual'])} manual)")
+    # Skip opportunities already enriched (have extractions in cache)
+    with db_lock:
+        done_keys = {r[0] for r in con.execute("SELECT key FROM extractions").fetchall()}
+    before = len(opps)
+    opps = [o for o in opps if candidate_key(o) not in done_keys]
+    if before != len(opps):
+        print(f"  skipped {before - len(opps)} already enriched (in extractions cache)")
     if limit:
         opps = opps[:limit]
 
@@ -957,53 +964,81 @@ def enrich(limit=None, workers=4):
 
     # Stage 1: HTTP fetches in parallel. Each worker resolves URLs and pulls
     # the first reachable page; the DB page cache is checked under a lock.
+    # as_completed with a bounded timeout means one slow URL (Google sign-in,
+    # Cloudflare challenge) does not block the whole batch. Tasks still running
+    # when the window closes are abandoned; they retry on the next run.
     fetched = []
-    with futures.ThreadPoolExecutor(max_workers=workers) as ex:
-        for opp, info in ex.map(enrich_one, opps):
+    ex = futures.ThreadPoolExecutor(max_workers=workers)
+    fut_to_opp = {ex.submit(enrich_one, opp): opp for opp in opps}
+    try:
+        for fut in futures.as_completed(fut_to_opp, timeout=600):
+            opp = fut_to_opp[fut]
+            try:
+                opp, info = fut.result(timeout=10)
+            except Exception as e:
+                info = (opp, f"worker error: {e}")
             fetched.append((opp, info))
+    except futures.TimeoutError:
+        pass  # remaining tasks did not finish in the time window
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
 
     # Stage 2: model extractions in parallel. Cache hits are free; misses
     # rotate providers through the shared _ScanRoot, which is already
     # thread-safe. DB writes go through the same lock.
     done = hits = 0
-    with futures.ThreadPoolExecutor(max_workers=workers) as ex:
-        results = list(ex.map(
-            lambda oi: extract_one(oi[0], oi[1]) if isinstance(oi[1], tuple) and oi[1][1]
-            else (oi[0], None, False),
-            fetched))
-    for (opp, parsed, from_cache), (_, info) in zip(results, fetched):
-        # Record the page before reading parsed facts: the fallback apply link
-        # below needs it.
-        if isinstance(info, tuple) and len(info) == 2:
-            opp["evidence_url"] = info[0]
-        if parsed:
-            for k in ("apply_url", "website", "deadline_iso",
-                      "deadline_text", "eligibility", "location", "notes"):
-                value = parsed.get(k)
-                # A null from the page must not erase a fact the scan already
-                # found in the tweet.
-                if value:
-                    opp[k] = value
-            status = normal_status(parsed.get("status"))
-            if status != "unknown":
-                opp["status"] = status
-        if not real_url(opp.get("apply_url")) and real_url(opp.get("evidence_url")):
-            # The fetched page is the best link we have when the model did not
-            # name a separate application form, or did not answer at all.
-            opp["apply_url"] = opp["evidence_url"]
-        # The written wording wins over a model-made ISO date; a free model
-        # happily writes 2024 for "Oct 27" when the tweet gives no year.
-        if (not opp.get("deadline_text") and not opp.get("deadline_iso")
-                and isinstance(info, tuple)):
-            text, iso = page_deadline(info[1])
+    ex = futures.ThreadPoolExecutor(max_workers=workers)
+    def extract_wrap(item):
+        opp, info = item
+        if isinstance(info, tuple) and info[1]:
+            _, parsed, from_cache = extract_one(opp, info)
+            return opp, parsed, from_cache, info
+        return opp, None, False, info
+    fut_to_item = {ex.submit(extract_wrap, item): item for item in fetched}
+    try:
+        for fut in futures.as_completed(fut_to_item, timeout=600):
+            try:
+                opp, parsed, from_cache, info = fut.result(timeout=10)
+            except Exception as e:
+                opp, info = fut_to_item[fut]
+                parsed, from_cache = None, False
+                print(f"  extraction error for {candidate_key(opp)}: {e}")
+            # Record the page before reading parsed facts: the fallback apply link
+            # below needs it.
+            if isinstance(info, tuple) and len(info) == 2:
+                opp["evidence_url"] = info[0]
+            if parsed:
+                for k in ("apply_url", "website", "deadline_iso",
+                          "deadline_text", "eligibility", "location", "notes"):
+                    value = parsed.get(k)
+                    # A null from the page must not erase a fact the scan already
+                    # found in the tweet.
+                    if value:
+                        opp[k] = value
+                status = normal_status(parsed.get("status"))
+                if status != "unknown":
+                    opp["status"] = status
+            if not real_url(opp.get("apply_url")) and real_url(opp.get("evidence_url")):
+                # The fetched page is the best link we have when the model did not
+                # name a separate application form, or did not answer at all.
+                opp["apply_url"] = opp["evidence_url"]
+            # The written wording wins over a model-made ISO date; a free model
+            # happily writes 2024 for "Oct 27" when the tweet gives no year.
+            if (not opp.get("deadline_text") and not opp.get("deadline_iso")
+                    and isinstance(info, tuple)):
+                text, iso = page_deadline(info[1])
+                if iso:
+                    opp["deadline_text"], opp["deadline_iso"] = text, iso
+            iso = parse_deadline_text(opp.get("deadline_text"))
             if iso:
-                opp["deadline_text"], opp["deadline_iso"] = text, iso
-        iso = parse_deadline_text(opp.get("deadline_text"))
-        if iso:
-            opp["deadline_iso"] = iso
-        done += 1
-        if from_cache:
-            hits += 1
+                opp["deadline_iso"] = iso
+            done += 1
+            if from_cache:
+                hits += 1
+    except futures.TimeoutError:
+        pass
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
     print(f"fetched and extracted {done} page(s), {hits} from cache")
     return opps
 
