@@ -1094,10 +1094,6 @@ def enrich(limit=None, workers=4):
                 status = normal_status(parsed.get("status"))
                 if status != "unknown":
                     opp["status"] = status
-            if not real_url(opp.get("apply_url")) and real_url(opp.get("evidence_url")):
-                # The fetched page is the best link we have when the model did not
-                # name a separate application form, or did not answer at all.
-                opp["apply_url"] = opp["evidence_url"]
             # The written wording wins over a model-made ISO date; a free model
             # happily writes 2024 for "Oct 27" when the tweet gives no year.
             if (not opp.get("deadline_text") and not opp.get("deadline_iso")
@@ -1253,15 +1249,22 @@ def candidate_facts(o, today=None):
     status = status_for(o, today)
     deadline = o.get("deadline_iso") or parse_deadline_text(o.get("deadline_text")) or ""
     closed = status == "closed"
+
+    # Preserve the original URL (t.co, bare domain, or full) before filtering.
+    # This becomes a "More info" fallback when no verified apply_url exists.
+    raw_apply = o.get("apply_url")
+    raw_evidence = o.get("evidence_url")
+
     facts = {
-        "apply_url": real_url(o.get("apply_url")),
-        "website": real_url(o.get("website") or o.get("evidence_url")),
+        "apply_url": real_url(raw_apply),
+        "website": real_url(o.get("website") or raw_evidence),
         "status": status if status != "unknown" else None,
         "verified_deadline": deadline or None,
         "deadline_text": o.get("deadline_text") or None,
         "verified_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "source": "research",
-        "evidence_url": real_url(o.get("evidence_url")),
+        "evidence_url": real_url(raw_evidence),
+        "reference_url": real_url(raw_apply) or real_url(raw_evidence) or raw_apply or raw_evidence,
     }
     return status, deadline, closed, facts
 
