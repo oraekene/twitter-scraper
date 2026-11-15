@@ -302,7 +302,38 @@ retweets, which carry the original author and drag spam feeds into the report.
 `twitter search` used to return HTTP 404. The cause was a missing `x-client-transaction-id` header,
 not a stale query id. Re-apply the fix with `node hiring\fix-twitter-cli.js` after any upgrade.
 
-## 10. Known bug in `fieldtheory search`, and the patch
+## 10. Run the readiness checklist
+
+```powershell
+python test_readiness_check.py       # self-check, no network
+python readiness_check.py            # scan every portfolio location and relevant chat
+```
+
+`readiness_check.py` reads `readiness_checklists.json`, uses
+`cold-email\portfolio.py` as the project inventory, and writes
+`out\readiness_project_report.json` plus `out\readiness_project_report.md`.
+The evidence sources and the human-readable checklist are in
+`READINESS-CHECKLISTS.md`. A checker hit means that matching file content
+exists, not that the project has completed the work.
+
+## 11. Keep the project and chat mirrors current
+
+```powershell
+# Refresh changed GitHub source snapshots in personal_context.
+python "C:\Users\rotim\Documents\cloudflare scrapers\github_repo_extractor.py" `
+  --mode source-only --personal-context "C:\Users\rotim\Videos\personal_context" --resume
+
+# Archive and import new official chat exports in the QMD repository.
+python "C:\Users\rotim\Documents\QMD powered Personal Knowledgebase and Search Engine\scripts\watch_chat_exports.py" --once
+```
+
+The extractor skips a repository only when its remote `pushed_at` value still
+matches the local snapshot. It downloads into a staging tree and then replaces
+`code\`, so files deleted upstream disappear. The chat watcher copies every
+finished export to an append-only raw archive before parsing it. The supported
+export paths and the provider limits are in `AI-CHAT-SYNC.md`.
+
+## 12. Known bug in `fieldtheory search`, and the patch
 
 Fieldtheory 1.3.22 breaks OR. Its `sanitizeFtsQuery()` in
 `dist\bookmarks-db.js` wraps every word in quotes the moment it sees one FTS5 operator, so `OR`

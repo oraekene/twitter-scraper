@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-15",
+  "source_corpora": [
+    {"name": "build", "path": "out/readiness_build_raw.json", "records": 2303},
+    {"name": "funding", "path": "out/readiness_funding_raw.json", "records": 630},
+    {"name": "opportunities", "path": "out/readiness_opportunities_raw.json", "records": 782},
+    {"name": "pre_launch", "path": "out/readiness_prelaunch_raw.json", "records": 981},
+    {"name": "pre_sell", "path": "out/readiness_presell_raw.json", "records": 92},
+    {"name": "bootstrap", "path": "out/readiness_bootstrap_raw.json", "records": 1145},
+    {"name": "readiness_assets", "path": "out/readiness_assets_raw.json", "records": 361}
+  ],
+  "checks": [
+    {
+      "id": "build.target_user_problem",
+      "category": "build",
+      "title": "Name the target user and painful problem",
+      "action": "State the user, the job, the painful problem, and the desired outcome in plain language.",
+      "patterns": ["target (?:user|customer|market)|\\bICP\\b|ideal customer profile|job to be done|customer problem|user pain"],
+      "evidence": [
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"},
+        {"type": "tweet", "id": "2086849883617784194", "url": "https://x.com/fin465/status/2086849883617784194"},
+        {"type": "simplenote", "id": "91f06ec77a87450e9b372425657303c6"}
+      ]
+    },
+    {
+      "id": "build.customer_discovery",
+      "category": "build",
+      "title": "Talk to potential customers",
+      "action": "Interview prospects and record their exact words, objections, and buying intent.",
+      "patterns": ["customer (?:interviews?|discovery|validation)|user (?:interviews?|research|validation)|interview (?:notes?|transcripts?|questions?)|survey responses?|30\\+ potential customers|ask 1[–-]3 existing customers"],
+      "evidence": [
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"},
+        {"type": "tweet", "id": "2086849883617784194", "url": "https://x.com/fin465/status/2086849883617784194"},
+        {"type": "tweet", "id": "2112137689185358204", "url": "https://x.com/knoxtwts/status/2112137689185358204"}
+      ]
+    },
+    {
+      "id": "build.scoped_mvp",
+      "category": "build",
+      "title": "Define the smallest useful version",
+      "action": "Write the functional scope, build the smallest path to the desired outcome, and list the remaining work.",
+      "patterns": ["minimum viable product|\\bMVP\\b|smallest version|one[- ]week (?:app|build|hackathon)|functional requirements|scope (?:the|out) (?:MVP|build)|first 20 customers"],
+      "evidence": [
+        {"type": "tweet", "id": "1919431143314673717", "url": "https://x.com/gregisenberg/status/1919431143314673717"},
+        {"type": "tweet", "id": "2112137689185358204", "url": "https://x.com/knoxtwts/status/2112137689185358204"},
+        {"type": "simplenote", "id": "082cf483f6db4beb9e4e354a983d1349"}
+      ]
+    },
+    {
+      "id": "build.website",
+      "category": "build",
+      "title": "Prepare a clear website",
+      "action": "Prepare a public website that explains the problem, outcome, offer, and next step.",
+      "patterns": ["https?://[^\\s)]+(?:vercel\\.app|pages\\.dev|netlify\\.app)|landing page copy|website structure|website template|hosted website|published website|deployed website"],
+      "evidence": [
+        {"type": "simplenote", "id": "91f06ec77a87450e9b372425657303c6"},
+        {"type": "simplenote", "id": "34dcb176c8f843119678bd52ac03e06e"},
+        {"type": "tweet", "id": "1840348855289905567", "url": "https://x.com/nico_jeannen/status/1840348855289905567"}
+      ]
+    },
+    {
+      "id": "build.interactive_demo",
+      "category": "build",
+      "title": "Prepare a working interactive demo",
+      "action": "Prepare a working demo that shows the main outcome, not only screenshots or a promise.",
+      "patterns": ["interactive demo|live demo|product demo|demo day|working prototype|product walkthrough"],
+      "evidence": [
+        {"type": "simplenote", "id": "91f06ec77a87450e9b372425657303c6"},
+        {"type": "simplenote", "id": "082cf483f6db4beb9e4e354a983d1349"},
+        {"type": "tweet", "id": "2107186094777434454", "url": "https://x.com/elie2222/status/2107186094777434454"}
+      ]
+    },
+    {
+      "id": "build.onboarding",
+      "category": "build",
+      "title": "Make first value easy to reach",
+      "action": "Prepare onboarding, a quick start, and a short path to the first useful result.",
+      "patterns": ["onboarding|first value|time[- ]to[- ]first[- ]value|quickstart|quick start|getting started|installation guide|walkthrough"],
+      "evidence": [
+        {"type": "tweet", "id": "2102737247267069980", "url": "https://x.com/suraj_sharma14/status/2102737247267069980"},
+        {"type": "tweet", "id": "2110705357492203564", "url": "https://x.com/mardehaym/status/2110705357492203564"},
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"}
+      ]
+    },
+    {
+      "id": "build.payment_or_waitlist",
+      "category": "build",
+      "title": "Prepare payment or waitlist handling",
+      "action": "Prepare a checkout, paid waitlist, or another clear way for a person to commit.",
+      "patterns": ["stripe\\.checkout|checkout session|payment (?:system|flow|collection)|pricing plan|price[_ -]?id|pricing page|paid waitlist|waitlist signup|sign.?up page"],
+      "evidence": [
+        {"type": "tweet", "id": "1911057602898706923", "url": "https://x.com/gregisenberg/status/1911057602898706923"},
+        {"type": "simplenote", "id": "91f06ec77a87450e9b372425657303c6"}
+      ]
+    },
+    {
+      "id": "build.traction_metrics",
+      "category": "build",
+      "title": "Measure traction",
+      "action": "Track customers, revenue, waitlist size, usage, retention, and other evidence that people value the product.",
+      "patterns": ["\\bMRR\\b|\\bARR\\b|waitlist (?:of|with|has)|revenue[:= ]|users? (?:signed|joined|active)|customers? (?:signed|paying)|conversion rate|retention|churn|traction"],
+      "evidence": [
+        {"type": "tweet", "id": "2083954605533065561", "url": "https://x.com/gregisenberg/status/2083954605533065561"},
+        {"type": "tweet", "id": "2086849883617784194", "url": "https://x.com/fin465/status/2086849883617784194"},
+        {"type": "tweet", "id": "2032910396064141555", "url": "https://x.com/samwoods/status/2032910396064141555"}
+      ]
+    },
+    {
+      "id": "build.quality_and_safety",
+      "category": "build",
+      "title": "Prove quality and operational safety",
+      "action": "Add tests, deployment checks, privacy and terms, backups, access control, and safe handling of customer data.",
+      "patterns": ["unit tests?|integration tests?|end[- ]to[- ]end tests?|pytest|vitest|playwright|cypress|github/workflows|continuous integration|\\bCI\\b|privacy policy|terms of service|security policy|backup|restore|mfa|2fa|encryption|rate limits?|deployment pipeline"],
+      "evidence": [
+        {"type": "tweet", "id": "1833557628401627245", "url": "https://x.com/mayowaoshin/status/1833557628401627245"},
+        {"type": "tweet", "id": "2110705357492203564", "url": "https://x.com/mardehaym/status/2110705357492203564"}
+      ]
+    },
+    {
+      "id": "build.feedback_loop",
+      "category": "build",
+      "title": "Close the customer feedback loop",
+      "action": "Collect customer questions, sales calls, support issues, and feature requests, then use them to change the product and message.",
+      "patterns": ["customer feedback|user feedback|support tickets?|sales calls?|customer interviews?|what_the_market_is_telling_us|feature requests?|churned customers|record every sales call"],
+      "evidence": [
+        {"type": "tweet", "id": "2083954605533065561", "url": "https://x.com/gregisenberg/status/2083954605533065561"},
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"},
+        {"type": "tweet", "id": "2032910396064141555", "url": "https://x.com/samwoods/status/2032910396064141555"}
+      ]
+    },
+    {
+      "id": "funding.pitch_deck",
+      "category": "funding",
+      "title": "Prepare the investor story",
+      "action": "Prepare a clear deck, one-page summary, or deal memo that explains the problem, product, market, evidence, and ask.",
+      "patterns": ["pitch deck|investor deck|data room|one[- ]pager|deal memo|fundraising deck|investor narrative"],
+      "evidence": [
+        {"type": "tweet", "id": "2113317206494679180", "url": "https://x.com/FrancisPSantora/status/2113317206494679180"},
+        {"type": "tweet", "id": "2032910396064141555", "url": "https://x.com/samwoods/status/2032910396064141555"},
+        {"type": "simplenote", "id": "3516acd3-4ba9-4aa1-91fb-bca51b8ac88f"}
+      ]
+    },
+    {
+      "id": "funding.traction_evidence",
+      "category": "funding",
+      "title": "Show investor-grade traction",
+      "action": "Show a short history of customers, revenue, growth, retention, or other demand evidence with dated numbers.",
+      "patterns": ["\\bMRR\\b|\\bARR\\b|traction|customers? (?:paying|signed)|revenue[:= ]|waitlist (?:of|with)|retention|churn|conversion rate|growth rate"],
+      "evidence": [
+        {"type": "tweet", "id": "2032910396064141555", "url": "https://x.com/samwoods/status/2032910396064141555"},
+        {"type": "tweet", "id": "1914332129372078503", "url": "https://x.com/harris/status/1914332129372078503"},
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"}
+      ]
+    },
+    {
+      "id": "funding.financial_plan",
+      "category": "funding",
+      "title": "Prepare the financial plan",
+      "action": "Prepare projections, costs, use of funds, runway, and a budget that match the raise target.",
+      "patterns": ["financial projections?|use of funds|cash flow|runway|burn rate|\\bP&L\\b|profit and loss|financial model|budget"],
+      "evidence": [
+        {"type": "tweet", "id": "2113317206494679180", "url": "https://x.com/FrancisPSantora/status/2113317206494679180"},
+        {"type": "tweet", "id": "1914332129372078503", "url": "https://x.com/harris/status/1914332129372078503"},
+        {"type": "simplenote", "id": "d16550963e4845f5b59f8c338a1353a4"}
+      ]
+    },
+    {
+      "id": "funding.legal_cap_table",
+      "category": "funding",
+      "title": "Prepare legal and ownership records",
+      "action": "Prepare the cap table, incorporation records, founder and IP agreements, and prior funding documents.",
+      "patterns": ["cap table|certificate of incorporation|founders?[' ]? agreement|IP assignment|term sheet|\\bSAFE\\b|shareholders? agreement|board minutes"],
+      "evidence": [
+        {"type": "tweet", "id": "2113317206494679180", "url": "https://x.com/FrancisPSantora/status/2113317206494679180"},
+        {"type": "tweet", "id": "2110390484757561749", "url": "https://x.com/kseniam0s/status/2110390484757561749"}
+      ]
+    },
+    {
+      "id": "funding.data_room",
+      "category": "funding",
+      "title": "Prepare the diligence data room",
+      "action": "Collect the deck, financials, contracts, bank records, IP records, and other diligence evidence in one controlled place.",
+      "patterns": ["data room|due diligence|customer contracts?|bank statements?|patent documentation|prior SAFEs|deal memo"],
+      "evidence": [
+        {"type": "tweet", "id": "2113317206494679180", "url": "https://x.com/FrancisPSantora/status/2113317206494679180"},
+        {"type": "tweet", "id": "2110390484757561749", "url": "https://x.com/kseniam0s/status/2110390484757561749"},
+        {"type": "simplenote", "id": "3516acd3-4ba9-4aa1-91fb-bca51b8ac88f"}
+      ]
+    },
+    {
+      "id": "funding.raise_process",
+      "category": "funding",
+      "title": "Prepare the raise process",
+      "action": "Set the target, stage, valuation, investor list, meeting cadence, and response speed.",
+      "patterns": ["fundraising|raise (?:a |the )?(?:seed|pre-seed|angel|round)|valuation|investor (?:list|outreach|process|meeting)|lead investor|use of funds|target raise"],
+      "evidence": [
+        {"type": "tweet", "id": "1914332129372078503", "url": "https://x.com/harris/status/1914332129372078503"},
+        {"type": "tweet", "id": "2110390484757561749", "url": "https://x.com/kseniam0s/status/2110390484757561749"},
+        {"type": "simplenote", "id": "d16550963e4845f5b59f8c338a1353a4"}
+      ]
+    },
+    {
+      "id": "opportunities.eligibility",
+      "category": "opportunities",
+      "title": "Check opportunity eligibility",
+      "action": "Track the deadline, location, sector, founder, company, and other eligibility rules for every target opportunity.",
+      "patterns": ["eligibility|eligible (?:entity|applicant|founder|company)|application requirements?|submission requirements?|selection criteria|judging criteria|deadline"],
+      "evidence": [
+        {"type": "tweet", "id": "2034243759488016687", "url": "https://x.com/richtosho/status/2034243759488016687"},
+        {"type": "tweet", "id": "2114326493811945679", "url": "https://x.com/Build3DAO/status/2114326493811945679"},
+        {"type": "simplenote", "id": "082cf483f6db4beb9e4e354a983d1349"}
+      ]
+    },
+    {
+      "id": "opportunities.application_assets",
+      "category": "opportunities",
+      "title": "Prepare application assets",
+      "action": "Prepare the working prototype, requirements, summary, budget, and documents that the application needs.",
+      "patterns": ["functional requirements?|technical requirements?|prototype|working demo|application (?:materials?|assets?)|one[- ]page (?:pitch|summary)|project (?:summary|description)|budget"],
+      "evidence": [
+        {"type": "simplenote", "id": "082cf483f6db4beb9e4e354a983d1349"},
+        {"type": "simplenote", "id": "34dcb176c8f843119678bd52ac03e06e"},
+        {"type": "tweet", "id": "1911057602898706923", "url": "https://x.com/gregisenberg/status/1911057602898706923"}
+      ]
+    },
+    {
+      "id": "opportunities.demo_day",
+      "category": "opportunities",
+      "title": "Prepare the demo-day pitch",
+      "action": "Prepare a short live demo, pitch deck, presentation script, and answers for the judges.",
+      "patterns": ["demo[- ]day|judge(?:s|ing)|pitch (?:video|deck|script)|presentation (?:deck|script)|live demo|elevator pitch"],
+      "evidence": [
+        {"type": "tweet", "id": "1986191399314923696", "url": "https://x.com/base/status/1986191399314923696"},
+        {"type": "tweet", "id": "2114326493811945679", "url": "https://x.com/Build3DAO/status/2114326493811945679"},
+        {"type": "simplenote", "id": "082cf483f6db4beb9e4e354a983d1349"}
+      ]
+    },
+    {
+      "id": "opportunities.submission_compliance",
+      "category": "opportunities",
+      "title": "Complete and check the submission",
+      "action": "Prepare every required file, follow the format rules, submit early, and keep the confirmation.",
+      "patterns": ["submit(?:ted|ting)? (?:an |the |your )?(?:application|proposal)|application (?:form|deadline|requirements?|materials?)|proposal (?:form|deadline|requirements?)|required documents?|submission checklist"],
+      "evidence": [
+        {"type": "tweet", "id": "2034243759488016687", "url": "https://x.com/richtosho/status/2034243759488016687"},
+        {"type": "tweet", "id": "2113671979081572512", "url": "https://x.com/alexsaraki/status/2113671979081572512"}
+      ]
+    },
+    {
+      "id": "marketing.demand_validation",
+      "category": "marketing",
+      "title": "Validate demand before building the message",
+      "action": "Find existing demand and real buying signals before investing in a content or launch plan.",
+      "patterns": ["demand (?:already )?exists|demand validation|validate demand|market demand|customer demand|preorders?|preorders?|250\\+ emails|public buying intent"],
+      "evidence": [
+        {"type": "tweet", "id": "2109677482731307129", "url": "https://x.com/oganicboss/status/2109677482731307129"},
+        {"type": "tweet", "id": "2086849883617784194", "url": "https://x.com/fin465/status/2086849883617784194"},
+        {"type": "tweet", "id": "2112480045277368411", "url": "https://x.com/thatGTMdude/status/2112480045277368411"}
+      ]
+    },
+    {
+      "id": "marketing.launch_plan",
+      "category": "marketing",
+      "title": "Write the launch plan",
+      "action": "Set the date, audience, message, channel, sequence, and success measure before launch day.",
+      "patterns": ["launch date|launch plan|launch checklist|pre[- ]?launch|prelaunch|viral launch|go[- ]to[- ]market|post[- ]launch"],
+      "evidence": [
+        {"type": "simplenote", "id": "7c56dc5c-ee65-43f0-870f-72a6eadc836f"},
+        {"type": "simplenote", "id": "20d02e3ea5ca4c9abf6087c7b44ed8c2"},
+        {"type": "tweet", "id": "1840348855289905567", "url": "https://x.com/nico_jeannen/status/1840348855289905567"}
+      ]
+    },
+    {
+      "id": "marketing.launch_assets",
+      "category": "marketing",
+      "title": "Prepare launch assets",
+      "action": "Prepare the launch copy, product video, founder introduction, demo, landing page, and creator briefs.",
+      "patterns": ["loom|introduce yourself|founder video|video introduction|launch film|product video|demo video|creator brief|launch copy"],
+      "evidence": [
+        {"type": "simplenote", "id": "915cad65-3ed1-4020-949b-8c4c8f43ce69"},
+        {"type": "simplenote", "id": "20d02e3ea5ca4c9abf6087c7b44ed8c2"},
+        {"type": "simplenote", "id": "7c56dc5c-ee65-43f0-870f-72a6eadc836f"},
+        {"type": "tweet", "id": "2107186094777434454", "url": "https://x.com/elie2222/status/2107186094777434454"}
+      ]
+    },
+    {
+      "id": "marketing.presell",
+      "category": "marketing",
+      "title": "Pre-sell the outcome",
+      "action": "Offer a waitlist, preorder, deposit, or paid commitment before the full product is ready.",
+      "patterns": ["waitlist|pre[- ]?sell|pre[- ]?order|presell|preorder|deposit|payment collection|paid waitlist|checkout"],
+      "evidence": [
+        {"type": "tweet", "id": "1911057602898706923", "url": "https://x.com/gregisenberg/status/1911057602898706923"},
+        {"type": "tweet", "id": "1761187622024585647", "url": "https://x.com/johnrush/status/1761187622024585647"},
+        {"type": "simplenote", "id": "91f06ec77a87450e9b372425657303c6"}
+      ]
+    },
+    {
+      "id": "marketing.audience_community",
+      "category": "marketing",
+      "title": "Build an owned audience and community",
+      "action": "Choose where the audience gathers, collect contacts, and give the community a clear reason to return.",
+      "patterns": ["community|discord|circle|whatsapp group|email list|newsletter|skool|audience|followers"],
+      "evidence": [
+        {"type": "tweet", "id": "1754493526505574801", "url": "https://x.com/gregisenberg/status/1754493526505574801"},
+        {"type": "tweet", "id": "2112480045277368411", "url": "https://x.com/thatGTMdude/status/2112480045277368411"},
+        {"type": "tweet", "id": "1840348855289905567", "url": "https://x.com/nico_jeannen/status/1840348855289905567"}
+      ]
+    },
+    {
+      "id": "marketing.daily_distribution",
+      "category": "marketing",
+      "title": "Run repeatable daily distribution",
+      "action": "Post, reply, and reach out every day for long enough to learn which messages create demand.",
+      "patterns": ["post daily|daily post|daily content|cold email|linkedin.{0,30}post|reddit|reply (?:to|with)|build in public|outbound"],
+      "evidence": [
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"},
+        {"type": "tweet", "id": "1754493526505574801", "url": "https://x.com/gregisenberg/status/1754493526505574801"},
+        {"type": "tweet", "id": "2110148919334429061", "url": "https://x.com/MeredithCheng22/status/2110148919334429061"},
+        {"type": "simplenote", "id": "f98b420ab7e346ee83429ae1a5015b4e"}
+      ]
+    },
+    {
+      "id": "marketing.social_proof",
+      "category": "marketing",
+      "title": "Turn customer results into proof",
+      "action": "Capture customer results as case studies, testimonials, quotes, reviews, and founder stories.",
+      "patterns": ["case stud(?:y|ies)|testimonial|social proof|customer quote|customer reviews?|user reviews?"],
+      "evidence": [
+        {"type": "tweet", "id": "2109266051770818603", "url": "https://x.com/paolo_scales/status/2109266051770818603"},
+        {"type": "tweet", "id": "2102737247267069980", "url": "https://x.com/suraj_sharma14/status/2102737247267069980"},
+        {"type": "simplenote", "id": "f98b420ab7e346ee83429ae1a5015b4e"}
+      ]
+    },
+    {
+      "id": "marketing.zero_budget_engine",
+      "category": "marketing",
+      "title": "Design a zero-budget revenue engine",
+      "action": "Use service-first delivery, customer revenue, free distribution, and cash flow before outside funding.",
+      "patterns": ["zero[- ]budget|no money|no funding|bootstrapp\\w*|free tools?|cash[- ]flow|customer revenue|cold outreach.{0,20}week|first 10 customers|first customer"],
+      "evidence": [
+        {"type": "tweet", "id": "1759665382128763161", "url": "https://x.com/barrettjoneill/status/1759665382128763161"},
+        {"type": "tweet", "id": "1919431143314673717", "url": "https://x.com/gregisenberg/status/1919431143314673717"},
+        {"type": "tweet", "id": "1911057602898706923", "url": "https://x.com/gregisenberg/status/1911057602898706923"}
+      ]
+    }
+  ]
+}
